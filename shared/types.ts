@@ -38,6 +38,9 @@ export interface DisplayMessage {
   knowledgeSourceId?: string;
 }
 export interface ChatSnapshot {
+  /** Monotonic server observation order; HTTP and SSE share this sequence. */
+  revision?: number;
+  runId?: string;
   messages: DisplayMessage[];
   running: boolean;
   status: string;

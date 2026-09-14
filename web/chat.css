@@ -740,3 +740,7 @@ pre code {
     transition: none;
   }
 }
+
+/* Fixed-size action controls must not shrink or inherit font baseline alignment. */
+.composer-footer .send { flex: 0 0 36px; display: grid; place-items: center; padding: 0; line-height: 1; align-self: center; }
+.composer-footer .send svg { display: block; }

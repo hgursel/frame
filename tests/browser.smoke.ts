@@ -7,6 +7,8 @@ import { createServer } from 'node:http';
 
 // Exercise the compiled production server and JavaScript worker, not just tsx source.
 const { createApp } = await import(new URL('../dist/server/app.js', import.meta.url).href);
+let heldConnectionsClosed = 0;
+let followupRequests = 0;
 const model = createServer(async (request, response) => {
   let raw = '';
   for await (const chunk of request) raw += chunk;
@@ -14,6 +16,34 @@ const model = createServer(async (request, response) => {
     raw.includes('Maintenance starts at 02:00 UTC.'),
     'Selected document must reach the local model',
   );
+  const body = JSON.parse(raw);
+  const lastUser = [...body.messages].reverse().find((m: any) => m.role === 'user');
+  const lastText = JSON.stringify(lastUser?.content);
+  const chunk = (delta: object, finish: string | null = null) =>
+    `data: ${JSON.stringify({ id: 'followup', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+  if (lastText?.includes('Hold until stopped')) {
+    response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    response.write(chunk({ reasoning_content: 'Waiting for cancellation.' }));
+    response.on('close', () => heldConnectionsClosed++);
+    return;
+  }
+  if (lastText?.includes('Follow-up tool check')) {
+    followupRequests++;
+    response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    if (body.messages.at(-1)?.role !== 'tool') {
+      response.write(chunk({ reasoning_content: 'I will search the project.' }));
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      response.write(chunk({ tool_calls: [{ index: 0, id: 'followup-search', type: 'function', function: { name: 'search_knowledge', arguments: '' } }] }));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      response.end(chunk({ tool_calls: [{ index: 0, function: { arguments: '{"query":"maintenance"}' } }] }) + chunk({}, 'tool_calls') + 'data: [DONE]\n\n');
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      response.write(chunk({ content: 'Follow-up result arrived.' }));
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      response.end(chunk({}, 'stop') + 'data: [DONE]\n\n');
+    }
+    return;
+  }
   response.writeHead(200, { 'Content-Type': 'text/event-stream' });
   const reason = (text: string) =>
     `data: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: { reasoning_content: text }, finish_reason: null }] })}\n\n`;
@@ -178,6 +208,43 @@ try {
   );
   await page.locator('.thinking summary').click();
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
+  // A resumed conversation must advance through reasoning, tool arguments, and response.
+  await page.getByRole('textbox', { name: 'Message Frame' }).fill('Follow-up tool check');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(page.locator('.status')).toHaveText('Preparing tool call', { timeout: 15000 });
+  await expect(page.locator('.status')).toHaveText('Waiting for model');
+  await expect(page.locator('.status')).toHaveText('Responding');
+  await expect(page.getByText('Follow-up result arrived.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible();
+  assert.equal(followupRequests, 2, 'One follow-up plus one continuation after the tool');
+  // Simulate an unavailable live stream. HTTP reconciliation must still update and stop.
+  await page.route('**/api/conversations/*/events', (route) => route.abort());
+  await page.reload();
+  await page.getByRole('button', { name: 'Review our migration plan.', exact: true }).click();
+  await expect(page.getByText('Follow-up result arrived.', { exact: true })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Message Frame' }).fill('Hold until stopped');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(page.locator('.status')).toContainText('reconnecting');
+  const stop = page.getByRole('button', { name: 'Stop generation', exact: true });
+  await expect(stop).toBeVisible({ timeout: 15000 });
+  await expect.poll(() => page.locator('.thinking-active').count(), { timeout: 15000 }).toBe(1);
+  const checkStopGeometry = async () => {
+    const box = await stop.boundingBox();
+    const icon = await stop.locator('svg').boundingBox();
+    assert(box && icon);
+    assert(Math.abs(box.width - 36) < 1 && Math.abs(box.height - 36) < 1);
+    assert(Math.abs(icon.x + icon.width / 2 - box.x - box.width / 2) < 1);
+    assert(Math.abs(icon.y + icon.height / 2 - box.y - box.height / 2) < 1);
+  };
+  await checkStopGeometry();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const drawer = page.getByRole('button', { name: 'Close navigation', exact: true });
+  if (await drawer.isVisible()) await drawer.click({ position: { x: 370, y: 400 } });
+  await checkStopGeometry();
+  await stop.click();
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible({ timeout: 15000 });
+  await expect.poll(() => heldConnectionsClosed).toBe(1);
+  await expect(page.locator('.thinking-active')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   // Desktop navigation may remain open when the viewport is resized; close its drawer.
   const closeNavigation = page.getByRole('button', { name: 'Close navigation', exact: true });

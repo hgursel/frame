@@ -27,9 +27,11 @@ const send = (value: WorkerOutput) => {
 };
 let session: Awaited<ReturnType<typeof createAgentSession>>['session'] | undefined;
 let stopping = false;
+const transportAbort = new AbortController();
 process.on('message', (message: WorkerInput | { type: 'abort' }) => {
   if ('type' in message) {
     stopping = true;
+    transportAbort.abort();
     void session?.abort();
     return;
   }
@@ -44,6 +46,7 @@ process.on('message', (message: WorkerInput | { type: 'abort' }) => {
   });
 });
 process.on('disconnect', () => {
+  transportAbort.abort();
   void session?.abort();
   setTimeout(() => process.exit(1), 500).unref();
 });
@@ -57,7 +60,10 @@ async function run(input: WorkerInput) {
     const url = new URL(request instanceof Request ? request.url : String(request));
     if (url.origin !== new URL(endpoint).origin || !url.pathname.startsWith('/v1/'))
       return Promise.reject(new Error('Only the configured local model endpoint is allowed'));
-    return transport(request, { ...init, redirect: 'error' });
+    const sourceSignal = init?.signal ?? (request instanceof Request ? request.signal : undefined);
+    return transport(request, { ...init, redirect: 'error',
+      signal: AbortSignal.any([transportAbort.signal, ...(sourceSignal ? [sourceSignal] : [])]),
+    });
   };
   mkdirSync(input.agentDir, { recursive: true, mode: 0o700 });
   mkdirSync(input.artifactDir, { recursive: true, mode: 0o700 });
@@ -188,6 +194,7 @@ async function run(input: WorkerInput) {
   let status = 'Waiting for model';
   let thinking = false;
   let lastEmit = 0;
+  let emitTimer: ReturnType<typeof setTimeout> | undefined;
   let firstDelta = 0;
   let compacting = false;
   let compactionError: string | undefined;
@@ -197,7 +204,13 @@ async function run(input: WorkerInput) {
       (session!.systemPrompt.length + JSON.stringify(session!.agent.state.tools).length) / 4,
     );
   const publish = (force = false) => {
-    if (!force && Date.now() - lastEmit < 80) return;
+    if (!force && Date.now() - lastEmit < 80) {
+      // Flush the latest state even if no more SDK events arrive after a burst.
+      emitTimer ??= setTimeout(() => { emitTimer = undefined; publish(true); }, 80);
+      return;
+    }
+    clearTimeout(emitTimer);
+    emitTimer = undefined;
     lastEmit = Date.now();
     // Follow the native branch, including pre-compaction messages, for a stable UI history.
     const messages: unknown[] = session!.sessionManager
@@ -233,6 +246,7 @@ async function run(input: WorkerInput) {
         .map((p: any) => p.text)
         .join('') || '';
     const rawThinking =
+      ['Thinking', 'Responding'].includes(status) &&
       currentText.trimStart().startsWith('<think>') && !currentText.includes('</think>');
     send({
       type: 'snapshot',
@@ -242,7 +256,10 @@ async function run(input: WorkerInput) {
     });
   };
   const unsubscribe = session.subscribe((event) => {
+    const previousStatus = status;
     if (event.type === 'message_start' && event.message.role === 'assistant') {
+      status = 'Waiting for model';
+      thinking = false;
       partial = event.message;
       firstDelta = 0;
       metrics.generation = undefined;
@@ -252,6 +269,8 @@ async function run(input: WorkerInput) {
       thinking = kind.startsWith('thinking_') && kind !== 'thinking_end';
       if (kind.startsWith('text_')) status = 'Responding';
       if (thinking) status = 'Thinking';
+      if (kind === 'thinking_end') status = 'Waiting for model';
+      if (kind.startsWith('toolcall_')) status = 'Preparing tool call';
       // SDK events include the cumulative message; RPC intentionally has a different wire format.
       partial = event.message;
       if (kind.endsWith('_delta') && !compacting) {
@@ -282,7 +301,7 @@ async function run(input: WorkerInput) {
       thinking = false;
     }
     if (event.type === 'tool_execution_start') status = `Running ${event.toolName}`;
-    if (event.type === 'tool_execution_end') status = 'Thinking';
+    if (event.type === 'tool_execution_end') status = 'Waiting for model';
     if (event.type === 'compaction_start') {
       status = 'Compacting context';
       compacting = true;
@@ -310,7 +329,8 @@ async function run(input: WorkerInput) {
       }
     }
     publish(
-      event.type === 'message_end' ||
+      status !== previousStatus ||
+        event.type === 'message_end' ||
         event.type === 'compaction_start' ||
         event.type === 'compaction_end' ||
         (event.type === 'message_update' &&
@@ -360,6 +380,7 @@ async function run(input: WorkerInput) {
         return;
       }
     }
+    if (stopping) { send({ type: 'done' }); return; }
     if (input.documents?.length)
       await session.sendCustomMessage(
         {
@@ -370,6 +391,9 @@ async function run(input: WorkerInput) {
         },
         { triggerTurn: false },
       );
+    if (stopping) { send({ type: 'done' }); return; }
+    status = 'Waiting for model';
+    publish(true);
     await session.prompt(input.prompt);
     partial = undefined;
     publish(true);
@@ -391,6 +415,7 @@ async function run(input: WorkerInput) {
           : 'The local model could not complete this task or context summary. History was retained; review the conversation and llama.cpp logs before retrying.',
     });
   } finally {
+    clearTimeout(emitTimer);
     unsubscribe();
     session.dispose();
     process.disconnect();

@@ -15,6 +15,7 @@ type ActiveRun = {
   stopRequested: boolean;
 };
 export class Runner extends EventEmitter {
+  private revision = Date.now() * 1000;
   readonly active = new Map<string, ActiveRun>();
   constructor(readonly store: Store) {
     super();
@@ -22,7 +23,7 @@ export class Runner extends EventEmitter {
   }
   snapshot(id: string): ChatSnapshot {
     const live = this.active.get(id);
-    if (live) return live.snapshot;
+    if (live) return { ...live.snapshot, runId: live.runId, revision: ++this.revision };
     const settings = this.store.settings();
     const project = this.store.project(this.store.conversation(id)!.projectId)!;
     const saved = this.store.meta(`metrics:${id}`);
@@ -33,6 +34,7 @@ export class Runner extends EventEmitter {
       )
       .get(id) as { status: string; error?: string } | undefined;
     return {
+      revision: ++this.revision,
       messages: readHistory(this.store.sessionFile(id)),
       running: false,
       status: last?.status || 'Ready',
@@ -123,6 +125,7 @@ export class Runner extends EventEmitter {
       snapshot: {
         ...this.snapshot(id),
         messages: history,
+        error: undefined,
         running: true,
         status: operation === 'compact' ? 'Compacting context' : 'Starting local model',
       },
@@ -204,9 +207,12 @@ export class Runner extends EventEmitter {
     this.emit(id);
     return { id: runId, status: 'running', duplicate: false };
   }
-  stop(id: string) {
+  stop(id: string, expectedRunId?: string) {
     const run = this.active.get(id);
     if (!run) return;
+    if (expectedRunId && run.runId !== expectedRunId)
+      throw Object.assign(new Error('This task has already ended. Refresh before stopping another task.'), { statusCode: 409 });
+    if (run.stopRequested) return;
     run.stopRequested = true;
     run.snapshot.status = 'Stopping';
     this.emit(id);

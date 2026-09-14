@@ -2,6 +2,7 @@ export async function api<T>(url: string, method = 'GET', body?: unknown): Promi
   const response = await fetch(`/api${url}`, {
     method,
     credentials: 'same-origin',
+    signal: AbortSignal.timeout(60_000),
     headers:
       body === undefined || body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),

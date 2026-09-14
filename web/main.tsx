@@ -10,6 +10,7 @@ import type {
   KnowledgeDocument,
 } from '../shared/types.js';
 import { api } from './api.js';
+import { newerSnapshot } from './snapshots.js';
 import { Thinking } from './Thinking.js';
 import { ContextPanel, Throughput, CopyMessage } from './ContextPanel.js';
 import { KnowledgePanel, SaveKnowledge, DocumentTools } from './Knowledge.js';
@@ -201,6 +202,10 @@ function Workspace() {
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [stoppingChat, setStoppingChat] = useState('');
+  const applySnapshot = (id: string, value: ChatSnapshot) => {
+    if (currentChat.current === id) setSnapshot((current) => newerSnapshot(current, value));
+  };
   const [artifacts, setArtifacts] = useState<{ name: string }[]>([]);
   const [settings, setSettings] = useState<PublicSettings>();
   const [pending, setPending] = useState<{
@@ -231,7 +236,7 @@ function Workspace() {
     const selected = currentChat.current;
     if (selected) {
       const updated = await api<ChatSnapshot>(`/conversations/${selected}`);
-      if (currentChat.current === selected) setSnapshot(updated);
+      applySnapshot(selected, updated);
     }
   };
   useEffect(() => {
@@ -243,26 +248,59 @@ function Workspace() {
     setConnected(false);
     setError('');
     if (!chatId) return;
+    let live = true;
+    let healthy = false;
+    let running = true;
+    let lastEvent = 0;
+    let polling = false;
+    let receivedRevision = 0;
+    const receive = (value: ChatSnapshot) => {
+      if (!live || currentChat.current !== chatId) return;
+      if ((value.revision ?? 0) < receivedRevision) return;
+      receivedRevision = value.revision ?? 0;
+      running = value.running;
+      applySnapshot(chatId, value);
+    };
+    const reconcile = async () => {
+      if (polling || !live) return;
+      polling = true;
+      try { receive(await api<ChatSnapshot>(`/conversations/${chatId}`)); }
+      catch (e) { if (live) setError((e as Error).message); }
+      finally { polling = false; }
+    };
     const stream = new EventSource(`/api/conversations/${chatId}/events`);
-    stream.onopen = () => setConnected(true);
     stream.onmessage = (event) => {
-      setSnapshot(JSON.parse(event.data));
-      setConnected(true);
+      if (!live || currentChat.current !== chatId) return;
+      try {
+        receive(JSON.parse(event.data));
+        healthy = true;
+        lastEvent = Date.now();
+        setConnected(true);
+      } catch { healthy = false; setConnected(false); void reconcile(); }
     };
     stream.onerror = () => {
+      if (!live) return;
+      healthy = false;
       setConnected(false);
-      void api(`/conversations/${chatId}`).catch(() => {});
+      void reconcile();
     };
-    return () => stream.close();
+    // A proxy can leave SSE open but buffered. Reconcile stalled active streams too.
+    const poll = setInterval(() => {
+      if (!healthy || (running && Date.now() - lastEvent > 3000)) void reconcile();
+    }, 2000);
+    void reconcile();
+    return () => { live = false; clearInterval(poll); stream.close(); };
   }, [chatId]);
   useEffect(() => {
     if (!chatId || snapshot.running) return;
+    let live = true;
     void api<{ name: string }[]>(`/conversations/${chatId}/artifacts`)
-      .then(setArtifacts)
-      .catch((e) => setError(e.message));
+      .then((items) => { if (live && currentChat.current === chatId) setArtifacts(items); })
+      .catch((e) => { if (live) setError(e.message); });
     void api<Conversation[]>('/conversations')
       .then(setChats)
       .catch(() => {});
+    return () => { live = false; };
   }, [chatId, snapshot.running]);
   const newChat = async () => {
     if (!projectId) {
@@ -300,7 +338,7 @@ function Workspace() {
       setDraft('');
       setAttached([]);
       const updated = await api<ChatSnapshot>(`/conversations/${id}`);
-      if (currentChat.current === id) setSnapshot(updated);
+      applySnapshot(id, updated);
     } catch (e) {
       setError(
         `${(e as Error).message} Retry uses the same request ID to prevent duplicate execution.`,
@@ -308,6 +346,17 @@ function Workspace() {
     } finally {
       setSending(false);
     }
+  };
+  const stop = async () => {
+    if (!chatId || stoppingChat === chatId) return;
+    const id = chatId;
+    setStoppingChat(id);
+    setError('');
+    try {
+      await api(`/conversations/${id}/stop`, 'POST', { runId: snapshot.runId });
+      applySnapshot(id, await api<ChatSnapshot>(`/conversations/${id}`));
+    } catch (e) { if (currentChat.current === id) setError((e as Error).message); }
+    finally { setStoppingChat((current) => current === id ? '' : current); }
   };
   const compact = async () => {
     if (!chatId || compacting || snapshot.running) return;
@@ -320,7 +369,7 @@ function Workspace() {
       await api(`/conversations/${id}/compact`, 'POST', { requestId: compactRequest.current.id });
       compactRequest.current = undefined;
       const updated = await api<ChatSnapshot>(`/conversations/${id}`);
-      if (currentChat.current === id) setSnapshot(updated);
+      applySnapshot(id, updated);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -664,10 +713,10 @@ function Workspace() {
               )}
               <div className="status-row">
                 <div className="status" aria-live="polite">
-                  {snapshot.running
-                    ? snapshot.status
-                    : chatId && !connected
-                      ? 'Reconnecting… Your task continues on the server.'
+                  {chatId && !connected
+                    ? 'Live updates reconnecting · Checking task status…'
+                    : snapshot.running
+                      ? stoppingChat === chatId ? 'Stopping' : snapshot.status
                       : project?.toolsEnabled
                         ? 'Trusted tools enabled · Host-account permissions'
                         : 'Chat mode · Project knowledge available · Host tools disabled'}
@@ -731,13 +780,11 @@ function Workspace() {
                       type="button"
                       className="send"
                       aria-label="Stop generation"
-                      onClick={() =>
-                        void api(`/conversations/${chatId}/stop`, 'POST', {}).catch((e) =>
-                          setError(e.message),
-                        )
-                      }
+                      disabled={stoppingChat === chatId || snapshot.status === 'Stopping'}
+                      title="Stop generation"
+                      onClick={() => void stop()}
                     >
-                      ■
+                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor" /></svg>
                     </button>
                   ) : (
                     <button
