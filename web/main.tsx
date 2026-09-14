@@ -717,7 +717,7 @@ function Workspace() {
               <div className="status-row">
                 <div className="status" aria-live="polite">
                   {chatId && !connected
-                    ? 'Live updates reconnecting · Checking task status…'
+                    ? `${snapshot.running ? stoppingChat === chatId ? 'Stopping' : snapshot.status : 'Checking task status…'} · Live updates reconnecting`
                     : snapshot.running
                       ? stoppingChat === chatId ? 'Stopping' : snapshot.status
                       : project?.toolsEnabled
