@@ -28,6 +28,16 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Model, Context, Instructions, and Documents settings tabs with retained drafts and keyboard navigation.
 - CI validates TypeScript, 17 API/SDK/Python tests, production build, and desktop/mobile browser workflows. Browser screenshots are retained as workflow artifacts.
 
+## 0.4.1 — Chat lifecycle fixes
+
+- Monotonic snapshot ordering prevents delayed HTTP responses from replacing newer stream state.
+- Polling reconciles disconnected or stalled active SSE streams without replaying prompts.
+- Phase changes publish immediately; trailing updates flush after event bursts. Tool preparation and waiting no longer masquerade as reasoning.
+- Run-scoped, idempotent Stop aborts model transport, prevents post-stop continuation, and has fixed icon alignment.
+- Conversation/project changes reject stale results; successful sends preserve newly typed drafts.
+- Knowledge selection/history ignore late responses.
+- Regression tests cover follow-up tool calls, stream outage recovery, model connection cancellation, automatic preflight cancellation, and stop geometry.
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.

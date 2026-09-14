@@ -276,7 +276,8 @@ export async function createApp(options: {
     },
   );
   app.post<{ Params: { id: string } }>('/api/conversations/:id/stop', async (request) => {
-    runner.stop(conversationId(request.params.id));
+    const { runId } = z.object({ runId: uuid.optional() }).parse(request.body || {});
+    runner.stop(conversationId(request.params.id), runId);
     return { ok: true };
   });
   app.post<{ Params: { id: string } }>('/api/conversations/:id/compact', async (request, reply) => {

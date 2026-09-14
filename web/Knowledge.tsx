@@ -85,6 +85,8 @@ export function KnowledgePanel({
 }) {
   const [selected, setSelected] = useState<Page>();
   const removal = useRef<HTMLDialogElement>(null);
+  const selectionRequest = useRef(0);
+  useEffect(() => () => { selectionRequest.current++; }, []);
   const [text, setText] = useState('');
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -95,17 +97,19 @@ export function KnowledgePanel({
   const [verified, setVerified] = useState(false);
   const [versions, setVersions] = useState<{ id: string; at: string; content: string }[]>();
   const open = async (id: string) => {
+    const request = ++selectionRequest.current;
     setError('');
     setVersions(undefined);
     try {
       const value = await api<Page>(`/projects/${projectId}/documents/${id}`);
+      if (request !== selectionRequest.current) return;
       setSelected(value);
       setText(value.text);
       setCreating(false);
       setEditing(false);
       setVerified(false);
     } catch (e) {
-      setError((e as Error).message);
+      if (request === selectionRequest.current) setError((e as Error).message);
     }
   };
   return (
@@ -155,7 +159,9 @@ export function KnowledgePanel({
           />
         </label>
         <button
+          disabled={busy}
           onClick={() => {
+            selectionRequest.current++;
             setCreating(true);
             setSelected(undefined);
             setName('');
@@ -186,6 +192,7 @@ export function KnowledgePanel({
             .map((doc) => (
               <button
                 key={doc.id}
+                disabled={busy}
                 className={selected?.id === doc.id ? 'selected' : ''}
                 onClick={() => void open(doc.id)}
               >
@@ -244,6 +251,7 @@ export function KnowledgePanel({
               <label>
                 Markdown content
                 <textarea
+                  disabled={busy}
                   aria-label="Markdown content"
                   className="knowledge-editor"
                   required
@@ -268,6 +276,7 @@ export function KnowledgePanel({
                 </button>
                 <button
                   type="button"
+                  disabled={busy}
                   onClick={() => {
                     setEditing(false);
                     setCreating(false);
@@ -306,13 +315,14 @@ export function KnowledgePanel({
                   ↓ {selected.kind === 'wiki' ? 'Markdown' : 'Original file'}
                 </a>
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    const request = selectionRequest.current;
                     void api<typeof versions>(
                       `/projects/${projectId}/documents/${selected.id}/revisions`,
                     )
-                      .then(setVersions)
-                      .catch((e) => setError(e.message))
-                  }
+                      .then((value) => { if (request === selectionRequest.current) setVersions(value); })
+                      .catch((e) => { if (request === selectionRequest.current) setError(e.message); });
+                  }}
                 >
                   History
                 </button>

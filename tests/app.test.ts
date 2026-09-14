@@ -422,6 +422,21 @@ test(
           'Never retry/replay a failed or cancelled compaction automatically',
         );
       }
+      // Stop during automatic preflight must not submit the queued follow-up afterward.
+      mode = 'hold';
+      f.store.saveSettings({ ...f.store.settings(), autoCompaction: true });
+      const cancelledFollowup = seed(6900);
+      const beforeCancel = requests.length;
+      await f.auth(`/conversations/${cancelledFollowup.id}/messages`, 'POST', {
+        requestId: randomUUID(), text: 'Never submit this follow-up after Stop',
+      });
+      await waitUntil(() => requests.length > beforeCancel);
+      await f.auth(`/conversations/${cancelledFollowup.id}/stop`, 'POST', {
+        runId: f.runner.snapshot(cancelledFollowup.id).runId,
+      });
+      await waitUntil(() => !f.runner.active.has(cancelledFollowup.id));
+      assert.equal(f.runner.snapshot(cancelledFollowup.id).status, 'stopped');
+      assert.equal(requests.length, beforeCancel + 1, 'Cancellation must not launch the queued prompt');
     } finally {
       await f.cleanup();
       mock.closeAllConnections();
@@ -678,9 +693,17 @@ test(
       behavior = 'hang';
       requested = false;
       const stopChat = f.store.createConversation(p.id);
-      f.runner.start(stopChat.id, randomUUID(), 'Keep going');
+      const stopRun = randomUUID();
+      f.runner.start(stopChat.id, stopRun, 'Keep going');
       await waitUntil(() => requested);
-      f.runner.stop(stopChat.id);
+      const observed = f.runner.snapshot(stopChat.id);
+      assert.equal(observed.runId, stopRun);
+      assert(f.runner.snapshot(stopChat.id).revision! > observed.revision!);
+      assert.equal((await f.call(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 401);
+      assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: randomUUID() })).statusCode, 409);
+      assert.equal(f.runner.active.get(stopChat.id)?.stopRequested, false);
+      assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 200);
+      assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 200);
       await waitUntil(() => !f.runner.active.has(stopChat.id));
       assert.equal(f.runner.snapshot(stopChat.id).status, 'stopped');
       for (const mode of ['error', 'redirect'] as const) {
