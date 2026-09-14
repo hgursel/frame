@@ -1087,3 +1087,49 @@ test('server restart preserves metadata/history and marks unfinished tasks inter
     await rm(f.root, { recursive: true, force: true });
   }
 });
+
+test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and rollback', async () => {
+  const f = await fixture();
+  try {
+    const p = f.store.createProject({ name: 'Deletion test', instructions: '', toolsEnabled: false });
+    const other = f.store.createProject({ name: 'Other', instructions: '', toolsEnabled: false });
+    const create = async (name: string) => (await f.auth('/projects/' + p.id + '/wiki', 'POST', { name, text: '# Source\n\nA retained fact.' })).json();
+    const doc = await create('Temporary page');
+    const endpoint = '/projects/' + p.id + '/documents/' + doc.id;
+    assert.equal((await f.call(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 401);
+    assert.equal((await f.auth('/projects/' + other.id + '/documents/' + doc.id, 'DELETE', { revision: doc.revision })).statusCode, 404);
+    assert.equal((await f.auth(endpoint, 'DELETE', { revision: '0'.repeat(64) })).statusCode, 409);
+    f.knowledge.locks.add(p.id);
+    assert.equal((await f.auth(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 409);
+    f.knowledge.locks.delete(p.id);
+    f.runner.active.set('test-lock', { projectId: p.id } as any);
+    assert.equal((await f.auth(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 409);
+    f.runner.active.delete('test-lock');
+    const sync = f.wiki.sync;
+    f.wiki.sync = async () => { throw new Error('Simulated index write failure'); };
+    assert.equal((await f.auth(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 500);
+    f.wiki.sync = sync;
+    assert.equal((await f.auth(endpoint)).statusCode, 200, 'Failed index update must restore the source');
+    assert(f.wiki.revisions(p.id, doc.id).length > 0);
+    const result = await f.auth(endpoint, 'DELETE', { revision: doc.revision });
+    assert.equal(result.statusCode, 200, result.body);
+    assert.equal((await f.auth(endpoint)).statusCode, 404);
+    assert.equal((await f.auth(endpoint + '/download')).statusCode, 404);
+    assert.equal((await f.auth(endpoint + '/revisions')).statusCode, 404);
+    assert(!(await f.wiki.catalog(p.id)).some((entry) => entry.id === doc.id));
+    await assert.rejects(readFile(path.join(f.knowledge.directory(doc), 'source.md')), { code: 'ENOENT' });
+    await assert.rejects(readFile(path.join(f.store.projectPath(p.id), 'knowledge', 'wiki', doc.id + '.md')), { code: 'ENOENT' });
+    const archive = unzipSync(await f.wiki.export(p.id));
+    assert(!Object.keys(archive).some((key) => key.includes(doc.id)));
+    assert(!strFromU8(archive['wiki/index.md']!).includes(doc.id));
+    assert(!strFromU8(archive['wiki/log.md']!).includes(doc.id));
+    const upload = await f.knowledge.add(p.id, 'source.txt', Buffer.from('Uploaded source'));
+    await f.wiki.record(p.id, upload.id);
+    assert.equal((await f.auth('/projects/' + p.id + '/documents/' + upload.id, 'DELETE', { revision: upload.revision })).statusCode, 200);
+    assert.equal(f.knowledge.list(p.id).length, 0);
+  } finally {
+    f.runner.active.delete('test-lock');
+    f.knowledge.locks.clear();
+    await f.cleanup();
+  }
+});

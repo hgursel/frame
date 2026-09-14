@@ -81,6 +81,12 @@ export function knowledgeApi(
     );
     return { ...doc, metadata: wiki.metadata(doc.id) };
   });
+  app.delete<{ Params: Params }>('/api/projects/:id/documents/:documentId', async (request) =>
+    change(request.params.id, async () => {
+      const { revision } = z.object({ revision: z.string().length(64) }).parse(request.body);
+      return wiki.remove(request.params.id, uuid.parse(request.params.documentId), revision);
+    }),
+  );
   app.put<{ Params: Params }>(
     '/api/projects/:id/documents/:documentId',
     { bodyLimit: 500000 },
@@ -173,7 +179,8 @@ export function knowledgeApi(
           ]),
       ),
     ];
-    return { conversation, message, source, sourceRevision: hash(source), sourceIds };
+    const available = new Set(knowledge.list(conversation.projectId).map((doc) => doc.id));
+    return { conversation, message, source, sourceRevision: hash(source), sourceIds: sourceIds.filter((id) => available.has(id)) };
   };
   app.get<{ Params: { id: string; index: string } }>(
     '/api/conversations/:id/knowledge/:index',
