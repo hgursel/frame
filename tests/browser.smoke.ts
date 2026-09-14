@@ -44,7 +44,10 @@ try {
   });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('pageerror', (error) => {
+    errors.push(error.message);
+    console.error('Browser error:', error.message);
+  });
   await page.goto(`http://127.0.0.1:${port}`);
   await page.getByLabel('Setup token').fill('browser-test-bootstrap');
   await page.getByLabel('Administrator password').fill('browser-test-password');
@@ -86,6 +89,25 @@ try {
   await thinking.locator('summary').click();
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
+  await expect(page.locator('.throughput')).toContainText('tok/s');
+  await page.getByLabel('Context usage', { exact: true }).click();
+  await expect(page.getByText('Conversation context', { exact: true })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Context used' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Compact now', exact: true })).toBeEnabled();
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-context.png'),
+      fullPage: true,
+    });
+  await page.getByLabel('Context usage', { exact: true }).click();
+  await page.getByRole('button', { name: 'Dark appearance', exact: false }).click();
+  assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-dark.png'),
+      fullPage: true,
+    });
+  await page.getByRole('button', { name: 'Light appearance', exact: false }).click();
   await page.getByRole('button', { name: 'Useful · Save to knowledge', exact: false }).click();
   await page.getByLabel('Page title', { exact: true }).fill('Migration knowledge');
   await page
@@ -119,15 +141,48 @@ try {
   await page.locator('.thinking summary').click();
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
   await page.setViewportSize({ width: 390, height: 844 });
+  // Desktop navigation may remain open when the viewport is resized; close its drawer.
+  const closeNavigation = page.getByRole('button', { name: 'Close navigation', exact: true });
+  if (await closeNavigation.isVisible())
+    await closeNavigation.click({ position: { x: 370, y: 400 } });
   assert(await page.getByRole('textbox', { name: 'Message Frame' }).isVisible());
+  await page.getByLabel('Context usage', { exact: true }).click();
+  await expect(page.getByText('Conversation context', { exact: true })).toBeVisible();
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-mobile.png'),
+      fullPage: true,
+    });
+  await page.getByLabel('Context usage', { exact: true }).click();
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await expect(page.getByLabel('Search conversations', { exact: true })).toBeVisible();
+  await page.getByLabel('Search conversations', { exact: true }).fill('no matching chat');
+  assert.equal(
+    await page.getByRole('navigation', { name: 'Conversations' }).getByRole('button').count(),
+    0,
+  );
+  await page
+    .getByRole('button', { name: 'Close navigation', exact: true })
+    .click({ position: { x: 370, y: 400 } });
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,
   );
   assert(!overflow, 'Mobile page must not overflow horizontally');
   assert.deepEqual(errors, []);
   console.log(
-    'Browser smoke passed: setup, model settings, upload/attachment, compiled SDK reasoning stream and animation, reviewed knowledge save/edit, reload/resume, and mobile layout.',
+    'Browser smoke passed: setup, model settings, upload/attachment, compiled SDK reasoning, context meter, throughput, appearance, knowledge save/edit, reload/resume, mobile drawer/search, and layout.',
   );
+} catch (error) {
+  const page = browser?.contexts()[0]?.pages()[0];
+  if (page) {
+    console.error((await page.locator('body').innerText()).slice(0, 3000));
+    if (process.env.FRAME_SCREENSHOT)
+      await page.screenshot({
+        path: process.env.FRAME_SCREENSHOT.replace('.png', '-failure.png'),
+        fullPage: true,
+      });
+  }
+  throw error;
 } finally {
   await browser?.close();
   await app.close();

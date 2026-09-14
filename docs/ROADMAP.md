@@ -12,6 +12,13 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Conversation knowledge search/read, model draft proposals, and reviewed saves/updates from useful answers and tool results.
 - Explicit Python environment installation, tested PDF/DOCX generation, and completed-artifact publication.
 
+## 0.3 — Chat interface and context management (implemented)
+
+- Refreshed chat layout, light/dark appearance, collapsible navigation, conversation search, copying, and scroll-aware streaming.
+- Context window/usage meter with reported-versus-estimated counts, checkpoint inspection, and observed generation throughput.
+- Configurable automatic compaction with scaled local-model budgets, manual/interruptible compaction, and reversible older read-only tool-result pruning.
+- Local mock SDK and browser coverage. Real-model long-context quality and llama.cpp timing validation remain acceptance work; see [context research](CONTEXT.md).
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.

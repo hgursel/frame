@@ -43,10 +43,16 @@ const modelSchema = z
     modelId: z.string().trim().min(1).max(200),
     contextWindow: z.number().int().min(2048).max(2_000_000),
     maxTokens: z.number().int().min(128).max(131072),
+    autoCompaction: z.boolean().default(true),
+    compactAtPercent: z.number().int().min(50).max(90).default(75),
+    pruneToolOutputs: z.boolean().default(true),
     instructions: z.string().max(16000),
     apiKey: z.string().max(4096).optional(),
   })
-  .refine((v) => v.maxTokens < v.contextWindow, 'Output limit must be smaller than context window');
+  .refine(
+    (v) => v.maxTokens + Math.max(256, Math.ceil(v.contextWindow * 0.03)) < v.contextWindow,
+    'Leave space for input and template overhead below the context window',
+  );
 const credentialsSchema = z.object({
   password: z.string().min(12).max(256),
   token: z.string().max(256).optional(),
@@ -272,6 +278,13 @@ export async function createApp(options: {
   app.post<{ Params: { id: string } }>('/api/conversations/:id/stop', async (request) => {
     runner.stop(conversationId(request.params.id));
     return { ok: true };
+  });
+  app.post<{ Params: { id: string } }>('/api/conversations/:id/compact', async (request, reply) => {
+    const id = conversationId(request.params.id);
+    const { requestId } = z.object({ requestId: uuid }).parse(request.body);
+    return reply
+      .code(202)
+      .send(runner.start(id, requestId, '', undefined, undefined, undefined, 'compact'));
   });
   app.get<{ Params: { id: string } }>('/api/conversations/:id/events', async (request, reply) => {
     const id = conversationId(request.params.id);

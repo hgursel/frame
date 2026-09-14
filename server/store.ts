@@ -9,6 +9,9 @@ export const defaults: StoredSettings = {
   modelId: '',
   contextWindow: 32768,
   maxTokens: 4096,
+  autoCompaction: true,
+  compactAtPercent: 75,
+  pruneToolOutputs: true,
   apiKey: '',
   instructions: 'Be accurate, practical, and transparent about uncertainty.',
 };

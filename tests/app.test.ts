@@ -10,6 +10,7 @@ import { readHistory, displayMessages } from '../server/history.js';
 import { unzipSync, strFromU8 } from 'fflate';
 import YAML from 'yaml';
 import { documentCommand } from '../server/python.js';
+import { SessionManager } from '@earendil-works/pi-coding-agent';
 
 const origin = 'http://127.0.0.1:3000';
 test('reasoning projection handles structured and tagged streams without animating history', () => {
@@ -158,6 +159,276 @@ async function waitUntil(test: () => boolean, timeout = 25000) {
     await new Promise((resolve) => setTimeout(resolve, 30));
   }
 }
+
+test(
+  'SDK compaction checkpoints preserve history, resume once, expose usage and throughput, and survive failure/cancellation',
+  { timeout: 60000 },
+  async () => {
+    const requests: any[] = [];
+    let mode: 'normal' | 'error' | 'hold' = 'normal';
+    const mock = createServer(async (req, res) => {
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      const body = JSON.parse(raw);
+      requests.push(body);
+      if (mode === 'error') {
+        res.writeHead(500);
+        res.end('summary unavailable');
+        return;
+      }
+      if (mode === 'hold') return;
+      const summary = JSON.stringify(body.messages).includes('<conversation>');
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      const event = (delta: object, finish: string | null = null, usage?: object) =>
+        `data: ${JSON.stringify({ id: 'context-test', object: 'chat.completion.chunk', model: 'context-model', choices: [{ index: 0, delta, finish_reason: finish }], usage })}\n\n`;
+      res.write(
+        event({
+          role: 'assistant',
+          content: summary
+            ? '# Goal\nPreserve the deployment decision.\n# Next steps\nContinue safely; completed actions must not be replayed.'
+            : 'Continued exactly once.',
+        }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      res.end(
+        event({}, 'stop', { prompt_tokens: 900, completion_tokens: 100, total_tokens: 1000 }) +
+          'data: [DONE]\n\n',
+      );
+    });
+    await new Promise<void>((resolve) => mock.listen(0, '127.0.0.1', resolve));
+    const f = await fixture();
+    try {
+      f.store.saveSettings({
+        ...f.store.settings(),
+        baseUrl: `http://127.0.0.1:${(mock.address() as { port: number }).port}/v1`,
+        modelId: 'context-model',
+        contextWindow: 8192,
+        maxTokens: 1024,
+      });
+      const p = f.store.createProject({
+        name: 'Context test',
+        instructions: '',
+        toolsEnabled: false,
+      });
+      const seed = (tokens = 1500) => {
+        const c = f.store.createConversation(p.id);
+        const manager = SessionManager.open(
+          f.store.sessionFile(c.id),
+          path.dirname(f.store.sessionFile(c.id)),
+          f.store.projectPath(p.id),
+        );
+        for (let i = 0; i < 12; i++) {
+          manager.appendMessage({
+            role: 'user',
+            content: `Question ${i}: ${'source facts '.repeat(100)}`,
+            timestamp: Date.now(),
+          });
+          manager.appendMessage({
+            role: 'assistant',
+            content: [
+              {
+                type: 'text',
+                text: `Decision ${i}: keep verified sources. ${'detailed explanation '.repeat(100)}`,
+              },
+            ],
+            api: 'openai-completions',
+            provider: 'frame-local',
+            model: 'context-model',
+            usage: {
+              input: tokens - 100,
+              output: 100,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: tokens,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+            },
+            stopReason: 'stop',
+            timestamp: Date.now(),
+          });
+        }
+        return c;
+      };
+      const c = seed();
+      const original = readHistory(f.store.sessionFile(c.id));
+      const id = randomUUID();
+      assert.equal(
+        (await f.call(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).statusCode,
+        401,
+      );
+      assert.equal(
+        (await f.auth(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).statusCode,
+        202,
+      );
+      assert(
+        (await f.auth(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).json()
+          .duplicate,
+      );
+      await waitUntil(() => !f.runner.active.has(c.id));
+      let snapshot = f.runner.snapshot(c.id);
+      assert.equal(snapshot.error, undefined);
+      assert.equal(snapshot.metrics?.context.compactions, 1);
+      assert(
+        snapshot.metrics?.context.estimated,
+        'Post-summary usage must not reuse pre-summary provider counts',
+      );
+      assert.match(snapshot.metrics!.context.lastCompaction!.summary, /deployment decision/);
+      assert.deepEqual(
+        snapshot.messages,
+        original,
+        'Compaction must retain all visible original messages',
+      );
+      assert.equal(
+        snapshot.metrics?.generation,
+        undefined,
+        'Summary generation is not chat throughput',
+      );
+      const requestCount = requests.length;
+      const checkpointSize = snapshot.metrics!.context.lastCompaction!.after;
+      await f.auth(`/conversations/${c.id}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: 'Continue with nonce-438',
+      });
+      await waitUntil(() => !f.runner.active.has(c.id));
+      assert.equal(requests.length, requestCount + 1, 'Only one continuation request');
+      assert.match(JSON.stringify(requests.at(-1)), /deployment decision/);
+      assert.match(JSON.stringify(requests.at(-1)), /nonce-438/);
+      snapshot = f.runner.snapshot(c.id);
+      assert.equal(snapshot.metrics?.context.tokens, 1000);
+      assert.equal(snapshot.metrics?.context.estimated, false);
+      assert.equal(snapshot.metrics?.generation?.tokens, 100);
+      assert((snapshot.metrics?.generation?.tokensPerSecond || 0) > 0);
+      assert.equal(snapshot.metrics?.generation?.estimated, false);
+      assert.equal(snapshot.messages.length, original.length + 2);
+      await f.auth(`/conversations/${c.id}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: 'One more follow-up',
+      });
+      await waitUntil(() => !f.runner.active.has(c.id));
+      assert.equal(
+        f.runner.snapshot(c.id).metrics?.context.lastCompaction?.after,
+        checkpointSize,
+        'A saved checkpoint size must not grow as later messages accumulate',
+      );
+      f.store.saveSettings({ ...f.store.settings(), modelId: 'changed-model' });
+      assert.equal(
+        f.runner.snapshot(c.id).metrics?.context.tokens,
+        null,
+        'Changing models invalidates cached counts',
+      );
+      f.store.saveSettings({ ...f.store.settings(), modelId: 'context-model' });
+
+      const auto = seed(6900);
+      const beforeAuto = requests.length;
+      await f.auth(`/conversations/${auto.id}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: 'Continue automatic checkpoint',
+      });
+      await waitUntil(() => !f.runner.active.has(auto.id));
+      assert.equal(f.runner.snapshot(auto.id).error, undefined);
+      assert.equal(f.runner.snapshot(auto.id).metrics?.context.compactions, 1);
+      assert(requests.length >= beforeAuto + 2, 'Summary must precede the pending prompt');
+      assert.equal(
+        requests
+          .slice(beforeAuto)
+          .filter((r) => JSON.stringify(r.messages).includes('Continue automatic checkpoint'))
+          .length,
+        1,
+      );
+      // Exercise the public SDK transform hook against an actual outbound request.
+      f.store.saveSettings({ ...f.store.settings(), autoCompaction: false });
+      const projected = f.store.createConversation(p.id);
+      const manager = SessionManager.open(
+        f.store.sessionFile(projected.id),
+        path.dirname(f.store.sessionFile(projected.id)),
+        f.store.projectPath(p.id),
+      );
+      const assistant = (content: any[], stopReason: 'stop' | 'toolUse' = 'stop') => ({
+        role: 'assistant' as const,
+        content,
+        api: 'openai-completions' as const,
+        provider: 'frame-local',
+        model: 'context-model',
+        usage: {
+          input: 900,
+          output: 100,
+          totalTokens: 1000,
+          cacheRead: 0,
+          cacheWrite: 0,
+          cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+        },
+        stopReason,
+        timestamp: Date.now(),
+      });
+      manager.appendMessage({ role: 'user', content: 'Read the source', timestamp: Date.now() });
+      manager.appendMessage(
+        assistant(
+          [
+            {
+              type: 'toolCall',
+              id: 'old-read',
+              name: 'read_knowledge',
+              arguments: { id: 'source' },
+            },
+          ],
+          'toolUse',
+        ),
+      );
+      const fullOutput = `SOURCE START ${'original source detail '.repeat(700)} SOURCE END`;
+      manager.appendMessage({
+        role: 'toolResult',
+        toolCallId: 'old-read',
+        toolName: 'read_knowledge',
+        content: [{ type: 'text', text: fullOutput }],
+        isError: false,
+        timestamp: Date.now(),
+      });
+      for (let i = 0; i < 2; i++) {
+        manager.appendMessage(assistant([{ type: 'text', text: 'Acknowledged.' }]));
+        manager.appendMessage({ role: 'user', content: `Follow-up ${i}`, timestamp: Date.now() });
+      }
+      manager.appendMessage(assistant([{ type: 'text', text: 'Ready.' }]));
+      await f.auth(`/conversations/${projected.id}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: 'Summarize the source',
+      });
+      await waitUntil(() => !f.runner.active.has(projected.id));
+      const sentTool = requests.at(-1).messages.find((m: any) => m.role === 'tool');
+      assert.equal(sentTool.tool_call_id, 'old-read');
+      assert.match(sentTool.content, /older read-only output shortened/);
+      assert(sentTool.content.length < fullOutput.length);
+      assert.equal(
+        readHistory(f.store.sessionFile(projected.id)).find((m) => m.role === 'tool')?.text,
+        fullOutput,
+      );
+      assert.equal(f.runner.snapshot(projected.id).metrics?.context.compactions, 0);
+      assert((f.runner.snapshot(projected.id).metrics?.context.prunedTokens || 0) > 0);
+      f.store.saveSettings({ ...f.store.settings(), autoCompaction: true });
+      for (const behavior of ['error', 'hold'] as const) {
+        mode = behavior;
+        const failed = seed();
+        const before = readHistory(f.store.sessionFile(failed.id));
+        const count = requests.length;
+        await f.auth(`/conversations/${failed.id}/compact`, 'POST', { requestId: randomUUID() });
+        await waitUntil(() => requests.length > count);
+        if (behavior === 'hold') await f.auth(`/conversations/${failed.id}/stop`, 'POST', {});
+        await waitUntil(() => !f.runner.active.has(failed.id));
+        assert.deepEqual(readHistory(f.store.sessionFile(failed.id)), before);
+        assert.equal(f.runner.snapshot(failed.id).metrics?.context.compactions, 0);
+        if (behavior === 'error') assert(f.runner.snapshot(failed.id).error);
+        else assert.equal(f.runner.snapshot(failed.id).status, 'stopped');
+        assert.equal(
+          requests.length,
+          count + 1,
+          'Never retry/replay a failed or cancelled compaction automatically',
+        );
+      }
+    } finally {
+      await f.cleanup();
+      mock.closeAllConnections();
+      await new Promise<void>((resolve) => mock.close(() => resolve()));
+    }
+  },
+);
 
 test(
   'real Pi SDK worker: streamed local completion, deduplication, resume, and no cloud fallback',

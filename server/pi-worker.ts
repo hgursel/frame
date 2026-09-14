@@ -4,12 +4,20 @@ import {
   ModelRuntime,
   SessionManager,
   SettingsManager,
+  buildSessionContext,
   type ResourceLoader,
 } from '@earendil-works/pi-coding-agent';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import type { WorkerInput, WorkerOutput } from '../shared/types.js';
+import type { ChatMetrics, WorkerInput, WorkerOutput } from '../shared/types.js';
 import { displayMessages } from './history.js';
+import {
+  compactionInstructions,
+  contextBudget,
+  emptyMetrics,
+  estimateMessages,
+  pruneToolOutputs,
+} from './context.js';
 import { localEndpoint } from './security.js';
 import { documentTool } from './document-tool.js';
 import { knowledgeTools } from './knowledge-tools.js';
@@ -42,6 +50,7 @@ process.on('disconnect', () => {
 
 async function run(input: WorkerInput) {
   const { settings, project } = input;
+  const budget = contextBudget(settings);
   const endpoint = localEndpoint(settings.baseUrl);
   const transport = globalThis.fetch;
   globalThis.fetch = (request, init) => {
@@ -132,7 +141,11 @@ async function run(input: WorkerInput) {
     resourceLoader: resources,
     settingsManager: SettingsManager.inMemory({
       enableInstallTelemetry: false,
-      compaction: { enabled: true },
+      compaction: {
+        enabled: settings.autoCompaction,
+        reserveTokens: budget.reserveTokens,
+        keepRecentTokens: budget.keepRecentTokens,
+      },
       retry: { enabled: false },
     }),
     sessionManager: SessionManager.open(
@@ -142,6 +155,29 @@ async function run(input: WorkerInput) {
     ),
   });
   session = created.session;
+  const metrics: ChatMetrics = emptyMetrics(settings);
+  const branch = session.sessionManager.getBranch();
+  const compactions = branch.filter((e) => e.type === 'compaction');
+  metrics.context.compactions = compactions.length;
+  const prior = compactions.at(-1);
+  if (prior?.type === 'compaction')
+    metrics.context.lastCompaction = {
+      before: prior.tokensBefore,
+      after: estimateMessages(
+        buildSessionContext(branch.slice(0, branch.indexOf(prior) + 1)).messages,
+      ),
+      summary: prior.summary,
+      at: prior.timestamp,
+    };
+  // Public Pi hook: only the outbound projection is trimmed. Native history is untouched.
+  const transform = session.agent.transformContext;
+  session.agent.transformContext = async (messages, signal) => {
+    const transformed = transform ? await transform(messages, signal) : messages;
+    if (!settings.pruneToolOutputs) return transformed;
+    const pruned = pruneToolOutputs(transformed, settings.contextWindow);
+    metrics.context.prunedTokens = pruned.saved;
+    return pruned.messages;
+  };
   if (stopping) {
     session.dispose();
     send({ type: 'done' });
@@ -152,11 +188,45 @@ async function run(input: WorkerInput) {
   let status = 'Waiting for model';
   let thinking = false;
   let lastEmit = 0;
+  let firstDelta = 0;
+  let compacting = false;
+  let compactionError: string | undefined;
+  // Used only when no current provider count is available. Tokenizers and templates vary.
+  const overhead = () =>
+    Math.ceil(
+      (session!.systemPrompt.length + JSON.stringify(session!.agent.state.tools).length) / 4,
+    );
   const publish = (force = false) => {
     if (!force && Date.now() - lastEmit < 80) return;
     lastEmit = Date.now();
-    const messages: unknown[] = [...session!.messages];
+    // Follow the native branch, including pre-compaction messages, for a stable UI history.
+    const messages: unknown[] = session!.sessionManager
+      .getBranch()
+      .flatMap<unknown>((entry) =>
+        entry.type === 'message'
+          ? [entry.message]
+          : entry.type === 'custom_message'
+            ? [{ ...entry, role: 'custom' }]
+            : [],
+      );
     if (partial) messages.push(partial);
+    const usage = session!.getContextUsage();
+    const last = session!.messages.at(-1);
+    const reported =
+      usage?.tokens != null &&
+      session!.messages.some((m) => m.role === 'assistant' && m.usage.totalTokens > 0);
+    metrics.context.tokens = reported
+      ? usage!.tokens
+      : estimateMessages(session!.messages) + overhead();
+    metrics.context.estimated =
+      !reported ||
+      !!partial ||
+      last?.role !== 'assistant' ||
+      last.usage.totalTokens <= 0 ||
+      last.stopReason === 'error' ||
+      last.stopReason === 'aborted';
+    if (partial)
+      metrics.context.tokens = (metrics.context.tokens || 0) + estimateMessages([partial]);
     const currentText =
       (partial as any)?.content
         ?.filter((p: any) => p.type === 'text')
@@ -168,11 +238,15 @@ async function run(input: WorkerInput) {
       type: 'snapshot',
       messages: displayMessages(messages, thinking || rawThinking),
       status: rawThinking ? 'Thinking' : status,
+      metrics,
     });
   };
   const unsubscribe = session.subscribe((event) => {
-    if (event.type === 'message_start' && event.message.role === 'assistant')
+    if (event.type === 'message_start' && event.message.role === 'assistant') {
       partial = event.message;
+      firstDelta = 0;
+      metrics.generation = undefined;
+    }
     if (event.type === 'message_update') {
       const kind = event.assistantMessageEvent.type;
       thinking = kind.startsWith('thinking_') && kind !== 'thinking_end';
@@ -180,16 +254,65 @@ async function run(input: WorkerInput) {
       if (thinking) status = 'Thinking';
       // SDK events include the cumulative message; RPC intentionally has a different wire format.
       partial = event.message;
+      if (kind.endsWith('_delta') && !compacting) {
+        firstDelta ||= performance.now();
+        const tokens = estimateMessages([event.message]);
+        const seconds = (performance.now() - firstDelta) / 1000;
+        metrics.generation = {
+          tokens,
+          seconds,
+          tokensPerSecond: seconds >= 0.1 ? tokens / seconds : null,
+          estimated: true,
+        };
+      }
     }
     if (event.type === 'message_end') {
+      if (event.message.role === 'assistant' && firstDelta && !compacting) {
+        const output = event.message.usage.output;
+        const tokens = output > 0 ? output : estimateMessages([event.message]);
+        const seconds = (performance.now() - firstDelta) / 1000;
+        metrics.generation = {
+          tokens,
+          seconds,
+          tokensPerSecond: seconds >= 0.1 ? tokens / seconds : null,
+          estimated: output <= 0,
+        };
+      }
       partial = undefined;
       thinking = false;
     }
     if (event.type === 'tool_execution_start') status = `Running ${event.toolName}`;
     if (event.type === 'tool_execution_end') status = 'Thinking';
-    if (event.type === 'compaction_start') status = 'Compacting context';
+    if (event.type === 'compaction_start') {
+      status = 'Compacting context';
+      compacting = true;
+    }
+    if (event.type === 'compaction_end') {
+      compacting = false;
+      if (event.errorMessage)
+        compactionError =
+          'Context compaction failed. History was retained. Review the local model logs or shorten the next input.';
+      status = event.errorMessage
+        ? 'Context compaction failed'
+        : event.aborted
+          ? 'Compaction stopped'
+          : 'Context compacted';
+      if (event.result) {
+        compactionError = undefined;
+        metrics.context.compactions++;
+        metrics.context.lastCompaction = {
+          before: event.result.tokensBefore,
+          after: event.result.estimatedTokensAfter ?? estimateMessages(session!.messages),
+          summary: event.result.summary,
+          at: new Date().toISOString(),
+        };
+        metrics.context.prunedTokens = 0;
+      }
+    }
     publish(
       event.type === 'message_end' ||
+        event.type === 'compaction_start' ||
+        event.type === 'compaction_end' ||
         (event.type === 'message_update' &&
           ['thinking_start', 'thinking_end', 'text_start'].includes(
             event.assistantMessageEvent.type,
@@ -197,6 +320,46 @@ async function run(input: WorkerInput) {
     );
   });
   try {
+    publish(true);
+    if (input.operation === 'compact') {
+      await session.compact(compactionInstructions);
+      publish(true);
+      send({ type: 'done' });
+      return;
+    }
+    // Include the pending turn, attachments, system prompt, and tool schemas in preflight.
+    const pendingTokens = Math.ceil(
+      (input.prompt.length + JSON.stringify(input.documents || []).length) / 4,
+    );
+    const inputLimit =
+      settings.contextWindow -
+      settings.maxTokens -
+      Math.max(256, Math.ceil(settings.contextWindow * 0.03));
+    if (pendingTokens + overhead() >= (settings.autoCompaction ? budget.threshold : inputLimit)) {
+      send({
+        type: 'done',
+        error:
+          'This message and its attachments exceed the available input budget. Shorten the message, attach fewer documents, or increase the configured context window.',
+      });
+      return;
+    }
+    if (
+      settings.autoCompaction &&
+      session.messages.length &&
+      (session.getContextUsage()?.tokens ?? estimateMessages(session.messages) + overhead()) +
+        pendingTokens >
+        budget.threshold
+    ) {
+      await session.compact(compactionInstructions);
+      if (estimateMessages(session.messages) + overhead() + pendingTokens > inputLimit) {
+        send({
+          type: 'done',
+          error:
+            'The retained context plus this input is still too large after compaction. The checkpoint was saved. Shorten the message or attachments, or increase the context window.',
+        });
+        return;
+      }
+    }
     if (input.documents?.length)
       await session.sendCustomMessage(
         {
@@ -215,7 +378,18 @@ async function run(input: WorkerInput) {
       last?.role === 'assistant' && last.stopReason === 'error'
         ? 'The local model returned an error. Check llama.cpp logs, context size, and chat-template/tool support.'
         : undefined;
-    send({ type: 'done', error });
+    send({ type: 'done', error: error || compactionError });
+  } catch (error) {
+    const noHistory =
+      error instanceof Error && /nothing to compact|already compacted/i.test(error.message);
+    send({
+      type: 'done',
+      error: stopping
+        ? undefined
+        : noHistory
+          ? 'There is no older context to compact yet. Continue the conversation first.'
+          : 'The local model could not complete this task or context summary. History was retained; review the conversation and llama.cpp logs before retrying.',
+    });
   } finally {
     unsubscribe();
     session.dispose();

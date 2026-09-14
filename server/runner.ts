@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { ChatSnapshot, WorkerOutput, WorkerInput } from '../shared/types.js';
 import { readHistory } from './history.js';
 import { Store } from './store.js';
+import { emptyMetrics, metricsKey } from './context.js';
 
 type ActiveRun = {
   process: ChildProcess;
@@ -22,6 +23,10 @@ export class Runner extends EventEmitter {
   snapshot(id: string): ChatSnapshot {
     const live = this.active.get(id);
     if (live) return live.snapshot;
+    const settings = this.store.settings();
+    const project = this.store.project(this.store.conversation(id)!.projectId)!;
+    const saved = this.store.meta(`metrics:${id}`);
+    const cached = saved ? JSON.parse(saved) : undefined;
     const last = this.store.db
       .prepare(
         'SELECT status, error FROM runs WHERE conversationId=? ORDER BY createdAt DESC, rowid DESC LIMIT 1',
@@ -32,6 +37,8 @@ export class Runner extends EventEmitter {
       running: false,
       status: last?.status || 'Ready',
       error: last?.error || undefined,
+      metrics:
+        cached?.key === metricsKey(settings, project) ? cached.metrics : emptyMetrics(settings),
     };
   }
   projectBusy(id: string) {
@@ -44,6 +51,7 @@ export class Runner extends EventEmitter {
     documents?: WorkerInput['documents'],
     pythonPath?: string,
     knowledge?: WorkerInput['knowledge'],
+    operation: WorkerInput['operation'] = 'prompt',
   ) {
     const existing = this.store.db
       .prepare('SELECT conversationId, status FROM runs WHERE id=?')
@@ -72,7 +80,7 @@ export class Runner extends EventEmitter {
     this.store.db
       .prepare('INSERT INTO runs VALUES (?, ?, ?, NULL, ?)')
       .run(runId, id, 'running', Date.now());
-    if (conversation.title === 'New conversation')
+    if (operation !== 'compact' && conversation.title === 'New conversation')
       this.store.db
         .prepare('UPDATE conversations SET title=? WHERE id=?')
         .run(prompt.slice(0, 70), id);
@@ -112,7 +120,12 @@ export class Runner extends EventEmitter {
       process: child,
       projectId: project.id,
       runId,
-      snapshot: { messages: history, running: true, status: 'Starting local model' },
+      snapshot: {
+        ...this.snapshot(id),
+        messages: history,
+        running: true,
+        status: operation === 'compact' ? 'Compacting context' : 'Starting local model',
+      },
       stopRequested: false,
     };
     this.active.set(id, active);
@@ -128,6 +141,7 @@ export class Runner extends EventEmitter {
           messages: event.messages,
           running: true,
           status: active.stopRequested ? 'Stopping' : event.status,
+          metrics: event.metrics,
         };
         this.emit(id);
       } else {
@@ -153,6 +167,11 @@ export class Runner extends EventEmitter {
       this.store.db
         .prepare('UPDATE runs SET status=?, error=? WHERE id=?')
         .run(status, error || null, runId);
+      if (active.snapshot.metrics)
+        this.store.setMeta(
+          `metrics:${id}`,
+          JSON.stringify({ key: metricsKey(settings, project), metrics: active.snapshot.metrics }),
+        );
       this.active.delete(id);
       this.emit(id);
     };
@@ -173,6 +192,7 @@ export class Runner extends EventEmitter {
         documents,
         pythonPath,
         knowledge,
+        operation,
       },
       (sendError) => {
         if (sendError) {

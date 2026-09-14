@@ -4,7 +4,7 @@
 
 Frame brings local models, project context, conversations, and agent tools into a browser-based workspace. It embeds the Pi SDK and connects to a llama.cpp server you operate. No separately installed Pi CLI, cloud-provider setup, or cloud fallback.
 
-## Status: 0.2 — single-administrator V1
+## Status: 0.3 — single-administrator V1
 
 Runnable, single-administrator application. Multi-user support is planned for **V2**. Trusted host tools run with the Frame Linux account's permissions; use a dedicated account and authenticated private access.
 
@@ -15,6 +15,8 @@ Runnable, single-administrator application. Multi-user support is planned for **
 - Test saved endpoint discovery through `/v1/models` (not a model-quality or tool-capability test).
 - Create/edit projects with instructions and an explicit trusted-tools toggle; managed project directories.
 - Streaming text and model reasoning, expandable thinking with an active animation, Markdown/code rendering, tool-result cards, stop generation, and reconnect-safe snapshots.
+- A centered chat interface with light/dark appearance, collapsible mobile navigation, conversation search, response copying, and scroll-aware streaming.
+- Context size/usage meter, configurable automatic compaction, manual checkpoints, reversible shortening of older read-only tool results, and observed output tokens/second. [Strategy, research, and measurement limits](docs/CONTEXT.md).
 - Project uploads: Markdown, TXT, CSV, PDF, and DOCX; preserved originals and bounded text extraction.
 - Markdown knowledge pages, revision history, conflict checks, and portable **Open Knowledge Format 0.2** export with provenance, index, and change log.
 - Read-only knowledge search/reading available in conversations; model-proposed drafts and **Useful → Save to knowledge** for answers and tool results. Review a new page or update an existing page before saving. Verification is a separate explicit action.

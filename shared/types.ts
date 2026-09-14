@@ -4,6 +4,9 @@ export interface ModelSettings {
   contextWindow: number;
   maxTokens: number;
   instructions: string;
+  autoCompaction: boolean;
+  compactAtPercent: number;
+  pruneToolOutputs: boolean;
 }
 export interface StoredSettings extends ModelSettings {
   apiKey: string;
@@ -39,8 +42,28 @@ export interface ChatSnapshot {
   running: boolean;
   status: string;
   error?: string;
+  metrics?: ChatMetrics;
+}
+export interface ChatMetrics {
+  context: {
+    tokens: number | null;
+    window: number;
+    estimated: boolean;
+    threshold: number;
+    auto: boolean;
+    prunedTokens: number;
+    compactions: number;
+    lastCompaction?: { before: number; after: number; summary: string; at: string };
+  };
+  generation?: {
+    tokens: number;
+    seconds: number;
+    tokensPerSecond: number | null;
+    estimated: boolean;
+  };
 }
 export interface WorkerInput {
+  operation?: 'prompt' | 'compact';
   cwd: string;
   agentDir: string;
   sessionFile: string;
@@ -68,6 +91,6 @@ export interface DocumentRuntimeStatus {
   message: string;
 }
 export type WorkerOutput =
-  | { type: 'snapshot'; messages: DisplayMessage[]; status: string }
+  | { type: 'snapshot'; messages: DisplayMessage[]; status: string; metrics: ChatMetrics }
   | { type: 'done'; error?: string }
   | { type: 'error'; error: string };

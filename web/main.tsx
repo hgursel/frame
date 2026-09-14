@@ -10,8 +10,10 @@ import type {
 } from '../shared/types.js';
 import { api } from './api.js';
 import { Thinking } from './Thinking.js';
+import { ContextPanel, Throughput, CopyMessage } from './ContextPanel.js';
 import { KnowledgePanel, SaveKnowledge, DocumentTools } from './Knowledge.js';
 import './style.css';
+import './chat.css';
 
 function Logo() {
   return (
@@ -132,6 +134,25 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
 }
 
 function Workspace() {
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 760);
+  const [theme, setTheme] = useState(() => localStorage.getItem('frame-theme') || 'light');
+  const [chatSearch, setChatSearch] = useState('');
+  const scrollArea = useRef<HTMLElement>(null);
+  const pinned = useRef(true);
+  const [showJump, setShowJump] = useState(false);
+  const compactRequest = useRef<{ chat: string; id: string } | undefined>(undefined);
+  const [compacting, setCompacting] = useState(false);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('frame-theme', theme);
+  }, [theme]);
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, []);
   const [projects, setProjects] = useState<Project[]>([]);
   const [chats, setChats] = useState<Conversation[]>([]);
   const [projectId, setProjectId] = useState('');
@@ -168,6 +189,11 @@ function Workspace() {
     status: 'Ready',
   });
   const [draft, setDraft] = useState('');
+  const [lastSubmitted, setLastSubmitted] = useState<{
+    chatId: string;
+    text: string;
+    documentIds: string[];
+  }>();
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -180,6 +206,14 @@ function Workspace() {
     documentIds: string[];
   }>();
   const project = projects.find((p) => p.id === projectId);
+  useEffect(() => {
+    pinned.current = true;
+    setShowJump(false);
+  }, [chatId]);
+  useEffect(() => {
+    if (pinned.current && scrollArea.current)
+      scrollArea.current.scrollTop = scrollArea.current.scrollHeight;
+  }, [snapshot, page]);
   const refresh = async () => {
     const [p, c, s] = await Promise.all([
       api<Project[]>('/projects'),
@@ -190,6 +224,11 @@ function Workspace() {
     setChats(c);
     setSettings(s);
     setProjectId((prev) => prev || p[0]?.id || '');
+    const selected = currentChat.current;
+    if (selected) {
+      const updated = await api<ChatSnapshot>(`/conversations/${selected}`);
+      if (currentChat.current === selected) setSnapshot(updated);
+    }
   };
   useEffect(() => {
     void refresh().catch((e) => setError(e.message));
@@ -252,6 +291,7 @@ function Workspace() {
         text: request.text,
         documentIds: request.documentIds,
       });
+      setLastSubmitted(request);
       setPending(undefined);
       setDraft('');
       setAttached([]);
@@ -265,9 +305,41 @@ function Workspace() {
       setSending(false);
     }
   };
+  const compact = async () => {
+    if (!chatId || compacting || snapshot.running) return;
+    const id = chatId;
+    if (compactRequest.current?.chat !== id)
+      compactRequest.current = { chat: id, id: crypto.randomUUID() };
+    setCompacting(true);
+    setError('');
+    try {
+      await api(`/conversations/${id}/compact`, 'POST', { requestId: compactRequest.current.id });
+      compactRequest.current = undefined;
+      const updated = await api<ChatSnapshot>(`/conversations/${id}`);
+      if (currentChat.current === id) setSnapshot(updated);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setCompacting(false);
+    }
+  };
   return (
-    <div className="workspace">
-      <aside className="sidebar">
+    <div className={`workspace ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      {sidebarOpen && (
+        <button
+          className="sidebar-scrim"
+          aria-label="Close navigation"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside
+        className="sidebar"
+        id="workspace-navigation"
+        onClick={(event) => {
+          if (window.innerWidth <= 760 && (event.target as HTMLElement).closest('button'))
+            setSidebarOpen(false);
+        }}
+      >
         <Logo />
         <button
           className="new-chat"
@@ -309,9 +381,20 @@ function Workspace() {
           ))}
         </nav>
         <div className="nav-heading">CONVERSATIONS</div>
+        <input
+          className="chat-search"
+          aria-label="Search conversations"
+          placeholder="Search conversations"
+          value={chatSearch}
+          onChange={(e) => setChatSearch(e.target.value)}
+        />
         <nav className="chat-list" aria-label="Conversations">
           {chats
-            .filter((c) => c.projectId === projectId)
+            .filter(
+              (c) =>
+                c.projectId === projectId &&
+                c.title.toLowerCase().includes(chatSearch.toLowerCase()),
+            )
             .map((c) => (
               <button
                 key={c.id}
@@ -335,6 +418,9 @@ function Workspace() {
             Local endpoint only
           </div>
           <button onClick={() => setPage('settings')}>⚙ Settings</button>
+          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+            {theme === 'light' ? '◐ Dark appearance' : '◑ Light appearance'}
+          </button>
           <button
             onClick={() =>
               void api('/auth/logout', 'POST', {}).then(() =>
@@ -348,7 +434,27 @@ function Workspace() {
       </aside>
       <main className="main">
         <header>
-          <div>
+          <div className="header-location">
+            <button
+              className="nav-toggle"
+              aria-label="Toggle navigation"
+              aria-expanded={sidebarOpen}
+              aria-controls="workspace-navigation"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="16" rx="3" />
+                <path d="M9 4v16" />
+              </svg>
+            </button>
             <span className="muted">Workspace</span>
             <span className="slash">/</span>
             {page === 'settings' ? 'Settings' : project?.name || 'Getting started'}
@@ -373,8 +479,30 @@ function Workspace() {
                 </button>
               </>
             )}
-            {project && <button onClick={() => setPage('project')}>Project settings</button>}
+            {project && (
+              <button
+                className="project-settings-button"
+                title="Project settings"
+                onClick={() => setPage('project')}
+              >
+                Project settings
+              </button>
+            )}
             <span className="model-pill">{settings?.modelId || 'Model not configured'}</span>
+            {page === 'chat' && (
+              <ContextPanel
+                metrics={snapshot.metrics}
+                settings={settings}
+                running={snapshot.running || compacting}
+                canCompact={
+                  !!chatId &&
+                  snapshot.messages.some((m) => m.role === 'assistant') &&
+                  !!settings?.modelId
+                }
+                onCompact={() => void compact()}
+                onSettings={() => setPage('settings')}
+              />
+            )}
           </div>
         </header>
         {page === 'settings' && settings ? (
@@ -403,7 +531,16 @@ function Workspace() {
           />
         ) : (
           <>
-            <section className="conversation" aria-label="Conversation">
+            <section
+              className="conversation"
+              aria-label="Conversation"
+              ref={scrollArea}
+              onScroll={() => {
+                const el = scrollArea.current!;
+                pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+                setShowJump(!pinned.current);
+              }}
+            >
               <div className="conversation-inner">
                 {!snapshot.messages.length && (
                   <div className="welcome">
@@ -480,9 +617,12 @@ function Workspace() {
                         {m.text}
                       </Markdown>
                       {m.role === 'assistant' && !!m.text && !snapshot.running && (
-                        <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
-                          ♡ Useful · Save to knowledge
-                        </button>
+                        <div className="message-actions">
+                          <CopyMessage text={m.text} />
+                          <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
+                            ♡ Useful · Save to knowledge
+                          </button>
+                        </div>
                       )}
                     </article>
                   ),
@@ -500,21 +640,56 @@ function Workspace() {
                   </div>
                 )}
                 {snapshot.error && (
-                  <p className="error" role="alert">
-                    {snapshot.error}
-                  </p>
+                  <>
+                    <p className="error" role="alert">
+                      {snapshot.error}
+                    </p>
+                    {lastSubmitted?.chatId === chatId && (
+                      <button
+                        className="restore-draft"
+                        onClick={() => {
+                          setDraft(lastSubmitted.text);
+                          setAttached(lastSubmitted.documentIds);
+                          setPending(undefined);
+                        }}
+                      >
+                        Restore last message to draft
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </section>
             <div className="composer-area">
-              <div className="status" aria-live="polite">
-                {snapshot.running
-                  ? snapshot.status
-                  : chatId && !connected
-                    ? 'Reconnecting… Your task continues on the server.'
-                    : project?.toolsEnabled
-                      ? 'Trusted tools enabled · Host-account permissions'
-                      : 'Chat mode · Project knowledge available · Host tools disabled'}
+              {showJump && (
+                <button
+                  className="jump-latest"
+                  onClick={() => {
+                    pinned.current = true;
+                    setShowJump(false);
+                    scrollArea.current?.scrollTo({
+                      top: scrollArea.current.scrollHeight,
+                      behavior: 'instant',
+                    });
+                  }}
+                >
+                  ↓ Latest message
+                </button>
+              )}
+              <div className="status-row">
+                <div className="status" aria-live="polite">
+                  {snapshot.running
+                    ? snapshot.status
+                    : chatId && !connected
+                      ? 'Reconnecting… Your task continues on the server.'
+                      : project?.toolsEnabled
+                        ? 'Trusted tools enabled · Host-account permissions'
+                        : 'Chat mode · Project knowledge available · Host tools disabled'}
+                </div>
+                <Throughput
+                  metrics={snapshot.metrics}
+                  running={snapshot.running && ['Responding', 'Thinking'].includes(snapshot.status)}
+                />
               </div>
               {error && (
                 <p className="error" role="alert">
@@ -710,6 +885,44 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         <small>
           Match the context allocated per llama.cpp slot. Model size is not context size.
         </small>
+        <fieldset className="context-settings">
+          <legend>Context management</legend>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={form.autoCompaction}
+              onChange={(e) => setForm({ ...form, autoCompaction: e.target.checked })}
+            />
+            Automatically compact older context
+          </label>
+          <label>
+            Compact at used percentage
+            <input
+              type="number"
+              min={50}
+              max={90}
+              required
+              value={form.compactAtPercent}
+              onChange={(e) => setForm({ ...form, compactAtPercent: Number(e.target.value) })}
+            />
+          </label>
+          <small>
+            Default: 75%. Frame may start earlier to reserve your output limit and template
+            headroom. Recent exchanges stay in context; older history becomes a checkpoint.
+          </small>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={form.pruneToolOutputs}
+              onChange={(e) => setForm({ ...form, pruneToolOutputs: e.target.checked })}
+            />
+            Shorten older read-only tool outputs
+          </label>
+          <small>
+            Keeps the latest two user turns, errors, and results from tools that make changes. Full
+            results stay in conversation history.
+          </small>
+        </fieldset>
         <label>
           Endpoint token (optional)
           <input
