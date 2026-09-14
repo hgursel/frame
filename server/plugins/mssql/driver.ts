@@ -133,7 +133,7 @@ export class TediousDriver implements SqlDriver {
                   ? String(c.value)
                   : c.value,
           );
-          const size = JSON.stringify(row).length;
+          const size = Buffer.byteLength(JSON.stringify(row));
           if (rows.length >= limits.rows || bytes + size > limits.bytes) {
             limited = true;
             if (login === 'read') connection.cancel();
