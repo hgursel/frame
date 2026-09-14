@@ -38,6 +38,13 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Knowledge selection/history ignore late responses.
 - Regression tests cover follow-up tool calls, stream outage recovery, model connection cancellation, automatic preflight cancellation, and stop geometry.
 
+## 0.5 — Built-in MSSQL plugin (implemented)
+
+- One system connection profile with separate read/write SQL logins, database allowlist, default-off mutation/schema/procedure gates, and project toggles.
+- Parsed supported reads; exact, single-use review for changes and administrator-allowlisted procedures; cancellation without automatic replay.
+- Paged schema initialization, searchable per-object Markdown knowledge, refresh/cancel, atomic cache publication, obsolete markers, and OKF export outside the normal document quota.
+- Bounded result tables and CSV artifacts. Browser coverage runs through the real Pi SDK with a controlled SQL driver; live SQL Server and local-model acceptance remain to be completed. See [MSSQL](MSSQL.md).
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.

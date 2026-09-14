@@ -50,7 +50,16 @@ export function metricsKey(settings: ModelSettings, project: Project) {
     .digest('hex');
 }
 
-const readOnly = new Set(['read', 'read_knowledge', 'search_knowledge', 'ls', 'find', 'grep']);
+const readOnly = new Set([
+  'read',
+  'read_knowledge',
+  'search_knowledge',
+  'mssql_schema_search',
+  'mssql_schema_read',
+  'ls',
+  'find',
+  'grep',
+]);
 const marker = '[Frame: older read-only output shortened';
 
 /** An ephemeral provider projection. Never mutate native messages or remove call/result pairs. */
