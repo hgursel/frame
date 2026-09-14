@@ -187,7 +187,7 @@ try {
   // A late source response must not replace the knowledge page selected afterward.
   const download = await page.getByRole('link', { name: 'Markdown', exact: false }).getAttribute('href');
   const projectPath = download!.split('/documents/')[0]!;
-  const docsResponse = await page.request.get(projectPath + '/documents');
+  const docsResponse = await page.request.get(new URL(projectPath + '/documents', page.url()).href);
   const sourceDoc = (await docsResponse.json()).find((d: any) => d.name === 'maintenance.md');
   const sourcePattern = '**/documents/' + sourceDoc.id;
   let releaseSource!: () => void;
