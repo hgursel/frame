@@ -4,20 +4,22 @@
 
 Frame brings local models, project context, conversations, and agent tools into a browser-based workspace. It embeds the Pi SDK and connects to a llama.cpp server you operate. No separately installed Pi CLI, cloud-provider setup, or cloud fallback.
 
-## Status: 0.3 — single-administrator V1
+## Status: 0.4 — single-administrator V1
 
 Runnable, single-administrator application. Multi-user support is planned for **V2**. Trusted host tools run with the Frame Linux account's permissions; use a dedicated account and authenticated private access.
 
 ### Implemented
 
 - First-run browser setup with a server-console bootstrap token; password sign-in and expiring HttpOnly cookies.
-- Browser settings for one local endpoint, model ID, context/output limits, optional endpoint token, and organization instructions.
+- Tabbed Model, Context, Instructions, and Documents settings for one local endpoint, model ID, context/output limits, optional endpoint token, and organization instructions.
 - Test saved endpoint discovery through `/v1/models` (not a model-quality or tool-capability test).
 - Create/edit projects with instructions and an explicit trusted-tools toggle; managed project directories.
-- Streaming text and model reasoning, expandable thinking with an active animation, Markdown/code rendering, tool-result cards, stop generation, and reconnect-safe snapshots.
+- Streaming text and model reasoning, expandable thinking with an active animation, Markdown tables/task lists, copyable code blocks, locally rendered Mermaid diagrams, tool-result cards, stop generation, and reconnect-safe snapshots.
 - A centered chat interface with light/dark appearance, collapsible mobile navigation, conversation search, response copying, and scroll-aware streaming.
 - Context size/usage meter, configurable automatic compaction, manual checkpoints, reversible shortening of older read-only tool results, and observed output tokens/second. [Strategy, research, and measurement limits](docs/CONTEXT.md).
+- Chat attachment menu with knowledge selection and computer uploads; removable attachment chips.
 - Project uploads: Markdown, TXT, CSV, PDF, and DOCX; preserved originals and bounded text extraction.
+- Remove source files and knowledge pages with confirmation, revision checks, and catalog cleanup.
 - Markdown knowledge pages, revision history, conflict checks, and portable **Open Knowledge Format 0.2** export with provenance, index, and change log.
 - Read-only knowledge search/reading available in conversations; model-proposed drafts and **Useful → Save to knowledge** for answers and tool results. Review a new page or update an existing page before saving. Verification is a separate explicit action.
 - Optional managed Python installation from Settings, with tested PDF/DOCX generation through `create_document` and atomic completed-file publication.
@@ -37,7 +39,7 @@ See [the roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). No 
 
 ## Quick start
 
-Target platform: **Ubuntu 26.04, Node.js 24 LTS, npm**. The agent and tools run on this server, not in your browser. PDF/DOCX features need Python 3 and `python3-venv`; install their managed environment from **Settings → Document tools**. Frame does not install llama.cpp or download models.
+Target platform: **Ubuntu 26.04, Node.js 24 LTS, npm**. The agent and tools run on this server, not in your browser. PDF/DOCX features need Python 3 and `python3-venv`; install their managed environment from **Settings → Documents**. Frame does not install llama.cpp or download models.
 
 ```bash
 git clone https://github.com/hgursel/frame.git
@@ -49,12 +51,12 @@ npm start
 
 Open **http://127.0.0.1:3000**. Use the setup token printed by the server to create a password (minimum 12 characters), then:
 
-1. Open **Settings**. Enter an endpoint such as `http://127.0.0.1:8080/v1` and the model alias your llama.cpp server actually serves.
-2. Match the context window to the context allocated per llama.cpp slot. Choose a smaller output limit.
+1. Open **Settings → Model**. Enter an endpoint such as `http://127.0.0.1:8080/v1` and the model alias your llama.cpp server actually serves.
+2. In **Settings → Context**, match the context window to the context allocated per llama.cpp slot. Choose a smaller output limit.
 3. Save, then **Test saved connection**. Discovery does not prove tool calling works.
 4. Create a project. Leave tools disabled for the first chat test.
 5. Send a prompt. Enable trusted tools only after reading the warning and confirming the model’s chat template supports tool calling.
-6. Open **Knowledge** to upload sources or create Markdown notes. Attach selected files to a prompt, or ask Frame to search the project knowledge. Ask it to synthesize a source into a knowledge draft, then review and save the result.
+6. Open **Knowledge** to manage sources and Markdown notes. Use **+** beside the chat composer to attach from knowledge or upload from your computer, or ask Frame to search the project knowledge. Ask it to synthesize a source into a knowledge draft, then review and save the result.
 
 See [the knowledge workflow](docs/KNOWLEDGE.md) for OKF structure, conversation updates, Python setup, and current limits.
 

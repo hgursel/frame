@@ -8,15 +8,17 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      FRAME_DATA_DIR: ${{ runner.temp }}/frame-python
-      FRAME_PYTHON: ${{ runner.temp }}/frame-python/python/venv/bin/python
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
+      - name: Configure temporary test paths
+        run: |
+          echo "FRAME_DATA_DIR=$RUNNER_TEMP/frame-python" >> "$GITHUB_ENV"
+          echo "FRAME_PYTHON=$RUNNER_TEMP/frame-python/python/venv/bin/python" >> "$GITHUB_ENV"
+          echo "FRAME_SCREENSHOT=$RUNNER_TEMP/frame-ui.png" >> "$GITHUB_ENV"
       - run: npm ci
       - run: env -u FRAME_PYTHON npm run python:setup
       - run: npm run check
@@ -24,3 +26,9 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium --only-shell
       - run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-screenshots
+          path: ${{ runner.temp }}/frame-ui*.png
+          if-no-files-found: ignore

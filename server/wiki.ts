@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { writeFile, readdir } from 'node:fs/promises';
+import { writeFile, readdir, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import YAML from 'yaml';
 import { zipSync, strToU8 } from 'fflate';
@@ -111,6 +111,47 @@ export class Wiki {
     }
     await this.knowledge.atomic(directory, 'log.md', log);
     return index;
+  }
+  async remove(projectId: string, id: string, revision: string) {
+    const doc = await this.knowledge.read(projectId, id);
+    if (doc.revision !== revision)
+      throw Object.assign(new Error('This document changed. Reopen it before removing it.'), { statusCode: 409 });
+    const directory = await this.knowledge.checkedDirectory(doc);
+    const root = await this.knowledge.folder(projectId);
+    const wikiDir = await this.knowledge.folder(projectId, 'wiki');
+    const staged = path.join(root, '.removing-' + randomUUID());
+    const db = this.knowledge.store.db;
+    const original = db.prepare('SELECT * FROM documents WHERE id=? AND projectId=?').get(id, projectId) as Record<string, any>;
+    const revisions = db.prepare('SELECT * FROM knowledge_revisions WHERE documentId=? AND projectId=?').all(id, projectId) as Record<string, any>[];
+    await rename(directory, staged);
+    let committed = false;
+    try {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.prepare('DELETE FROM knowledge_revisions WHERE documentId=? AND projectId=?').run(id, projectId);
+        db.prepare('DELETE FROM documents WHERE id=? AND projectId=?').run(id, projectId);
+        db.exec('COMMIT'); committed = true;
+      } catch (error) { db.exec('ROLLBACK'); throw error; }
+      await this.sync(projectId);
+      await rm(path.join(wikiDir, id + '.md'), { force: true });
+    } catch (error) {
+      if (committed) {
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare('INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(original.id, original.projectId, original.name, original.kind, original.extension, original.bytes, original.revision, original.truncated, original.updatedAt);
+          const insert = db.prepare('INSERT INTO knowledge_revisions VALUES (?, ?, ?, ?, ?, ?)');
+          for (const row of revisions) insert.run(row.id, row.documentId, row.projectId, row.at, row.content, row.metadata);
+          db.exec('COMMIT');
+        } catch (restoreError) { db.exec('ROLLBACK'); throw restoreError; }
+      }
+      await rename(staged, directory);
+      await this.sync(projectId);
+      throw error;
+    }
+    // Originals/evidence remain staged until the catalog and database changes succeed.
+    // A storage cleanup failure is surfaced; never report permanent deletion on failure.
+    await rm(staged, { recursive: true, force: true });
+    return { ok: true };
   }
   async catalog(projectId: string) {
     const entries = [];

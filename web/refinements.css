@@ -1,0 +1,84 @@
+/* Navigation, rich documents, attachments, and settings topics. */
+.frame-wordmark { font-size: 29px; font-weight: 750; letter-spacing: -1.5px; line-height: 1; }
+.sidebar .frame-wordmark { padding: 5px 12px 12px; font-size: 29px; }
+.nav-heading { color: var(--ink); font-weight: 750; letter-spacing: .7px; font-size: 11px; }
+.nav-heading button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; font-size: 23px; font-weight: 400; }
+.sidebar-bottom { padding-top: 10px; }
+.rich-markdown { min-width: 0; line-height: 1.75; }
+.rich-markdown > :first-child { margin-top: 0; }
+.rich-markdown > :last-child { margin-bottom: 0; }
+.rich-markdown h1 { font-size: 1.75em; }
+.rich-markdown h2 { font-size: 1.4em; }
+.rich-markdown h3 { font-size: 1.15em; }
+.rich-markdown h1, .rich-markdown h2, .rich-markdown h3 { font-weight: 650; letter-spacing: -.35px; line-height: 1.4; margin: 1.6em 0 .65em; }
+.rich-markdown ul, .rich-markdown ol { padding-left: 1.6em; }
+.rich-markdown li { margin: .35em 0; }
+.rich-markdown blockquote { border-left: 3px solid var(--line); color: var(--subtle); margin: 1em 0; padding-left: 18px; }
+.rich-markdown hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+.rich-markdown :not(pre) > code { background: var(--surface); border-radius: 5px; padding: 2px 5px; font-size: .88em; }
+.rich-markdown input[type='checkbox'] { width: 14px; height: 14px; margin-right: 7px; }
+.rich-markdown .contains-task-list { list-style: none; padding-left: 0; }
+.markdown-table { overflow: auto; max-width: 100%; margin: 20px 0; border: 1px solid var(--line); border-radius: 10px; }
+.markdown-table table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.markdown-table th { background: var(--panel); font-weight: 650; }
+.markdown-table th, .markdown-table td { padding: 11px 15px; border-bottom: 1px solid var(--line); min-width: 110px; vertical-align: top; }
+.markdown-table tr:last-child td { border-bottom: 0; }
+.markdown-table tbody tr:hover { background: var(--panel); }
+.code-block, .diagram-block { margin: 20px 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
+.code-caption, .diagram-block figcaption { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 14px; color: var(--subtle); font-size: 11px; border-bottom: 1px solid var(--line); }
+.code-caption button, .diagram-block figcaption button { border: 0; font-size: 11px; padding: 4px 7px; }
+.diagram-block figcaption > div { display: flex; gap: 8px; }
+.code-block pre { margin: 0; border: 0; border-radius: 0; white-space: pre; max-height: 520px; }
+.diagram-block > img { display: block; max-width: 100%; max-height: 560px; margin: auto; padding: 18px; }
+.diagram-block > p, .diagram-block > details { margin: 12px 16px; font-size: 12px; }
+.diagram-block summary { cursor: pointer; color: var(--subtle); }
+.mermaid-render-host { position: fixed; left: -100000px; top: 0; width: 1200px; visibility: hidden; pointer-events: none; }
+.diagram-dialog, .attachment-dialog, .remove-dialog { border: 1px solid var(--line); border-radius: 18px; color: var(--ink); background: var(--canvas); padding: 24px; max-height: 85dvh; box-shadow: 0 20px 80px #0003; }
+.diagram-dialog::backdrop, .attachment-dialog::backdrop, .remove-dialog::backdrop { background: #0006; }
+.diagram-dialog { width: min(95vw, 1400px); }
+.diagram-dialog > button { display: block; margin: 0 0 16px auto; }
+.diagram-dialog img { display: block; min-width: 100%; max-width: none; }
+.attachments-control { position: relative; flex-shrink: 0; }
+.attachment-menu > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font-size: 26px; line-height: 1; color: var(--ink); }
+.attachment-menu > summary::-webkit-details-marker { display: none; }
+.attachment-menu > summary:hover, .attachment-menu[open] > summary { background: var(--hover); }
+.attachment-menu > summary[aria-disabled='true'] { opacity: .4; cursor: not-allowed; }
+.attachment-options { position: absolute; bottom: calc(100% + 14px); left: -5px; width: 250px; padding: 8px; background: var(--canvas); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 8px 30px #0002; z-index: 5; }
+.attachment-options > button { display: block; width: 100%; border: 0; text-align: left; font-size: 13px; padding: 11px 10px; }
+.attachment-options small { margin: 6px 10px; font-size: 10px; }
+.attachment-dialog { width: min(520px, calc(100vw - 24px)); }
+.attachment-dialog h2, .remove-dialog h2 { margin-top: 0; font-size: 21px; letter-spacing: -.4px; }
+.attachment-dialog p, .remove-dialog p { font-size: 13px; }
+.attachment-results { max-height: 40dvh; overflow: auto; margin: 14px 0; }
+.attachment-results label { display: flex; align-items: center; gap: 12px; padding: 10px 5px; margin: 0; font-weight: 400; }
+.attachment-results input { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
+.attachment-results strong { font-weight: 550; overflow-wrap: anywhere; }
+.attachment-results small { margin: 2px 0 0; }
+.dialog-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 22px; font-size: 12px; }
+.dialog-actions > span { margin-right: auto; color: var(--subtle); }
+.composer-attachments { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.composer-attachments > span { display: flex; gap: 9px; align-items: center; background: var(--canvas); border: 1px solid var(--line); border-radius: 9px; padding: 5px 6px 5px 10px; font-size: 12px; max-width: 100%; }
+.composer-attachments > span > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer-attachments button { border: 0; padding: 0; width: 23px; height: 23px; font-size: 19px; color: var(--subtle); }
+.composer-footer > .composer-hint { flex: 1; min-width: 0; }
+.attachment-error { position: absolute; left: 0; bottom: 50px; width: min(330px, calc(100vw - 60px)); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 30px #0002; background: var(--canvas); color: var(--ink); padding: 12px; z-index: 6; line-height: 1.5; }
+.attachment-error button { float: right; border: 0; padding: 0 4px; }
+.remove-dialog { width: min(460px, calc(100vw - 24px)); }
+.danger-button { color: #a43336; border-color: #be73764d; }
+.danger-button:hover { background: #be737617; }
+:root[data-theme='dark'] .danger-button { color: #edaaaa; }
+.settings-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 0 8px; margin: 24px 0 10px; overflow: auto; position: sticky; top: -1px; background: var(--canvas); z-index: 2; }
+.settings-tabs button { border: 0; font-size: 13px; padding: 9px 13px; }
+.settings-tabs button[aria-selected='true'] { background: var(--surface); color: var(--ink); font-weight: 650; }
+.settings-topic { border: 0; padding: 0; margin: 0; min-width: 0; }
+.settings-topic[hidden], .settings-panel form[hidden], .settings-panel [role='tabpanel'][hidden] { display: none; }
+.settings-topic .context-settings { margin: 25px 0 0; }
+.settings-panel .button-row { padding-top: 14px; border-top: 1px solid var(--line); }
+.settings-panel .document-tools { margin-top: 12px; border: 0; }
+@media (max-width: 760px) {
+  .settings-tabs { gap: 0; }
+  .settings-tabs button { font-size: 12px; padding: 9px 10px; }
+  .composer-footer > .composer-hint { font-size: 9px; }
+  .diagram-block figcaption { align-items: flex-start; }
+  .diagram-block figcaption > div { flex-wrap: wrap; justify-content: flex-end; }
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import Markdown from 'react-markdown';
+import { RichMarkdown } from './RichMarkdown.js';
+import { AttachmentPicker } from './AttachmentPicker.js';
 import type {
   ChatSnapshot,
   Conversation,
@@ -14,16 +15,10 @@ import { ContextPanel, Throughput, CopyMessage } from './ContextPanel.js';
 import { KnowledgePanel, SaveKnowledge, DocumentTools } from './Knowledge.js';
 import './style.css';
 import './chat.css';
+import './refinements.css';
 
 function Logo() {
-  return (
-    <span className="brand">
-      <span className="mark" aria-hidden="true">
-        F
-      </span>
-      Frame<span className="edition">LOCAL</span>
-    </span>
-  );
+  return <span className="brand frame-wordmark" aria-label="Frame">Frame</span>;
 }
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -156,19 +151,28 @@ function Workspace() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [chats, setChats] = useState<Conversation[]>([]);
   const [projectId, setProjectId] = useState('');
+  const currentProject = useRef(projectId);
+  currentProject.current = projectId;
   const [chatId, setChatId] = useState('');
   const currentChat = useRef(chatId);
   currentChat.current = chatId;
   const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [attached, setAttached] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number>();
   const refreshDocuments = async () => {
-    if (projectId) setDocuments(await api<KnowledgeDocument[]>(`/projects/${projectId}/documents`));
+    if (projectId) {
+      const docs = await api<KnowledgeDocument[]>(`/projects/${projectId}/documents`);
+      if (currentProject.current !== projectId) return;
+      setDocuments(docs);
+      setAttached((ids) => ids.filter((id) => docs.some((doc) => doc.id === id)));
+    }
   };
   useEffect(() => {
     let live = true;
     setAttached([]);
+    setUploading(false);
     setDocuments([]);
     setSaveIndex(undefined);
     if (projectId)
@@ -273,7 +277,7 @@ function Workspace() {
     return chat.id;
   };
   const submit = async () => {
-    if ((!draft.trim() && !pending) || sending) return;
+    if ((!draft.trim() && !pending) || sending || uploading || snapshot.running) return;
     setSending(true);
     setError('');
     try {
@@ -341,15 +345,6 @@ function Workspace() {
         }}
       >
         <Logo />
-        <button
-          className="new-chat"
-          onClick={() => {
-            setPending(undefined);
-            void newChat().catch((e) => setError(e.message));
-          }}
-        >
-          + New conversation
-        </button>
         <div className="nav-heading">
           PROJECTS
           <button
@@ -380,7 +375,13 @@ function Workspace() {
             </button>
           ))}
         </nav>
-        <div className="nav-heading">CONVERSATIONS</div>
+        <div className="nav-heading">
+          CONVERSATIONS
+          <button title="New conversation" aria-label="New conversation" onClick={() => {
+            setPending(undefined);
+            void newChat().catch((e) => setError(e.message));
+          }}>+</button>
+        </div>
         <input
           className="chat-search"
           aria-label="Search conversations"
@@ -413,10 +414,6 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
-          <div className="local-badge">
-            <span className="dot" />
-            Local endpoint only
-          </div>
           <button onClick={() => setPage('settings')}>⚙ Settings</button>
           <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             {theme === 'light' ? '◐ Dark appearance' : '◑ Light appearance'}
@@ -604,18 +601,7 @@ function Workspace() {
                           ))}
                         </div>
                       )}
-                      <Markdown
-                        components={{
-                          img: () => <span>[Image omitted; use artifact downloads]</span>,
-                          a: ({ href, children }) => (
-                            <a href={href} target="_blank" rel="noreferrer noopener">
-                              {children}
-                            </a>
-                          ),
-                        }}
-                      >
-                        {m.text}
-                      </Markdown>
+                      <RichMarkdown text={m.text} streaming={snapshot.running && i === snapshot.messages.length - 1} />
                       {m.role === 'assistant' && !!m.text && !snapshot.running && (
                         <div className="message-actions">
                           <CopyMessage text={m.text} />
@@ -703,36 +689,14 @@ function Workspace() {
                   void submit();
                 }}
               >
-                {!!documents.length && (
-                  <details className="attachment-picker">
-                    <summary>
-                      ▤ Attach documents {attached.length ? `(${attached.length}/5)` : ''}
-                    </summary>
-                    <div>
-                      {documents.map((d) => (
-                        <label key={d.id}>
-                          <input
-                            type="checkbox"
-                            checked={attached.includes(d.id)}
-                            disabled={
-                              (!attached.includes(d.id) && attached.length >= 5) ||
-                              !!pending ||
-                              snapshot.running
-                            }
-                            onChange={(e) =>
-                              setAttached((prev) =>
-                                e.target.checked
-                                  ? [...prev, d.id]
-                                  : prev.filter((id) => id !== d.id),
-                              )
-                            }
-                          />
-                          {d.name}
-                        </label>
-                      ))}
-                    </div>
-                  </details>
-                )}
+                {!!attached.length && <div className="composer-attachments">
+                  {attached.map((id) => <span key={id}>
+                    <span>{documents.find((d) => d.id === id)?.name || 'Document'}</span>
+                    <button type="button" aria-label={`Remove attachment ${documents.find((d) => d.id === id)?.name || 'document'}`}
+                      disabled={snapshot.running || !!pending || uploading}
+                      onClick={() => setAttached((ids) => ids.filter((value) => value !== id))}>×</button>
+                  </span>)}
+                </div>}
                 <textarea
                   aria-label="Message Frame"
                   placeholder="Ask Frame anything about your work…"
@@ -750,7 +714,15 @@ function Workspace() {
                   }}
                 />
                 <div className="composer-footer">
-                  <span>
+                  <AttachmentPicker key={projectId} projectId={projectId} documents={documents}
+                    attached={attached} disabled={!projectId || snapshot.running || !!pending || sending}
+                    onBusy={setUploading}
+                    onToggle={(id) => setAttached((ids) => ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id].slice(0, 5))}
+                    onUploaded={(doc) => {
+                      setDocuments((docs) => [doc, ...docs.filter((d) => d.id !== doc.id)]);
+                      setAttached((ids) => [...new Set([...ids, doc.id])].slice(0, 5));
+                    }} />
+                  <span className="composer-hint">
                     {project?.name || 'Select a project'}
                     <span className="separator">·</span>Shift + Enter for a new line
                   </span>
@@ -770,7 +742,7 @@ function Workspace() {
                   ) : (
                     <button
                       className="send"
-                      disabled={sending || !draft.trim() || !projectId || !settings?.modelId}
+                      disabled={sending || uploading || !draft.trim() || !projectId || !settings?.modelId}
                       aria-label="Send message"
                     >
                       {sending ? '…' : '↑'}
@@ -802,6 +774,8 @@ function Workspace() {
 
 function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () => Promise<void> }) {
   const [form, setForm] = useState(initial);
+  const tabs = ['model', 'context', 'instructions', 'documents'] as const;
+  const [tab, setTab] = useState<typeof tabs[number]>('model');
   const [key, setKey] = useState('');
   const [clear, setClear] = useState(false);
   const [notice, setNotice] = useState('');
@@ -809,12 +783,18 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
   const [busy, setBusy] = useState(false);
   return (
     <section className="settings-panel">
-      <span className="eyebrow">LOCAL BY DESIGN</span>
-      <h1>Model connection</h1>
-      <p className="muted">
-        Connect Frame to a llama.cpp server on this machine or your private network.
-      </p>
-      <form
+      <h1>Settings</h1>
+      <p className="muted">Configure your model, context, instructions, and document tools.</p>
+      <div className="settings-tabs" role="tablist" aria-label="Settings topics">
+        {tabs.map((name, i) => <button key={name} type="button" id={`tab-${name}`} role="tab"
+          aria-selected={tab === name} aria-controls={`settings-${name}`} tabIndex={tab === name ? 0 : -1}
+          onClick={() => setTab(name)}
+          onKeyDown={(e) => {
+            const index = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : -1;
+            if (index >= 0) { e.preventDefault(); setTab(tabs[index]!); document.getElementById(`tab-${tabs[index]}`)?.focus(); }
+          }}>{name[0]!.toUpperCase() + name.slice(1)}</button>)}
+      </div>
+      <form hidden={tab === 'documents'}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -837,6 +817,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           }
         }}
       >
+        <fieldset id="settings-model" role="tabpanel" aria-labelledby="tab-model" hidden={tab !== 'model'} disabled={tab !== 'model' || busy} className="settings-topic">
         <label>
           Endpoint URL
           <input
@@ -858,6 +839,26 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             onChange={(e) => setForm({ ...form, modelId: e.target.value })}
           />
         </label>
+        <label>
+          Endpoint token (optional)
+          <input
+            type="password"
+            autoComplete="new-password"
+            placeholder={
+              initial.hasApiKey
+                ? 'Saved token — leave blank to keep'
+                : 'No authentication token required by default'
+            }
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+          />
+        </label>
+        <label className="checkbox">
+          <input type="checkbox" checked={clear} onChange={(e) => setClear(e.target.checked)} />
+          Remove saved endpoint token
+        </label>
+        </fieldset>
+        <fieldset id="settings-context" role="tabpanel" aria-labelledby="tab-context" hidden={tab !== 'context'} disabled={tab !== 'context' || busy} className="settings-topic">
         <div className="form-row">
           <label>
             Context window
@@ -923,24 +924,8 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             results stay in conversation history.
           </small>
         </fieldset>
-        <label>
-          Endpoint token (optional)
-          <input
-            type="password"
-            autoComplete="new-password"
-            placeholder={
-              initial.hasApiKey
-                ? 'Saved token — leave blank to keep'
-                : 'No authentication token required by default'
-            }
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-          />
-        </label>
-        <label className="checkbox">
-          <input type="checkbox" checked={clear} onChange={(e) => setClear(e.target.checked)} />
-          Remove saved endpoint token
-        </label>
+        </fieldset>
+        <fieldset id="settings-instructions" role="tabpanel" aria-labelledby="tab-instructions" hidden={tab !== 'instructions'} disabled={tab !== 'instructions' || busy} className="settings-topic">
         <label>
           Organization instructions
           <textarea
@@ -949,6 +934,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             onChange={(e) => setForm({ ...form, instructions: e.target.value })}
           />
         </label>
+        </fieldset>
         <div className="button-row">
           <button className="primary" disabled={busy}>
             Save settings
@@ -990,7 +976,9 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           </p>
         )}
       </form>
-      <DocumentTools />
+      <div id="settings-documents" role="tabpanel" aria-labelledby="tab-documents" hidden={tab !== 'documents'}>
+        {tab === 'documents' && <DocumentTools />}
+      </div>
       <div className="scope-note">
         <strong>V1 · Single administrator</strong>
         <p>

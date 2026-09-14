@@ -22,7 +22,7 @@ const model = createServer(async (request, response) => {
   response.write(reason('Comparing the migration steps.'));
   await new Promise((resolve) => setTimeout(resolve, 1200));
   response.end(
-    `data: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: { role: 'assistant', content: 'Your local workspace is ready.' }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`,
+    `data: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: { role: 'assistant', content: "Your local workspace is ready.\n\n| Phase | Status |\n| --- | --- |\n| Migration | Ready |\n\n```mermaid\nflowchart TD\nA[Sources] --> B[Review]\nB --> C[Answer]\n```\n\n```mermaid\nnot-a-valid-diagram\n```" }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`,
   );
 });
 await new Promise<void>((resolve) => model.listen(0, '127.0.0.1', resolve));
@@ -44,6 +44,8 @@ try {
   });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors: string[] = [];
+  const externalRequests: string[] = [];
+  page.on('request', (request) => { if (/^https?:/.test(request.url()) && !request.url().startsWith(`http://127.0.0.1:${port}/`)) externalRequests.push(request.url()); });
   page.on('pageerror', (error) => {
     errors.push(error.message);
     console.error('Browser error:', error.message);
@@ -66,15 +68,23 @@ try {
     .getByLabel('Project instructions', { exact: true })
     .fill('Help plan reliable infrastructure.');
   await page.getByRole('button', { name: 'Create project', exact: true }).last().click();
-  await page.getByRole('button', { name: 'Knowledge', exact: true }).click();
-  await page.getByLabel('Upload document', { exact: true }).setInputFiles({
-    name: 'maintenance.md',
-    mimeType: 'text/markdown',
+  assert.equal(await page.locator('.sidebar .edition, .sidebar .mark, .local-badge, .new-chat').count(), 0);
+  await page.getByRole('button', { name: 'Add attachments', exact: true }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Upload from computer', exact: false }).click();
+  await (await chooser).setFiles({
+    name: 'maintenance.md', mimeType: 'text/markdown',
     buffer: Buffer.from('# Maintenance\n\nMaintenance starts at 02:00 UTC.'),
   });
-  await page.getByRole('heading', { name: 'maintenance.md', exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Attach to conversation', exact: true }).click();
-  await page.getByRole('button', { name: '+ New conversation' }).click();
+  await expect(page.locator('.composer-attachments')).toContainText('maintenance.md');
+  await page.getByRole('button', { name: 'Add attachments', exact: true }).click();
+  await page.getByRole('button', { name: 'Attach from knowledge', exact: false }).click();
+  await expect(page.getByRole('dialog', { name: 'Attach from knowledge' })).toBeVisible();
+  await page.getByLabel('Search attachment knowledge').fill('maintenance');
+  const selectedFile = page.getByRole('dialog', { name: 'Attach from knowledge' }).getByRole('checkbox');
+  await selectedFile.uncheck(); await selectedFile.check();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Review our migration plan.');
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({ path: process.env.FRAME_SCREENSHOT, fullPage: true });
@@ -90,6 +100,13 @@ try {
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
   await expect(page.locator('.throughput')).toContainText('tok/s');
+  await expect(page.getByRole('columnheader', { name: 'Phase', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Migration', exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Mermaid diagram', exact: true })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText('This Mermaid diagram could not be rendered.', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Expand diagram', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Expanded Mermaid diagram' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close diagram', exact: true }).click();
   await page.getByLabel('Context usage', { exact: true }).click();
   await expect(page.getByText('Conversation context', { exact: true })).toBeVisible();
   await expect(page.getByRole('progressbar', { name: 'Context used' })).toBeVisible();
@@ -130,6 +147,27 @@ try {
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-knowledge.png'),
       fullPage: true,
     });
+  await page.getByRole('button', { name: 'maintenance.md', exact: false }).click();
+  await page.getByRole('heading', { name: 'maintenance.md', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Remove file', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Remove file?' }).getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'maintenance.md', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove file', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove permanently', exact: true }).click();
+  await expect(page.locator('.knowledge-list')).not.toContainText('maintenance.md');
+  await page.locator('.sidebar-bottom').getByRole('button', { name: 'Settings', exact: false }).click();
+  await page.getByRole('tab', { name: 'Context', exact: true }).click();
+  await page.getByLabel('Compact at used percentage').fill('70');
+  await page.getByRole('tab', { name: 'Instructions', exact: true }).click();
+  await page.getByLabel('Organization instructions').fill('Keep answers accurate and practical.');
+  await page.getByRole('tab', { name: 'Context', exact: true }).click();
+  await expect(page.getByLabel('Compact at used percentage')).toHaveValue('70');
+  await page.getByRole('tab', { name: 'Model', exact: true }).click();
+  await expect(page.getByLabel('Model ID', { exact: true })).toHaveValue('local-test-model');
+  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'Settings saved' }).waitFor();
+  await page.getByRole('tab', { name: 'Documents', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Document tools', exact: true })).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: 'Review our migration plan.', exact: true }).click();
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
@@ -169,8 +207,9 @@ try {
   );
   assert(!overflow, 'Mobile page must not overflow horizontally');
   assert.deepEqual(errors, []);
+  assert.deepEqual(externalRequests, [], 'Markdown and diagrams must not request external resources');
   console.log(
-    'Browser smoke passed: setup, model settings, upload/attachment, compiled SDK reasoning, context meter, throughput, appearance, knowledge save/edit, reload/resume, mobile drawer/search, and layout.',
+    'Browser smoke passed: setup, tabbed settings with retained drafts, composer uploads and knowledge attachments, GFM tables, local Mermaid rendering/fallback/expansion, knowledge removal, streaming/context/throughput, appearance, reload, and mobile layout.',
   );
 } catch (error) {
   const page = browser?.contexts()[0]?.pages()[0];

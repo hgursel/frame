@@ -1,37 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import Markdown from 'react-markdown';
+import { RichMarkdown } from './RichMarkdown.js';
 import type { KnowledgeDocument, DocumentRuntimeStatus } from '../shared/types.js';
 import { api } from './api.js';
 
 type Page = KnowledgeDocument & { text: string; metadata?: Record<string, any> };
-export function KnowledgeMarkdown({
-  text,
-  onOpen,
-}: {
-  text: string;
-  onOpen?: (id: string) => void;
-}) {
-  return (
-    <Markdown
-      components={{
-        img: () => <span>[External image omitted]</span>,
-        a: ({ href, children }) => {
-          const id = href?.match(/^(?:\/|\.\/)?([a-f0-9-]{36})\.md(?:#.*)?$/)?.[1];
-          return id && onOpen ? (
-            <button className="text-link" onClick={() => onOpen(id)}>
-              {children}
-            </button>
-          ) : (
-            <a href={href} target="_blank" rel="noreferrer noopener">
-              {children}
-            </a>
-          );
-        },
-      }}
-    >
-      {text}
-    </Markdown>
-  );
+export function KnowledgeMarkdown({ text, onOpen }: { text: string; onOpen?: (id: string) => void }) {
+  return <RichMarkdown text={text} onOpen={onOpen} />;
 }
 export function DocumentTools() {
   const [status, setStatus] = useState<DocumentRuntimeStatus>();
@@ -110,6 +84,7 @@ export function KnowledgePanel({
   onAttach: (id: string) => void;
 }) {
   const [selected, setSelected] = useState<Page>();
+  const removal = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState('');
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -316,6 +291,7 @@ export function KnowledgePanel({
               </div>
               <div className="knowledge-actions">
                 <button onClick={() => onAttach(selected.id)}>Attach to conversation</button>
+                <button className="danger-button" disabled={busy} onClick={() => removal.current?.showModal()}>Remove {selected.kind === 'wiki' ? 'page' : 'file'}</button>
                 {selected.kind === 'wiki' && (
                   <button
                     onClick={() => {
@@ -380,6 +356,25 @@ export function KnowledgePanel({
           )}
         </div>
       </div>
+      <dialog ref={removal} className="remove-dialog" aria-labelledby="remove-title"
+        onCancel={(e) => { if (busy) e.preventDefault(); }}>
+        <h2 id="remove-title">Remove {selected?.kind === 'wiki' ? 'page' : 'file'}?</h2>
+        <p><strong>{selected?.name}</strong> will be removed from project knowledge, including its original file and saved revisions.</p>
+        <p className="muted">Other pages may still reference it. Previously saved conversation excerpts and backups are unchanged.</p>
+        <div className="dialog-actions">
+          <button type="button" disabled={busy} onClick={() => removal.current?.close()}>Cancel</button>
+          <button type="button" className="danger-button" disabled={busy || !selected} onClick={async () => {
+            if (!selected) return;
+            setBusy(true); setError('');
+            try {
+              await api('/projects/' + projectId + '/documents/' + selected.id, 'DELETE', { revision: selected.revision });
+              removal.current?.close();
+              setSelected(undefined); setText(''); setVersions(undefined);
+            } catch (e) { setError((e as Error).message); removal.current?.close(); }
+            finally { setBusy(false); await refresh().catch((e) => setError(e.message)); }
+          }}>{busy ? 'Removing…' : 'Remove permanently'}</button>
+        </div>
+      </dialog>
     </section>
   );
 }
