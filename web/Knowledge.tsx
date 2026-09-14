@@ -159,6 +159,7 @@ export function KnowledgePanel({
           />
         </label>
         <button
+          disabled={busy}
           onClick={() => {
             selectionRequest.current++;
             setCreating(true);
@@ -250,6 +251,7 @@ export function KnowledgePanel({
               <label>
                 Markdown content
                 <textarea
+                  disabled={busy}
                   aria-label="Markdown content"
                   className="knowledge-editor"
                   required
@@ -274,6 +276,7 @@ export function KnowledgePanel({
                 </button>
                 <button
                   type="button"
+                  disabled={busy}
                   onClick={() => {
                     setEditing(false);
                     setCreating(false);
@@ -312,12 +315,13 @@ export function KnowledgePanel({
                   ↓ {selected.kind === 'wiki' ? 'Markdown' : 'Original file'}
                 </a>
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    const request = selectionRequest.current;
                     void api<typeof versions>(
                       `/projects/${projectId}/documents/${selected.id}/revisions`,
                     )
-                      .then(setVersions)
-                      .catch((e) => setError(e.message))
+                      .then((value) => { if (request === selectionRequest.current) setVersions(value); })
+                      .catch((e) => { if (request === selectionRequest.current) setError(e.message); });
                   }
                 >
                   History

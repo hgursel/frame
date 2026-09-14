@@ -118,7 +118,13 @@ try {
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Review our migration plan.');
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({ path: process.env.FRAME_SCREENSHOT, fullPage: true });
+  await page.route('**/api/conversations/*/messages', async (route) => {
+    const response = await route.fetch();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    await route.fulfill({ response });
+  }, { times: 1 });
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Message Frame' }).fill('Draft for the next turn');
   const thinking = page.locator('.thinking-active');
   await thinking.waitFor();
   assert.equal(await thinking.getAttribute('open'), null, 'Thinking starts collapsed');
@@ -129,6 +135,7 @@ try {
   await thinking.locator('summary').click();
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
+  await expect(page.getByRole('textbox', { name: 'Message Frame' })).toHaveValue('Draft for the next turn');
   await expect(page.locator('.throughput')).toContainText('tok/s');
   await expect(page.getByRole('columnheader', { name: 'Phase', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Migration', exact: true })).toBeVisible();
@@ -177,6 +184,30 @@ try {
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-knowledge.png'),
       fullPage: true,
     });
+  // A late source response must not replace the knowledge page selected afterward.
+  const download = await page.getByRole('link', { name: 'Markdown', exact: false }).getAttribute('href');
+  const projectPath = download!.split('/documents/')[0]!;
+  const docsResponse = await page.request.get(projectPath + '/documents');
+  const sourceDoc = (await docsResponse.json()).find((d: any) => d.name === 'maintenance.md');
+  const sourcePattern = '**/documents/' + sourceDoc.id;
+  let releaseSource!: () => void;
+  let sourceIntercepted = false;
+  const sourceGate = new Promise<void>((resolve) => { releaseSource = resolve; });
+  await page.route(sourcePattern, async (route) => {
+    const response = await route.fetch();
+    sourceIntercepted = true;
+    await sourceGate;
+    await route.fulfill({ response });
+  });
+  await page.getByRole('button', { name: 'maintenance.md', exact: false }).click();
+  await expect.poll(() => sourceIntercepted).toBe(true);
+  await page.getByRole('button', { name: 'Migration knowledge.md', exact: false }).click();
+  await expect(page.getByRole('heading', { name: 'Migration knowledge.md', exact: true })).toBeVisible();
+  const sourceResponse = page.waitForResponse((response) => response.url().endsWith('/documents/' + sourceDoc.id));
+  releaseSource(); await sourceResponse;
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect(page.getByRole('heading', { name: 'Migration knowledge.md', exact: true })).toBeVisible();
+  await page.unroute(sourcePattern);
   await page.getByRole('button', { name: 'maintenance.md', exact: false }).click();
   await page.getByRole('heading', { name: 'maintenance.md', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Remove file', exact: true }).click();

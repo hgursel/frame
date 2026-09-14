@@ -309,6 +309,7 @@ function Workspace() {
     }
     const chat = await api<Conversation>('/conversations', 'POST', { projectId });
     setChats((prev) => [chat, ...prev]);
+    if (currentProject.current !== projectId) return;
     setChatId(chat.id);
     currentChat.current = chat.id;
     setPage('chat');
@@ -334,9 +335,11 @@ function Workspace() {
         documentIds: request.documentIds,
       });
       setLastSubmitted(request);
-      setPending(undefined);
-      setDraft('');
-      setAttached([]);
+      setPending((current) => current?.id === request.id ? undefined : current);
+      if (currentChat.current === id) {
+        setDraft((current) => current.trim() === request.text ? '' : current);
+        setAttached([]);
+      }
       const updated = await api<ChatSnapshot>(`/conversations/${id}`);
       applySnapshot(id, updated);
     } catch (e) {
