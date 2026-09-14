@@ -28,6 +28,11 @@ export interface DisplayMessage {
   text: string;
   name?: string;
   failed?: boolean;
+  thinking?: string;
+  thinkingActive?: boolean;
+  attachments?: { id: string; name: string }[];
+  proposal?: { title: string; text: string; targetId?: string; revision?: string };
+  knowledgeSourceId?: string;
 }
 export interface ChatSnapshot {
   messages: DisplayMessage[];
@@ -43,6 +48,24 @@ export interface WorkerInput {
   settings: StoredSettings;
   project: Project;
   prompt: string;
+  documents?: { id: string; name: string; text: string }[];
+  pythonPath?: string;
+  knowledge?: { id: string; name: string; revision: string; text: string; description?: string }[];
+}
+export interface KnowledgeDocument {
+  id: string;
+  projectId: string;
+  name: string;
+  kind: 'upload' | 'wiki';
+  extension: string;
+  bytes: number;
+  revision: string;
+  truncated: boolean;
+  updatedAt: string;
+}
+export interface DocumentRuntimeStatus {
+  state: 'ready' | 'missing' | 'installing' | 'error';
+  message: string;
 }
 export type WorkerOutput =
   | { type: 'snapshot'; messages: DisplayMessage[]; status: string }

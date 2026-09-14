@@ -669,3 +669,281 @@ code {
     font-size: 28px;
   }
 }
+/* Reasoning stays quiet when complete and visibly active even while collapsed. */
+.thinking {
+  margin: 0 0 18px;
+  border-left: 2px solid #d5ded8;
+  padding-left: 14px;
+  color: #617068;
+}
+.thinking summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  list-style: none;
+}
+.thinking summary::-webkit-details-marker {
+  display: none;
+}
+.thinking-orbit {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #cad6ce;
+  border-top-color: #426b55;
+  border-radius: 50%;
+}
+.thinking-active .thinking-orbit {
+  animation: thinking-turn 1s linear infinite;
+}
+.thinking-active summary {
+  color: #315d45;
+}
+.thinking-chevron {
+  transition: transform 0.2s;
+}
+.thinking[open] .thinking-chevron {
+  transform: rotate(180deg);
+}
+.thinking pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  max-height: 360px;
+  overflow: auto;
+}
+@keyframes thinking-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-active .thinking-orbit {
+    animation: none;
+    border-style: dotted;
+  }
+}
+.active-tab {
+  background: #e9efe9;
+  color: #315d45;
+}
+.save-knowledge {
+  font-size: 12px;
+  color: #5f7466;
+  background: transparent;
+  padding: 6px 0;
+  margin-top: 8px;
+}
+.attachment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.attachment-chips span,
+.knowledge-tag {
+  background: #eaf0e9;
+  border-radius: 5px;
+  padding: 5px 9px;
+  font-size: 12px;
+}
+.attachment-picker {
+  padding: 10px 16px 0;
+  font-size: 13px;
+}
+.attachment-picker summary {
+  cursor: pointer;
+  color: #526957;
+}
+.attachment-picker > div {
+  max-height: 150px;
+  overflow: auto;
+  padding: 10px 0;
+}
+.attachment-picker label,
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.attachment-picker input,
+.check input {
+  width: auto;
+}
+.knowledge-panel {
+  padding: 36px 42px;
+  overflow: auto;
+  flex: 1;
+}
+.knowledge-heading,
+.detail-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+.knowledge-heading h1 {
+  margin: 10px 0;
+}
+.knowledge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  margin: 20px 0;
+}
+.button-link,
+.upload-button {
+  border: 1px solid #d9dfd7;
+  border-radius: 6px;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #385342;
+  font-size: 14px;
+}
+.upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.upload-button:focus-within {
+  outline: 2px solid #426b55;
+}
+.knowledge-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 30px;
+  margin-top: 28px;
+}
+.knowledge-list {
+  border-right: 1px solid #e1e5dd;
+  padding-right: 22px;
+}
+.knowledge-list input {
+  width: 100%;
+  margin-bottom: 15px;
+}
+.knowledge-list button {
+  display: block;
+  text-align: left;
+  width: 100%;
+  padding: 12px 8px;
+  overflow-wrap: anywhere;
+}
+.knowledge-list small {
+  display: block;
+  color: #78847a;
+  margin-top: 6px;
+}
+.knowledge-list .selected {
+  background: #e8eee6;
+  border-radius: 6px;
+}
+.knowledge-detail {
+  min-width: 0;
+}
+.knowledge-detail h2 {
+  overflow-wrap: anywhere;
+}
+.knowledge-body {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.knowledge-body pre,
+.knowledge-detail pre,
+.knowledge-modal pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 400px;
+  overflow: auto;
+  background: #eef1eb;
+  padding: 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.knowledge-editor {
+  min-height: 280px;
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  line-height: 1.6;
+  resize: vertical;
+}
+.knowledge-empty {
+  padding: 40px 20px;
+  max-width: 540px;
+  line-height: 1.8;
+}
+.knowledge-detail details,
+.knowledge-modal details {
+  margin: 18px 0;
+}
+.text-link {
+  padding: 0;
+  color: #356248;
+  text-decoration: underline;
+  background: none;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #122b1ed0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.knowledge-modal {
+  border: 0;
+  margin: auto;
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fafbf7;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 20px 80px #0c1c1a44;
+}
+.knowledge-modal::backdrop {
+  background: #122b1ed0;
+}
+.knowledge-modal label,
+.knowledge-detail form > label {
+  display: block;
+  margin: 18px 0;
+}
+.knowledge-modal label.check {
+  display: flex;
+}
+.knowledge-modal input:not([type='checkbox']),
+.knowledge-modal select {
+  width: 100%;
+}
+@media (max-width: 800px) {
+  .knowledge-panel {
+    padding: 22px 16px;
+  }
+  .knowledge-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .knowledge-list {
+    border-right: 0;
+    max-height: 230px;
+    overflow: auto;
+  }
+  .knowledge-heading {
+    display: block;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+  }
+  .knowledge-modal {
+    padding: 20px;
+  }
+}

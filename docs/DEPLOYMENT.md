@@ -43,6 +43,8 @@ Stop Frame cleanly before backing up the entire configured data directory. Inclu
 
 ## Dependencies and updates
 
-The lockfile pins application dependencies. Installing/building requires package-registry access; running against a local model does not require cloud model APIs. Changes to SDK versions must pass the mock integration suite and a real llama.cpp acceptance test. Python document tooling, MCP processes, and extra fonts are not automatically installed in this foundation.
+The lockfile pins application dependencies. Installing/building requires package-registry access; running against a local model does not require cloud model APIs. Changes to SDK versions must pass the mock integration suite and a real llama.cpp acceptance test. Python document tools install only through the explicit Settings action or `npm run python:setup`; Ubuntu needs `python3-venv`. MCP processes and general skills remain separate future work.
+
+For the 0.2 update, stop Frame, back up its data directory, pull the latest code, run `npm ci` and `npm run build`, then restart. SQLite adds the knowledge tables without replacing existing projects or conversations. Use Settings to install document tools when PDF/DOCX features are needed. Keep the repository's `python/` folder alongside the compiled application; the Node service invokes its document helper.
 
 The included systemd hardening is defense-in-depth, not a sandbox. Tool execution still has the service account’s accessible files/network, including Frame’s own writable data. Container/VM isolation and organization-level access controls are roadmap work.

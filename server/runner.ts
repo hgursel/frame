@@ -2,7 +2,7 @@ import { fork, type ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ChatSnapshot, WorkerOutput } from '../shared/types.js';
+import type { ChatSnapshot, WorkerOutput, WorkerInput } from '../shared/types.js';
 import { readHistory } from './history.js';
 import { Store } from './store.js';
 
@@ -37,7 +37,14 @@ export class Runner extends EventEmitter {
   projectBusy(id: string) {
     return [...this.active.values()].some((run) => run.projectId === id);
   }
-  start(id: string, runId: string, prompt: string) {
+  start(
+    id: string,
+    runId: string,
+    prompt: string,
+    documents?: WorkerInput['documents'],
+    pythonPath?: string,
+    knowledge?: WorkerInput['knowledge'],
+  ) {
     const existing = this.store.db
       .prepare('SELECT conversationId, status FROM runs WHERE id=?')
       .get(runId) as { conversationId: string; status: string } | undefined;
@@ -90,6 +97,7 @@ export class Runner extends EventEmitter {
           DO_NOT_TRACK: '1',
           PI_ARTIFACT_DIR: this.store.artifacts(conversation),
           PI_CODING_AGENT_DIR: path.join(this.store.root, 'agent', id),
+          ...(pythonPath ? { FRAME_PYTHON: pythonPath } : {}),
         },
       });
     } catch {
@@ -162,6 +170,9 @@ export class Runner extends EventEmitter {
         settings,
         project,
         prompt,
+        documents,
+        pythonPath,
+        knowledge,
       },
       (sendError) => {
         if (sendError) {

@@ -1,6 +1,6 @@
 {
   "name": "@frame-workspace/frame",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "A self-hosted organizational AI workspace powered by local llama.cpp models.",
@@ -13,17 +13,22 @@
     "start": "node --env-file-if-exists=.env dist/server/index.js",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:ui": "node --import tsx tests/browser.smoke.ts",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "python:setup": "node --env-file-if-exists=.env --import tsx server/setup-python.ts"
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.85.1",
     "@fastify/cookie": "11.1.2",
+    "@fastify/multipart": "10.1.1",
     "@fastify/rate-limit": "11.2.0",
     "@fastify/static": "10.1.3",
     "fastify": "5.12.4",
+    "fflate": "0.8.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-markdown": "10.1.0",
+    "typebox": "1.3.30",
+    "yaml": "2.9.1",
     "zod": "4.6.5"
   },
   "devDependencies": {

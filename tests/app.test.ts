@@ -1,14 +1,40 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, readFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer, get } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
-import { readHistory } from '../server/history.js';
+import { readHistory, displayMessages } from '../server/history.js';
+import { unzipSync, strFromU8 } from 'fflate';
+import YAML from 'yaml';
+import { documentCommand } from '../server/python.js';
 
 const origin = 'http://127.0.0.1:3000';
+test('reasoning projection handles structured and tagged streams without animating history', () => {
+  const message = {
+    role: 'assistant',
+    content: [
+      { type: 'thinking', thinking: 'Compare sources.' },
+      { type: 'text', text: 'Answer' },
+    ],
+  };
+  assert.equal(displayMessages([message], true)[0]?.thinkingActive, true);
+  assert.equal(displayMessages([message])[0]?.thinkingActive, false);
+  const tagged = { role: 'assistant', content: '<think>Still working' };
+  assert.equal(displayMessages([tagged], true)[0]?.thinking, 'Still working');
+  assert.equal(displayMessages([tagged])[0]?.thinkingActive, false);
+  assert.equal(
+    displayMessages([{ role: 'assistant', content: '<think>Done</think>Final' }])[0]?.text,
+    'Final',
+  );
+  assert.equal(
+    displayMessages([{ role: 'assistant', content: 'An example: <think>not reasoning</think>' }])[0]
+      ?.thinking,
+    undefined,
+  );
+});
 test('production static UI is served with security headers', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'frame-static-test-'));
   let app: Awaited<ReturnType<typeof createApp>>['app'] | undefined;
@@ -148,6 +174,12 @@ test(
       for await (const chunk of req) raw += chunk;
       requests.push(JSON.parse(raw));
       res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      const reason = (text: string) =>
+        `data: ${JSON.stringify({ id: 'cmpl-test', object: 'chat.completion.chunk', created: 1, model: 'frame-test-model', choices: [{ index: 0, delta: { reasoning_content: text }, finish_reason: null }] })}\n\n`;
+      res.write(reason('First I inspect the sources. '));
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      res.write(reason('Then I compare the findings.'));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       res.write(
         `data: ${JSON.stringify({ id: 'cmpl-test', object: 'chat.completion.chunk', created: 1, model: 'frame-test-model', choices: [{ index: 0, delta: { role: 'assistant', content: 'Hello from the local test model.' }, finish_reason: null }] })}\n\n`,
       );
@@ -192,7 +224,10 @@ test(
       );
       assert.equal((await f.auth('/settings', 'PUT', f.store.settings())).statusCode, 409);
       let sawStream = false;
+      const thinking: string[] = [];
       f.runner.on(c.id, () => {
+        for (const message of f.runner.snapshot(c.id).messages)
+          if (message.thinkingActive) thinking.push(message.thinking || '');
         if (
           f.runner.snapshot(c.id).running &&
           f.runner.snapshot(c.id).messages.some((m) => m.text.includes('Hello from'))
@@ -205,13 +240,23 @@ test(
       assert.equal(snapshot.status, 'completed');
       assert.equal(requests.length, 1);
       assert(sawStream);
+      assert(thinking.some((t) => t.includes('First I inspect')));
+      assert(thinking.some((t) => t.includes('Then I compare')));
+      assert(!snapshot.messages.some((m) => m.thinkingActive));
+      assert(
+        readHistory(f.store.sessionFile(c.id)).some((m) => m.thinking?.includes('Then I compare')),
+      );
       assert(
         snapshot.messages.some(
           (m) => m.role === 'assistant' && m.text.includes('local test model'),
         ),
       );
       assert.equal(requests[0].model, 'frame-test-model');
-      assert(!requests[0].tools?.length);
+      assert.deepEqual(requests[0].tools.map((t: any) => t.function.name).sort(), [
+        'propose_knowledge',
+        'read_knowledge',
+        'search_knowledge',
+      ]);
       const second = await f.auth(`/conversations/${c.id}/messages`, 'POST', {
         requestId: randomUUID(),
         text: 'Continue',
@@ -375,6 +420,356 @@ test(
         assert.equal(f.runner.snapshot(failed.id).status, 'failed');
         assert(f.runner.snapshot(failed.id).error);
       }
+    } finally {
+      await f.cleanup();
+      mock.closeAllConnections();
+      await new Promise<void>((resolve) => mock.close(() => resolve()));
+    }
+  },
+);
+
+test('uploads, OKF export, reviewed conversation updates, revisions, and project boundaries', async () => {
+  const f = await fixture();
+  try {
+    const p = f.store.createProject({
+      name: 'Knowledge test',
+      instructions: '',
+      toolsEnabled: false,
+    });
+    const other = f.store.createProject({ name: 'Other', instructions: '', toolsEnabled: false });
+    const upload = (name: string, content: Buffer, cookie = f.token) =>
+      f.app.inject({
+        method: 'POST',
+        url: `/api/projects/${p.id}/documents`,
+        headers: {
+          host: '127.0.0.1:3000',
+          origin,
+          cookie,
+          'content-type': 'multipart/form-data; boundary=frame-test',
+        },
+        payload: Buffer.concat([
+          Buffer.from(
+            `--frame-test\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: application/octet-stream\r\n\r\n`,
+          ),
+          content,
+          Buffer.from('\r\n--frame-test--\r\n'),
+        ]),
+      });
+    assert.equal((await upload('private.md', Buffer.from('x'), '')).statusCode, 401);
+    assert.equal((await upload('payload.exe', Buffer.from('x'))).statusCode, 400);
+    assert.equal((await upload('bad.txt', Buffer.from([255, 255]))).statusCode, 400);
+    assert.equal((await upload('not.pdf', Buffer.from('not a PDF'))).statusCode, 400);
+    const result = await upload(
+      'runbook.md',
+      Buffer.from('# Runbook\n\nThe backup window is 02:00 UTC.'),
+    );
+    assert.equal(result.statusCode, 200, result.body);
+    const source = result.json();
+    assert.equal((await f.auth(`/projects/${other.id}/documents/${source.id}`)).statusCode, 404);
+    assert.match((await f.auth(`/projects/${p.id}/documents/${source.id}/download`)).body, /02:00/);
+    assert.equal(
+      (
+        await f.auth(`/projects/${p.id}/documents/${source.id}`, 'PUT', {
+          text: 'Overwrite source',
+          revision: source.revision,
+        })
+      ).statusCode,
+      400,
+    );
+    const chat = f.store.createConversation(p.id);
+    const history = [
+      { type: 'session', id: 'session-test', version: 3 },
+      {
+        type: 'custom_message',
+        id: 'attachment',
+        parentId: null,
+        customType: 'frame_documents',
+        display: false,
+        content: 'private excerpt',
+        details: { documents: [{ id: source.id, name: 'runbook.md' }] },
+      },
+      {
+        type: 'message',
+        id: 'question',
+        parentId: 'attachment',
+        message: { role: 'user', content: 'What is the backup window?' },
+      },
+      {
+        type: 'message',
+        id: 'answer',
+        parentId: 'question',
+        message: {
+          role: 'assistant',
+          content: [
+            { type: 'thinking', thinking: 'Private model reasoning' },
+            { type: 'text', text: 'Backups run at 02:00 UTC.' },
+          ],
+        },
+      },
+    ];
+    await writeFile(
+      f.store.sessionFile(chat.id),
+      history.map((e) => JSON.stringify(e)).join('\n') + '\n',
+    );
+    const preview = (await f.auth(`/conversations/${chat.id}/knowledge/1`)).json();
+    assert.equal(preview.text, 'Backups run at 02:00 UTC.');
+    assert(!JSON.stringify(preview).includes('Private model reasoning'));
+    const saved = await f.auth(`/conversations/${chat.id}/knowledge/1`, 'POST', {
+      ...preview,
+      title: 'Backup policy',
+      text: `# Backup policy\n\nBackups run at 02:00 UTC. See [runbook](/${source.id}.md).`,
+    });
+    assert.equal(saved.statusCode, 200, saved.body);
+    const note = saved.json();
+    assert.equal(f.wiki.metadata(note.id).verified, undefined, 'Saving is not verification');
+    const text = '# Backup policy\n\nReview completed against the runbook.';
+    const edited = await f.auth(`/projects/${p.id}/documents/${note.id}`, 'PUT', {
+      text,
+      revision: note.revision,
+      verified: true,
+    });
+    assert.equal(edited.statusCode, 200, edited.body);
+    assert.equal(f.wiki.metadata(note.id).verified[0].by, 'human:administrator');
+    assert.equal(
+      (
+        await f.auth(`/projects/${p.id}/documents/${note.id}`, 'PUT', {
+          text: 'Stale overwrite',
+          revision: note.revision,
+        })
+      ).statusCode,
+      409,
+    );
+    assert.equal(
+      (await f.auth(`/projects/${p.id}/documents/${note.id}/revisions`)).json().length,
+      2,
+    );
+    const exportResult = await f.auth(`/projects/${p.id}/knowledge/export`);
+    assert.equal(exportResult.statusCode, 200, exportResult.body.slice(0, 100));
+    const files = unzipSync(exportResult.rawPayload);
+    const index = strFromU8(files['wiki/index.md']!);
+    assert.match(index, /okf_version: "0.2"/);
+    assert.match(strFromU8(files['wiki/log.md']!), /## \d{4}-\d{2}-\d{2}/);
+    for (const [filename, bytes] of Object.entries(files))
+      if (filename.startsWith('wiki/') && !/\/(index|log)\.md$/.test(filename)) {
+        const match = /^---\n([\s\S]*?)\n---/.exec(strFromU8(bytes));
+        assert(match, filename);
+        const metadata = YAML.parse(match[1]!);
+        assert.equal(typeof metadata.type, 'string');
+        assert(metadata.sources.every((s: any) => typeof s.resource === 'string'));
+      }
+    assert(Object.keys(files).some((n) => n.includes('evidence-')));
+    assert(
+      !Object.entries(files).some(
+        ([name, bytes]) =>
+          name.includes('evidence-') && strFromU8(bytes).includes('Private model reasoning'),
+      ),
+    );
+    f.knowledge.locks.add(p.id);
+    assert.equal(
+      (
+        await f.auth(`/projects/${p.id}/wiki`, 'POST', {
+          name: 'Blocked',
+          text: 'No concurrent changes',
+        })
+      ).statusCode,
+      409,
+    );
+    f.knowledge.locks.delete(p.id);
+    await mkdir(path.join(f.store.projectPath(other.id), 'outside'));
+    await symlink(
+      path.join(f.store.projectPath(other.id), 'outside'),
+      path.join(f.store.projectPath(other.id), 'knowledge'),
+    );
+    assert.equal(
+      (
+        await f.auth(`/projects/${other.id}/wiki`, 'POST', {
+          name: 'Escape',
+          text: 'Must not write through symlink',
+        })
+      ).statusCode,
+      409,
+    );
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test(
+  'managed Python generates complete PDF/DOCX artifacts and extracts uploads offline',
+  { skip: !process.env.FRAME_PYTHON },
+  async () => {
+    const f = await fixture();
+    try {
+      assert.equal((await f.python.status()).state, 'ready');
+      const p = f.store.createProject({ name: 'Documents', instructions: '', toolsEnabled: true });
+      const chat = f.store.createConversation(p.id);
+      const directory = f.store.artifacts(chat);
+      await mkdir(directory, { recursive: true });
+      for (const format of ['pdf', 'docx']) {
+        const value = await documentCommand(f.python.executable, {
+          command: 'generate',
+          directory,
+          format,
+          filename: `report-${format}`,
+          title: 'Frame verification report',
+          markdown:
+            '# Findings\n\nBackup checks passed.\n\n- Review the runbook\n- Keep provenance',
+        });
+        assert(value.bytes > 1000);
+        const bytes = await readFile(path.join(directory, value.name));
+        const upload = await f.knowledge.add(p.id, value.name, bytes);
+        const extracted = await f.knowledge.read(p.id, upload.id);
+        assert.match(extracted.text, /Backup checks passed/);
+        const download = await f.auth(`/conversations/${chat.id}/artifacts/${value.name}`);
+        assert.equal(download.statusCode, 200);
+        assert.deepEqual(download.rawPayload, bytes);
+        await assert.rejects(
+          documentCommand(f.python.executable, {
+            command: 'generate',
+            directory,
+            format,
+            filename: `report-${format}`,
+            title: 'Overwrite',
+            markdown: 'Must fail',
+          }),
+        );
+        assert.deepEqual(await readFile(path.join(directory, value.name)), bytes);
+      }
+      await assert.rejects(
+        documentCommand(f.python.executable, {
+          command: 'generate',
+          directory,
+          format: 'pdf',
+          filename: '../escape',
+          title: 'No',
+          markdown: 'No',
+        }),
+      );
+    } finally {
+      await f.cleanup();
+    }
+  },
+);
+
+test(
+  'SDK searches knowledge, proposes a reviewed update, and calls the Python document tool',
+  { skip: !process.env.FRAME_PYTHON, timeout: 45000 },
+  async () => {
+    const f = await fixture();
+    let calls = 0;
+    let sourceId = '';
+    let observed: any[] = [];
+    const mock = createServer(async (req, res) => {
+      let raw = '';
+      for await (const part of req) raw += part;
+      const request = JSON.parse(raw);
+      observed.push(request);
+      calls++;
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      const chunk = (delta: unknown, finish: string | null = null) =>
+        `data: ${JSON.stringify({ id: 'knowledge-test', object: 'chat.completion.chunk', created: 1, model: 'test-model', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+      const actions = [
+        { name: 'search_knowledge', args: { query: 'maintenance' } },
+        { name: 'read_knowledge', args: { id: sourceId } },
+        {
+          name: 'propose_knowledge',
+          args: {
+            title: 'Maintenance policy',
+            text: `# Maintenance policy\n\nMaintenance starts at 02:00 UTC. [Source](/${sourceId}.md).`,
+          },
+        },
+        {
+          name: 'create_document',
+          args: {
+            filename: 'maintenance',
+            title: 'Maintenance report',
+            markdown: '# Schedule\nMaintenance starts at 02:00 UTC.',
+            format: 'pdf',
+          },
+        },
+      ];
+      const action = actions[calls - 1];
+      res.end(
+        action
+          ? chunk({
+              role: 'assistant',
+              tool_calls: [
+                {
+                  index: 0,
+                  id: `call_${calls}`,
+                  type: 'function',
+                  function: { name: action.name, arguments: JSON.stringify(action.args) },
+                },
+              ],
+            }) +
+              chunk({}, 'tool_calls') +
+              'data: [DONE]\n\n'
+          : chunk({
+              role: 'assistant',
+              content: 'Your report is ready. Review the knowledge draft to save it.',
+            }) +
+              chunk({}, 'stop') +
+              'data: [DONE]\n\n',
+      );
+    });
+    await new Promise<void>((resolve) => mock.listen(0, '127.0.0.1', resolve));
+    try {
+      const p = f.store.createProject({
+        name: 'Tool workflow',
+        instructions: '',
+        toolsEnabled: true,
+      });
+      const source = await f.knowledge.add(
+        p.id,
+        'maintenance.md',
+        Buffer.from('Maintenance starts at 02:00 UTC.'),
+      );
+      sourceId = source.id;
+      await f.wiki.record(p.id, source.id);
+      const c = f.store.createConversation(p.id);
+      f.store.saveSettings({
+        ...f.store.settings(),
+        modelId: 'test-model',
+        baseUrl: `http://127.0.0.1:${(mock.address() as any).port}/v1`,
+      });
+      const started = await f.auth(`/conversations/${c.id}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: 'Read maintenance, draft a wiki note, and generate a PDF.',
+        documentIds: [source.id],
+      });
+      assert.equal(started.statusCode, 202, started.body);
+      await waitUntil(() => !f.runner.active.has(c.id));
+      assert.equal(calls, 5);
+      const snapshot = f.runner.snapshot(c.id);
+      assert.equal(snapshot.error, undefined, JSON.stringify(snapshot));
+      const toolMessages = snapshot.messages.filter((m) => m.role === 'tool');
+      assert.equal(toolMessages.length, 4);
+      assert(
+        toolMessages.every((m) => !m.failed),
+        JSON.stringify(toolMessages),
+      );
+      assert(
+        observed[2].messages.some(
+          (m: any) => m.role === 'tool' && String(m.content).includes('02:00 UTC'),
+        ),
+      );
+      assert.equal(f.knowledge.list(p.id).length, 1, 'Proposal must not mutate knowledge');
+      const proposalIndex = snapshot.messages.findIndex((m) => !!m.proposal);
+      assert(proposalIndex >= 0);
+      const preview = (await f.auth(`/conversations/${c.id}/knowledge/${proposalIndex}`)).json();
+      assert.equal(preview.title, 'Maintenance policy');
+      const save = await f.auth(
+        `/conversations/${c.id}/knowledge/${proposalIndex}`,
+        'POST',
+        preview,
+      );
+      assert.equal(save.statusCode, 200, save.body);
+      assert.equal(f.knowledge.list(p.id).length, 2);
+      assert.equal(
+        (await f.auth(`/conversations/${c.id}/artifacts/maintenance.pdf`)).statusCode,
+        200,
+      );
+      assert.equal(readHistory(f.store.sessionFile(c.id))[0]?.attachments?.[0]?.id, source.id);
     } finally {
       await f.cleanup();
       mock.closeAllConnections();

@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import staticFiles from '@fastify/static';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import { z } from 'zod';
 import { mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -9,6 +10,10 @@ import path from 'node:path';
 import type { ServerResponse } from 'node:http';
 import { Store } from './store.js';
 import { Runner } from './runner.js';
+import { PythonRuntime } from './python.js';
+import { Knowledge } from './knowledge.js';
+import { Wiki } from './wiki.js';
+import { knowledgeApi } from './knowledge-api.js';
 import {
   digest,
   equal,
@@ -56,10 +61,16 @@ export async function createApp(options: {
   const origin = new URL(options.origin).origin;
   const store = new Store(path.resolve(options.dataDir));
   const runner = new Runner(store);
+  const python = new PythonRuntime(store.root);
+  const knowledge = new Knowledge(store, python);
+  const wiki = new Wiki(knowledge);
   const streams = new Set<ServerResponse>();
   const app = Fastify({ bodyLimit: 128 * 1024, logger: false, trustProxy: false });
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
+  await app.register(multipart, {
+    limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
+  });
   const authLimit = { rateLimit: { max: 5, timeWindow: '1 minute' } };
   const publicRoutes = new Set(['/api/auth/status', '/api/auth/setup', '/api/auth/login']);
   app.setErrorHandler((error: any, _request, reply) => {
@@ -188,12 +199,10 @@ export async function createApp(options: {
           note: 'Discovery succeeded. A chat/tool test is still required.',
         };
       } catch {
-        return reply
-          .code(502)
-          .send({
-            error:
-              'Could not query the local endpoint. Check address, authentication, and llama.cpp availability.',
-          });
+        return reply.code(502).send({
+          error:
+            'Could not query the local endpoint. Check address, authentication, and llama.cpp availability.',
+        });
       }
     },
   );
@@ -227,10 +236,37 @@ export async function createApp(options: {
     '/api/conversations/:id/messages',
     async (request, reply) => {
       const id = conversationId(request.params.id);
-      const { requestId, text } = z
-        .object({ requestId: uuid, text: z.string().trim().min(1).max(32000) })
+      const { requestId, text, documentIds } = z
+        .object({
+          requestId: uuid,
+          text: z.string().trim().min(1).max(32000),
+          documentIds: z.array(uuid).max(5).default([]),
+        })
         .parse(request.body);
-      return reply.code(202).send(runner.start(id, requestId, text));
+      if (store.db.prepare('SELECT id FROM runs WHERE id=?').get(requestId))
+        return reply.code(202).send(runner.start(id, requestId, text));
+      const project = store.project(store.conversation(id)!.projectId)!;
+      return knowledge.write(project.id, async () => {
+        const documents = await knowledge.context(
+          project.id,
+          documentIds,
+          store.settings().contextWindow,
+        );
+        const runtime = project.toolsEnabled ? await python.status() : undefined;
+        const catalog = await wiki.catalog(project.id);
+        return reply
+          .code(202)
+          .send(
+            runner.start(
+              id,
+              requestId,
+              text,
+              documents,
+              runtime?.state === 'ready' ? python.executable : undefined,
+              catalog,
+            ),
+          );
+      });
     },
   );
   app.post<{ Params: { id: string } }>('/api/conversations/:id/stop', async (request) => {
@@ -311,15 +347,17 @@ export async function createApp(options: {
       }
     },
   );
+  knowledgeApi(app, knowledge, wiki, runner);
   if (options.webDir && existsSync(options.webDir)) {
     await app.register(staticFiles, { root: options.webDir, wildcard: false });
   }
   app.addHook('preClose', async () => {
     for (const stream of streams) stream.end();
     await runner.close();
+    await python.close();
   });
   app.addHook('onClose', async () => {
     store.close();
   });
-  return { app, store, runner };
+  return { app, store, runner, knowledge, wiki, python };
 }

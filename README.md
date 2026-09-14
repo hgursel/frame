@@ -4,9 +4,9 @@
 
 Frame brings local models, project context, conversations, and agent tools into a browser-based workspace. It embeds the Pi SDK and connects to a llama.cpp server you operate. No separately installed Pi CLI, cloud-provider setup, or cloud fallback.
 
-## Status: 0.1 foundation scaffold
+## Status: 0.2 — single-administrator V1
 
-Runnable, single-administrator foundation. **Not a hardened multi-user organizational release.** Do not expose it directly to the Internet or use it as a security boundary around confidential systems.
+Runnable, single-administrator application. Multi-user support is planned for **V2**. Trusted host tools run with the Frame Linux account's permissions; use a dedicated account and authenticated private access.
 
 ### Implemented
 
@@ -14,7 +14,11 @@ Runnable, single-administrator foundation. **Not a hardened multi-user organizat
 - Browser settings for one local endpoint, model ID, context/output limits, optional endpoint token, and organization instructions.
 - Test saved endpoint discovery through `/v1/models` (not a model-quality or tool-capability test).
 - Create/edit projects with instructions and an explicit trusted-tools toggle; managed project directories.
-- Streaming text chat, Markdown/code rendering, tool-result cards, stop generation, reconnect-safe snapshots.
+- Streaming text and model reasoning, expandable thinking with an active animation, Markdown/code rendering, tool-result cards, stop generation, and reconnect-safe snapshots.
+- Project uploads: Markdown, TXT, CSV, PDF, and DOCX; preserved originals and bounded text extraction.
+- Markdown knowledge pages, revision history, conflict checks, and portable **Open Knowledge Format 0.2** export with provenance, index, and change log.
+- Read-only knowledge search/reading available in conversations; model-proposed drafts and **Useful → Save to knowledge** for answers and tool results. Review a new page or update an existing page before saving. Verification is a separate explicit action.
+- Optional managed Python installation from Settings, with tested PDF/DOCX generation through `create_document` and atomic completed-file publication.
 - Pi-native persisted JSONL history; fresh SDK worker per task resumes the exact conversation file.
 - Request-ID deduplication, one active task per project, two tasks maximum across projects, 10-minute task limit.
 - Authenticated, download-only artifacts from each conversation’s output folder.
@@ -23,16 +27,15 @@ Runnable, single-administrator foundation. **Not a hardened multi-user organizat
 ### Planned, not implemented
 
 - MCP connection management, trusted skill installation, and extension dialog bridging.
-- Document uploads, wiki editor/browser, and tested Python document-generation environments.
 - Existing external-folder registration; V1 creates managed folders only.
 - Model/reasoning presets, richer diagnostics, administrator credential rotation, and packaged installer.
-- Multi-user identity, project authorization, audit events, and isolated execution.
+- V2: multi-user identity, project authorization, audit events, and isolated execution.
 
 See [the roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). No placeholder control pretends these features work.
 
 ## Quick start
 
-Target platform: **Ubuntu 26.04, Node.js 24 LTS, npm**. The agent and tools run on this server, not in your browser. Python, fonts, and skill-specific binaries are separate prerequisites when those tools need them. Frame does not install llama.cpp or download models.
+Target platform: **Ubuntu 26.04, Node.js 24 LTS, npm**. The agent and tools run on this server, not in your browser. PDF/DOCX features need Python 3 and `python3-venv`; install their managed environment from **Settings → Document tools**. Frame does not install llama.cpp or download models.
 
 ```bash
 git clone https://github.com/hgursel/frame.git
@@ -49,6 +52,9 @@ Open **http://127.0.0.1:3000**. Use the setup token printed by the server to cre
 3. Save, then **Test saved connection**. Discovery does not prove tool calling works.
 4. Create a project. Leave tools disabled for the first chat test.
 5. Send a prompt. Enable trusted tools only after reading the warning and confirming the model’s chat template supports tool calling.
+6. Open **Knowledge** to upload sources or create Markdown notes. Attach selected files to a prompt, or ask Frame to search the project knowledge. Ask it to synthesize a source into a knowledge draft, then review and save the result.
+
+See [the knowledge workflow](docs/KNOWLEDGE.md) for OKF structure, conversation updates, Python setup, and current limits.
 
 Endpoint tokens stay server-side. An empty password input in model settings preserves the stored token; the explicit remove checkbox clears it. A dummy non-secret token is used internally by the compatibility client for endpoints with no authentication.
 
@@ -56,7 +62,7 @@ Endpoint tokens stay server-side. An empty password input in model settings pres
 
 Frame uses Pi’s `openai-completions` compatibility adapter for llama.cpp’s `/v1/chat/completions`. Only loopback or RFC1918 private IPv4 endpoints are accepted; `localhost` is normalized to `127.0.0.1`. Literal IPv6 loopback is also supported. Arbitrary DNS names, public IPs, metadata addresses, URL credentials, and redirects are rejected. Internal DNS and other private IPv6 ranges are deferred.
 
-No reasoning-effort parameter or image input is exposed yet. A model may still generate its own reasoning text according to its llama.cpp template. Context configuration in Frame does **not** resize llama.cpp’s KV cache. Choose a tool-capable model and test your template separately.
+The thinking panel displays reasoning supplied by your model: structured `reasoning_content`/`reasoning`/`reasoning_text` through Pi, or a leading `<think>…</think>` block in ordinary text. It does not invent thinking or force the model to produce it. Expand the panel while generating to see updates; collapsed headers animate until reasoning finishes. Completed thinking persists with native history. No reasoning-effort control or image input is exposed yet. Context configuration in Frame does **not** resize llama.cpp’s KV cache. Knowledge tools and document generation require a tool-capable model/template.
 
 ## Data and execution
 
@@ -70,10 +76,13 @@ The default data directory is `./data`, excluded from Git:
 | `projects/<project-id>/`                           | Managed project workspace                                                                     |
 | `projects/<project-id>/outputs/<conversation-id>/` | Flat user-facing download directory                                                           |
 | `agent/<conversation-id>/`                         | Worker-local Pi runtime data                                                                  |
+| `projects/<project-id>/knowledge/<document-id>/`   | Original files, extracted/editable content, conversation evidence                             |
+| `projects/<project-id>/knowledge/wiki/`            | Generated OKF bundle: concept pages, index, and log                                           |
+| `python/venv/`                                     | Optional managed document runtime                                                             |
 
 Pi is a dependency with an exact pinned version and lockfile. Frame explicitly disables install telemetry and catalog network refreshes. Project extensions, packages, ambient skills, and arbitrary `AGENTS.md` files are **not automatically discovered** in this foundation. Only the instructions saved through Frame are loaded. MCP/skill integration must deliberately add resource loading and approvals later.
 
-Trusted tools include filesystem read/write/edit/search and shell execution. **A project directory, a worker process, and a prompt instruction are not a sandbox.** Trusted tools can reach every file, network service, and credential accessible to the Frame Linux account. Keep tools disabled for chat-only use; use a dedicated non-root account and least privilege. Model transport restrictions do not restrict shell/Python network access.
+Every project has narrowly scoped `search_knowledge`, `read_knowledge`, and `propose_knowledge` tools; proposals do not write. Trusted host tools add filesystem read/write/edit/search, shell execution, and `create_document` when Python is ready. **A project directory, a worker process, and a prompt instruction are not a sandbox.** Trusted tools can reach every file, network service, and credential accessible to the Frame Linux account. Keep host tools disabled when you only need chat and knowledge. Model transport restrictions do not restrict shell/Python network access.
 
 Downloads reject traversal, symlinks, multi-linked files, and files larger than 100 MiB. They are served as attachments, never executed as HTML in Frame’s origin. These API checks cannot contain a malicious agent with host-level write access.
 
@@ -94,6 +103,8 @@ npm run dev
 
 Tests use local temporary directories and a mock OpenAI-compatible HTTP server, including a real Pi SDK worker. They do not require a GPU or spend API credits. **A test pass is not verification against your real llama.cpp/model configuration.**
 
+For Python integration coverage, run `npm run python:setup`, then run tests with `FRAME_PYTHON` set to the absolute path of `data/python/venv/bin/python`. CI installs that runtime and runs the PDF/DOCX and complete SDK tool workflow tests. Without `FRAME_PYTHON`, those two tests are explicitly skipped.
+
 For the optional browser smoke test, run `npx playwright install chromium --only-shell`, then `npm run build && npm run test:ui`. The browser binary is a development dependency, not needed to run Frame.
 
 ## References
@@ -101,5 +112,7 @@ For the optional browser smoke test, run `npx playwright install chromium --only
 - [Pi SDK](https://pi.dev/docs/latest/sdk)
 - [Pi security model](https://pi.dev/docs/latest/security)
 - [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server)
+- [Google Open Knowledge Format 0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md)
+- [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 
 No license for Frame’s source has been selected yet. Dependency licenses remain applicable.

@@ -1,8 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Markdown from 'react-markdown';
-import type { ChatSnapshot, Conversation, Project, PublicSettings } from '../shared/types.js';
+import type {
+  ChatSnapshot,
+  Conversation,
+  Project,
+  PublicSettings,
+  KnowledgeDocument,
+} from '../shared/types.js';
 import { api } from './api.js';
+import { Thinking } from './Thinking.js';
+import { KnowledgePanel, SaveKnowledge, DocumentTools } from './Knowledge.js';
 import './style.css';
 
 function Logo() {
@@ -130,7 +138,30 @@ function Workspace() {
   const [chatId, setChatId] = useState('');
   const currentChat = useRef(chatId);
   currentChat.current = chatId;
-  const [page, setPage] = useState<'chat' | 'settings' | 'project'>('chat');
+  const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
+  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
+  const [attached, setAttached] = useState<string[]>([]);
+  const [saveIndex, setSaveIndex] = useState<number>();
+  const refreshDocuments = async () => {
+    if (projectId) setDocuments(await api<KnowledgeDocument[]>(`/projects/${projectId}/documents`));
+  };
+  useEffect(() => {
+    let live = true;
+    setAttached([]);
+    setDocuments([]);
+    setSaveIndex(undefined);
+    if (projectId)
+      void api<KnowledgeDocument[]>(`/projects/${projectId}/documents`)
+        .then((d) => {
+          if (live) setDocuments(d);
+        })
+        .catch((e) => {
+          if (live) setError(e.message);
+        });
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
   const [snapshot, setSnapshot] = useState<ChatSnapshot>({
     messages: [],
     running: false,
@@ -142,7 +173,12 @@ function Workspace() {
   const [connected, setConnected] = useState(false);
   const [artifacts, setArtifacts] = useState<{ name: string }[]>([]);
   const [settings, setSettings] = useState<PublicSettings>();
-  const [pending, setPending] = useState<{ id: string; chatId: string; text: string }>();
+  const [pending, setPending] = useState<{
+    id: string;
+    chatId: string;
+    text: string;
+    documentIds: string[];
+  }>();
   const project = projects.find((p) => p.id === projectId);
   const refresh = async () => {
     const [p, c, s] = await Promise.all([
@@ -204,14 +240,21 @@ function Workspace() {
     try {
       const id = pending?.chatId || chatId || (await newChat());
       if (!id) return;
-      const request = pending || { id: crypto.randomUUID(), chatId: id, text: draft.trim() };
+      const request = pending || {
+        id: crypto.randomUUID(),
+        chatId: id,
+        text: draft.trim(),
+        documentIds: attached,
+      };
       setPending(request);
       await api(`/conversations/${id}/messages`, 'POST', {
         requestId: request.id,
         text: request.text,
+        documentIds: request.documentIds,
       });
       setPending(undefined);
       setDraft('');
+      setAttached([]);
       const updated = await api<ChatSnapshot>(`/conversations/${id}`);
       if (currentChat.current === id) setSnapshot(updated);
     } catch (e) {
@@ -311,12 +354,42 @@ function Workspace() {
             {page === 'settings' ? 'Settings' : project?.name || 'Getting started'}
           </div>
           <div className="header-actions">
+            {project && (
+              <>
+                <button
+                  className={page === 'chat' ? 'active-tab' : ''}
+                  onClick={() => setPage('chat')}
+                >
+                  Chat
+                </button>
+                <button
+                  className={page === 'knowledge' ? 'active-tab' : ''}
+                  onClick={() => {
+                    setPage('knowledge');
+                    void refreshDocuments().catch((e) => setError(e.message));
+                  }}
+                >
+                  Knowledge
+                </button>
+              </>
+            )}
             {project && <button onClick={() => setPage('project')}>Project settings</button>}
             <span className="model-pill">{settings?.modelId || 'Model not configured'}</span>
           </div>
         </header>
         {page === 'settings' && settings ? (
           <Settings initial={settings} onSaved={refresh} />
+        ) : page === 'knowledge' && project ? (
+          <KnowledgePanel
+            key={projectId}
+            projectId={projectId}
+            documents={documents}
+            refresh={refreshDocuments}
+            onAttach={(id) => {
+              setAttached((prev) => [...new Set([...prev, id])].slice(0, 5));
+              setPage('chat');
+            }}
+          />
         ) : page === 'project' ? (
           <ProjectForm
             key={project?.id || 'new'}
@@ -377,10 +450,23 @@ function Workspace() {
                         {m.failed ? '×' : '✓'} {m.name || 'Tool result'}
                       </summary>
                       <pre>{m.text}</pre>
+                      {!snapshot.running && (
+                        <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
+                          {m.proposal ? 'Review knowledge draft' : 'Save useful result'}
+                        </button>
+                      )}
                     </details>
                   ) : (
                     <article key={i} className={`message ${m.role}`}>
                       <div className="message-author">{m.role === 'user' ? 'YOU' : 'FRAME'}</div>
+                      <Thinking text={m.thinking} active={m.thinkingActive && snapshot.running} />
+                      {!!m.attachments?.length && (
+                        <div className="attachment-chips">
+                          {m.attachments.map((a) => (
+                            <span key={a.id}>▤ {a.name}</span>
+                          ))}
+                        </div>
+                      )}
                       <Markdown
                         components={{
                           img: () => <span>[Image omitted; use artifact downloads]</span>,
@@ -393,6 +479,11 @@ function Workspace() {
                       >
                         {m.text}
                       </Markdown>
+                      {m.role === 'assistant' && !!m.text && !snapshot.running && (
+                        <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
+                          ♡ Useful · Save to knowledge
+                        </button>
+                      )}
                     </article>
                   ),
                 )}
@@ -423,7 +514,7 @@ function Workspace() {
                     ? 'Reconnecting… Your task continues on the server.'
                     : project?.toolsEnabled
                       ? 'Trusted tools enabled · Host-account permissions'
-                      : 'Chat mode · Tools disabled'}
+                      : 'Chat mode · Project knowledge available · Host tools disabled'}
               </div>
               {error && (
                 <p className="error" role="alert">
@@ -437,6 +528,36 @@ function Workspace() {
                   void submit();
                 }}
               >
+                {!!documents.length && (
+                  <details className="attachment-picker">
+                    <summary>
+                      ▤ Attach documents {attached.length ? `(${attached.length}/5)` : ''}
+                    </summary>
+                    <div>
+                      {documents.map((d) => (
+                        <label key={d.id}>
+                          <input
+                            type="checkbox"
+                            checked={attached.includes(d.id)}
+                            disabled={
+                              (!attached.includes(d.id) && attached.length >= 5) ||
+                              !!pending ||
+                              snapshot.running
+                            }
+                            onChange={(e) =>
+                              setAttached((prev) =>
+                                e.target.checked
+                                  ? [...prev, d.id]
+                                  : prev.filter((id) => id !== d.id),
+                              )
+                            }
+                          />
+                          {d.name}
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
                 <textarea
                   aria-label="Message Frame"
                   placeholder="Ask Frame anything about your work…"
@@ -489,6 +610,17 @@ function Workspace() {
           </>
         )}
       </main>
+      {saveIndex !== undefined && chatId && (
+        <SaveKnowledge
+          key={`${chatId}-${saveIndex}`}
+          projectId={projectId}
+          chatId={chatId}
+          index={saveIndex}
+          documents={documents}
+          onClose={() => setSaveIndex(undefined)}
+          onSaved={refreshDocuments}
+        />
+      )}
     </div>
   );
 }
@@ -645,11 +777,12 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           </p>
         )}
       </form>
+      <DocumentTools />
       <div className="scope-note">
-        <strong>Foundation release · Single administrator</strong>
+        <strong>V1 · Single administrator</strong>
         <p>
-          Cloud providers, model downloads, MCP management, skill installation, file uploads, and
-          multi-user access are not included yet. Local models must already be running in llama.cpp.
+          Multi-user access is planned for V2. MCP management and general skill installation are
+          upcoming. Local models must already be running in llama.cpp.
         </p>
       </div>
     </section>

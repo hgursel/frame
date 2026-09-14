@@ -4,14 +4,24 @@
 
 Implemented: local endpoint setup, administrator sign-in, managed projects, chat-only/trusted-tool modes, SDK worker lifecycle, streaming, persisted history, and downloads. Validate against a real llama.cpp build/model before internal trial use.
 
-## Next — Complete the local workflow
+## 0.2 — Knowledge and document workflow (implemented)
+
+- Streamed reasoning with expandable text and a collapsed activity animation.
+- Project document uploads, preserved sources, bounded PDF/DOCX extraction, Markdown notes and revision history.
+- OKF 0.2 concept files, provenance, cross-links, index/log, and bundle export.
+- Conversation knowledge search/read, model draft proposals, and reviewed saves/updates from useful answers and tool results.
+- Explicit Python environment installation, tested PDF/DOCX generation, and completed-artifact publication.
+
+## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
 2. **MCP and skills:** choose one maintained MCP integration or narrow adapter; support selected transports, secret references, connectivity tests, explicit trust, project scoping, and cleanup. Install trusted skills only after displaying what code/dependencies will run. Bridge extension dialogs and cancel unsupported interactions. Do not silently auto-approve.
-3. **Knowledge and documents:** bounded uploads, read-only wiki browser then editing with conflict detection, file-type policy, tested Python virtual environment for document skills, atomic artifact publication, and richer tool-call presentation.
-4. **Packaging and diagnostics:** repeatable Ubuntu installer/uninstaller, dependency checks, sanitized diagnostics, admin password/token rotation, backup/restore commands, UI smoke tests and signed versioned releases. Avoid unattended self-updates.
+3. **Knowledge refinements:** full OKF bundle import/round-trip editing, richer source metadata controls, wiki linting for contradictions/broken links, and optional ingestion automation. V1 already supports user-requested synthesis with reviewed proposals; no unattended wiki rewrite engine.
+4. **Packaging and diagnostics:** repeatable Ubuntu installer/uninstaller, dependency checks, sanitized diagnostics, admin password/token rotation, backup/restore commands, and signed versioned releases. Avoid unattended self-updates.
 
-## Before organizational multi-user deployment
+## V2 — Multi-user organizational deployment
+
+Deferred from V1 at the owner's request. V1 retains one administrator.
 
 - Authentication strategy (e.g. organization OIDC), user/session lifecycle, per-project authorization on every endpoint/event/file.
 - OS-level worker isolation, credential and egress boundaries, resource limits; decide how shared files and simultaneous writes behave.

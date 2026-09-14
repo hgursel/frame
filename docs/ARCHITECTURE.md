@@ -16,7 +16,7 @@ SDK initialization explicitly selects `frame-local`; no model fallback is intent
 
 ## Persistence and reconnect
 
-SQLite stores metadata and request IDs, not a second conversation history. Pi JSONL is authoritative. `history.ts` is a read-only, bounded UI projection that follows native parent IDs and omits reasoning blocks. No branching UI is implemented.
+SQLite stores metadata and request IDs, not a second conversation history. Pi JSONL is authoritative. `history.ts` is a read-only, bounded UI projection that follows native parent IDs and separates reasoning from final text. Only the active assistant's reasoning animates. Native custom messages preserve selected-document context and attachment provenance. No branching UI is implemented.
 
 POST starts a task independently of its SSE subscribers. Events are complete UI snapshots, not fragile token deltas: a reconnect gets the current snapshot immediately. There is no event-replay database. Slow clients are disconnected when buffered output exceeds the limit; they reconnect to a current snapshot. Native history remains on disk after worker exit.
 
@@ -36,7 +36,17 @@ Settings changes are blocked while tasks are active, then apply to future tasks,
 - Password/setup routes are rate-limited. Reverse proxy configuration must preserve the expected Host header.
 - Endpoint secrets are owner-readable, not encrypted at rest. Use filesystem/disk encryption and a dedicated account when required. No secret is returned by the settings API.
 - Generated HTML is downloadable only. Markdown does not render raw HTML, and remote images are omitted. Opening links is an explicit user action.
-- Chat-only projects have no tools. Trusted-tool projects grant unsandboxed host-account execution; this is intentionally prominent in the UI.
+- Chat-mode projects have read-only knowledge search/reading and a non-writing proposal tool. Trusted-tool projects additionally grant unsandboxed host-account execution; this is intentionally prominent in the UI.
 - Arbitrary third-party extensions are disabled until an explicit trust, lifecycle, and web-dialog design is implemented.
 
 No tenants, RBAC placeholders, Redis, vector store, generic provider/plugin framework, or custom permission DSL. Add those only to satisfy a concrete requirement and tests.
+
+## Knowledge and documents
+
+Original uploads and bounded extracted text live in managed document directories. Curated notes are edited through Frame. SQLite stores document metadata and saved note revisions; `Wiki` produces a portable OKF 0.2 projection with frontmatter, index, newest-first change log, and source links. The exported archive also carries original files and captured conversation evidence. The `wiki/` subdirectory is the conformant bundle; sibling directories hold its referenced source assets.
+
+Each task receives a project-scoped snapshot for bounded search/read tools. It does not receive the whole corpus in the model context. Explicit attachments are stored as native Pi custom messages before the prompt. The proposal tool returns structured draft details in the native tool result and makes no filesystem changes. A browser save validates the completed source response, the project, and the target revision before applying a reviewed update. A useful response is unverified unless the user separately confirms checking it against sources. Conversation evidence excludes model reasoning.
+
+Knowledge changes and uploads take the project lock and are rejected while that project runs. Exported OKF files are generated projections; edit through the web UI, not those generated files. Host tools can bypass application ownership conventions, so this is not an authorization boundary against a hostile trusted agent.
+
+Python installs only after an explicit UI/CLI action into an app-owned venv. Pinned extraction/generation packages run without model/network calls. Installer-only proxy/index environment variables support organization package mirrors. Parsing has input, output, CPU, memory and time bounds. PDF/DOCX publication links a completed temporary file into its final name without overwriting an existing artifact. General shell scripts remain subject to host permissions and may have their own network behavior.
