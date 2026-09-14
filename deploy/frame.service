@@ -1,0 +1,27 @@
+[Unit]
+Description=Frame local AI workspace
+After=network.target
+
+[Service]
+Type=simple
+User=frame
+Group=frame
+WorkingDirectory=/opt/frame
+StateDirectory=frame
+StateDirectoryMode=0700
+Environment=NODE_ENV=production
+Environment=FRAME_DATA_DIR=/var/lib/frame
+Environment=FRAME_HOST=127.0.0.1
+Environment=FRAME_PORT=3000
+Environment=FRAME_ORIGIN=http://127.0.0.1:3000
+ExecStart=/usr/bin/node /opt/frame/dist/server/index.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+TimeoutStopSec=15
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target
