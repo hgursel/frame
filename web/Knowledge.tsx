@@ -322,7 +322,7 @@ export function KnowledgePanel({
                     )
                       .then((value) => { if (request === selectionRequest.current) setVersions(value); })
                       .catch((e) => { if (request === selectionRequest.current) setError(e.message); });
-                  }
+                  }}
                 >
                   History
                 </button>
