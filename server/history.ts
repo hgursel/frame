@@ -51,6 +51,7 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
           attachments: attached,
           proposal:
             m.role === 'toolResult' ? (m.details as any)?.frameKnowledgeProposal : undefined,
+          sqlResult: m.role === 'toolResult' ? (m.details as any)?.sqlResult : undefined,
           knowledgeSourceId:
             m.role === 'toolResult' ? (m.details as any)?.knowledgeSourceId : undefined,
         },

@@ -1,3 +1,4 @@
+import type { SqlApproval, SqlResult } from './plugins.js';
 export interface ModelSettings {
   baseUrl: string;
   modelId: string;
@@ -36,11 +37,13 @@ export interface DisplayMessage {
   attachments?: { id: string; name: string }[];
   proposal?: { title: string; text: string; targetId?: string; revision?: string };
   knowledgeSourceId?: string;
+  sqlResult?: SqlResult;
 }
 export interface ChatSnapshot {
   /** Monotonic server observation order; HTTP and SSE share this sequence. */
   revision?: number;
   runId?: string;
+  sqlApproval?: SqlApproval;
   messages: DisplayMessage[];
   running: boolean;
   status: string;
@@ -67,6 +70,7 @@ export interface ChatMetrics {
 }
 export interface WorkerInput {
   operation?: 'prompt' | 'compact';
+  mssql?: { databases: string[] };
   cwd: string;
   agentDir: string;
   sessionFile: string;
@@ -94,6 +98,7 @@ export interface DocumentRuntimeStatus {
   message: string;
 }
 export type WorkerOutput =
+  | { type: 'plugin_call'; id: string; action: string; args: unknown }
   | { type: 'snapshot'; messages: DisplayMessage[]; status: string; metrics: ChatMetrics }
   | { type: 'done'; error?: string }
   | { type: 'error'; error: string };

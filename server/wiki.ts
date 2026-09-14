@@ -8,6 +8,7 @@ import { openArtifact } from './security.js';
 
 const label = (text: string) => text.replace(/[\[\]<>\r\n]/g, '');
 export class Wiki {
+  schemaFiles?: (projectId: string) => Record<string, string>;
   constructor(readonly knowledge: Knowledge) {
     knowledge.store.db.exec(
       'CREATE TABLE IF NOT EXISTS knowledge_revisions (id TEXT PRIMARY KEY, documentId TEXT NOT NULL, projectId TEXT NOT NULL, at TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT NOT NULL)',
@@ -115,34 +116,61 @@ export class Wiki {
   async remove(projectId: string, id: string, revision: string) {
     const doc = await this.knowledge.read(projectId, id);
     if (doc.revision !== revision)
-      throw Object.assign(new Error('This document changed. Reopen it before removing it.'), { statusCode: 409 });
+      throw Object.assign(new Error('This document changed. Reopen it before removing it.'), {
+        statusCode: 409,
+      });
     const directory = await this.knowledge.checkedDirectory(doc);
     const root = await this.knowledge.folder(projectId);
     const wikiDir = await this.knowledge.folder(projectId, 'wiki');
     const staged = path.join(root, '.removing-' + randomUUID());
     const db = this.knowledge.store.db;
-    const original = db.prepare('SELECT * FROM documents WHERE id=? AND projectId=?').get(id, projectId) as Record<string, any>;
-    const revisions = db.prepare('SELECT * FROM knowledge_revisions WHERE documentId=? AND projectId=?').all(id, projectId) as Record<string, any>[];
+    const original = db
+      .prepare('SELECT * FROM documents WHERE id=? AND projectId=?')
+      .get(id, projectId) as Record<string, any>;
+    const revisions = db
+      .prepare('SELECT * FROM knowledge_revisions WHERE documentId=? AND projectId=?')
+      .all(id, projectId) as Record<string, any>[];
     await rename(directory, staged);
     let committed = false;
     try {
       db.exec('BEGIN IMMEDIATE');
       try {
-        db.prepare('DELETE FROM knowledge_revisions WHERE documentId=? AND projectId=?').run(id, projectId);
+        db.prepare('DELETE FROM knowledge_revisions WHERE documentId=? AND projectId=?').run(
+          id,
+          projectId,
+        );
         db.prepare('DELETE FROM documents WHERE id=? AND projectId=?').run(id, projectId);
-        db.exec('COMMIT'); committed = true;
-      } catch (error) { db.exec('ROLLBACK'); throw error; }
+        db.exec('COMMIT');
+        committed = true;
+      } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+      }
       await this.sync(projectId);
       await rm(path.join(wikiDir, id + '.md'), { force: true });
     } catch (error) {
       if (committed) {
         db.exec('BEGIN IMMEDIATE');
         try {
-          db.prepare('INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(original.id, original.projectId, original.name, original.kind, original.extension, original.bytes, original.revision, original.truncated, original.updatedAt);
+          db.prepare('INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+            original.id,
+            original.projectId,
+            original.name,
+            original.kind,
+            original.extension,
+            original.bytes,
+            original.revision,
+            original.truncated,
+            original.updatedAt,
+          );
           const insert = db.prepare('INSERT INTO knowledge_revisions VALUES (?, ?, ?, ?, ?, ?)');
-          for (const row of revisions) insert.run(row.id, row.documentId, row.projectId, row.at, row.content, row.metadata);
+          for (const row of revisions)
+            insert.run(row.id, row.documentId, row.projectId, row.at, row.content, row.metadata);
           db.exec('COMMIT');
-        } catch (restoreError) { db.exec('ROLLBACK'); throw restoreError; }
+        } catch (restoreError) {
+          db.exec('ROLLBACK');
+          throw restoreError;
+        }
       }
       await rename(staged, directory);
       await this.sync(projectId);
@@ -204,6 +232,20 @@ export class Wiki {
           await file.close();
         }
       }
+    }
+    const schema = this.schemaFiles?.(projectId) || {};
+    for (const [name, text] of Object.entries(schema)) files['wiki/' + name] = strToU8(text);
+    if (Object.keys(schema).length) {
+      files['wiki/index.md'] = strToU8(
+        new TextDecoder().decode(files['wiki/index.md']) +
+          '\n\n## Database knowledge\n\n- [SQL schema collection](mssql/index.md)\n',
+      );
+      files['wiki/mssql/index.md'] = strToU8(
+        '# SQL schema knowledge\n\n' +
+          Object.keys(schema)
+            .map((p) => '- [' + p + '](' + p.slice(6) + ')')
+            .join('\n'),
+      );
     }
     return Buffer.from(zipSync(files, { level: 1 }));
   }

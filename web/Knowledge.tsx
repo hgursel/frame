@@ -1,10 +1,17 @@
+import { SqlKnowledge } from './Plugins.js';
 import React, { useEffect, useState, useRef } from 'react';
 import { RichMarkdown } from './RichMarkdown.js';
 import type { KnowledgeDocument, DocumentRuntimeStatus } from '../shared/types.js';
 import { api } from './api.js';
 
 type Page = KnowledgeDocument & { text: string; metadata?: Record<string, any> };
-export function KnowledgeMarkdown({ text, onOpen }: { text: string; onOpen?: (id: string) => void }) {
+export function KnowledgeMarkdown({
+  text,
+  onOpen,
+}: {
+  text: string;
+  onOpen?: (id: string) => void;
+}) {
   return <RichMarkdown text={text} onOpen={onOpen} />;
 }
 export function DocumentTools() {
@@ -86,7 +93,12 @@ export function KnowledgePanel({
   const [selected, setSelected] = useState<Page>();
   const removal = useRef<HTMLDialogElement>(null);
   const selectionRequest = useRef(0);
-  useEffect(() => () => { selectionRequest.current++; }, []);
+  useEffect(
+    () => () => {
+      selectionRequest.current++;
+    },
+    [],
+  );
   const [text, setText] = useState('');
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -126,6 +138,7 @@ export function KnowledgePanel({
           ↓ Export OKF bundle
         </a>
       </div>
+      <SqlKnowledge projectId={projectId} />
       <div className="knowledge-actions">
         <label className="upload-button">
           {busy ? 'Please wait…' : '+ Upload document'}
@@ -300,7 +313,13 @@ export function KnowledgePanel({
               </div>
               <div className="knowledge-actions">
                 <button onClick={() => onAttach(selected.id)}>Attach to conversation</button>
-                <button className="danger-button" disabled={busy} onClick={() => removal.current?.showModal()}>Remove {selected.kind === 'wiki' ? 'page' : 'file'}</button>
+                <button
+                  className="danger-button"
+                  disabled={busy}
+                  onClick={() => removal.current?.showModal()}
+                >
+                  Remove {selected.kind === 'wiki' ? 'page' : 'file'}
+                </button>
                 {selected.kind === 'wiki' && (
                   <button
                     onClick={() => {
@@ -320,8 +339,12 @@ export function KnowledgePanel({
                     void api<typeof versions>(
                       `/projects/${projectId}/documents/${selected.id}/revisions`,
                     )
-                      .then((value) => { if (request === selectionRequest.current) setVersions(value); })
-                      .catch((e) => { if (request === selectionRequest.current) setError(e.message); });
+                      .then((value) => {
+                        if (request === selectionRequest.current) setVersions(value);
+                      })
+                      .catch((e) => {
+                        if (request === selectionRequest.current) setError(e.message);
+                      });
                   }}
                 >
                   History
@@ -366,23 +389,54 @@ export function KnowledgePanel({
           )}
         </div>
       </div>
-      <dialog ref={removal} className="remove-dialog" aria-labelledby="remove-title"
-        onCancel={(e) => { if (busy) e.preventDefault(); }}>
+      <dialog
+        ref={removal}
+        className="remove-dialog"
+        aria-labelledby="remove-title"
+        onCancel={(e) => {
+          if (busy) e.preventDefault();
+        }}
+      >
         <h2 id="remove-title">Remove {selected?.kind === 'wiki' ? 'page' : 'file'}?</h2>
-        <p><strong>{selected?.name}</strong> will be removed from project knowledge, including its original file and saved revisions.</p>
-        <p className="muted">Other pages may still reference it. Previously saved conversation excerpts and backups are unchanged.</p>
+        <p>
+          <strong>{selected?.name}</strong> will be removed from project knowledge, including its
+          original file and saved revisions.
+        </p>
+        <p className="muted">
+          Other pages may still reference it. Previously saved conversation excerpts and backups are
+          unchanged.
+        </p>
         <div className="dialog-actions">
-          <button type="button" disabled={busy} onClick={() => removal.current?.close()}>Cancel</button>
-          <button type="button" className="danger-button" disabled={busy || !selected} onClick={async () => {
-            if (!selected) return;
-            setBusy(true); setError('');
-            try {
-              await api('/projects/' + projectId + '/documents/' + selected.id, 'DELETE', { revision: selected.revision });
-              removal.current?.close();
-              setSelected(undefined); setText(''); setVersions(undefined);
-            } catch (e) { setError((e as Error).message); removal.current?.close(); }
-            finally { setBusy(false); await refresh().catch((e) => setError(e.message)); }
-          }}>{busy ? 'Removing…' : 'Remove permanently'}</button>
+          <button type="button" disabled={busy} onClick={() => removal.current?.close()}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="danger-button"
+            disabled={busy || !selected}
+            onClick={async () => {
+              if (!selected) return;
+              setBusy(true);
+              setError('');
+              try {
+                await api('/projects/' + projectId + '/documents/' + selected.id, 'DELETE', {
+                  revision: selected.revision,
+                });
+                removal.current?.close();
+                setSelected(undefined);
+                setText('');
+                setVersions(undefined);
+              } catch (e) {
+                setError((e as Error).message);
+                removal.current?.close();
+              } finally {
+                setBusy(false);
+                await refresh().catch((e) => setError(e.message));
+              }
+            }}
+          >
+            {busy ? 'Removing…' : 'Remove permanently'}
+          </button>
         </div>
       </dialog>
     </section>

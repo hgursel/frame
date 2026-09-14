@@ -1,3 +1,6 @@
+import { MssqlPlugin } from './plugins/mssql/service.js';
+import { mssqlApi } from './plugins/mssql/api.js';
+import type { SqlDriver } from './plugins/mssql/driver.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import staticFiles from '@fastify/static';
@@ -63,10 +66,12 @@ export async function createApp(options: {
   origin: string;
   setupToken: string;
   webDir?: string;
+  sqlDriver?: SqlDriver;
 }) {
   const origin = new URL(options.origin).origin;
   const store = new Store(path.resolve(options.dataDir));
-  const runner = new Runner(store);
+  const mssql = new MssqlPlugin(store, options.sqlDriver);
+  const runner = new Runner(store, mssql);
   const python = new PythonRuntime(store.root);
   const knowledge = new Knowledge(store, python);
   const wiki = new Wiki(knowledge);
@@ -362,6 +367,16 @@ export async function createApp(options: {
     },
   );
   knowledgeApi(app, knowledge, wiki, runner);
+  mssqlApi(app, mssql, runner);
+  wiki.schemaFiles = (id) => {
+    try {
+      const settings = mssql.requireProject(id);
+      mssql.schema.ensureSource(id, settings);
+      return mssql.schema.pages(id, settings.databases);
+    } catch {
+      return {};
+    }
+  };
   if (options.webDir && existsSync(options.webDir)) {
     await app.register(staticFiles, { root: options.webDir, wildcard: false });
   }
@@ -369,9 +384,10 @@ export async function createApp(options: {
     for (const stream of streams) stream.end();
     await runner.close();
     await python.close();
+    await mssql.close();
   });
   app.addHook('onClose', async () => {
     store.close();
   });
-  return { app, store, runner, knowledge, wiki, python };
+  return { app, store, runner, knowledge, wiki, python, mssql };
 }

@@ -1,3 +1,5 @@
+import { PluginSettings, ProjectPlugins, SqlApprovalCard, SqlResultTable } from './Plugins.js';
+import './plugins.css';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RichMarkdown } from './RichMarkdown.js';
@@ -19,7 +21,11 @@ import './chat.css';
 import './refinements.css';
 
 function Logo() {
-  return <span className="brand frame-wordmark" aria-label="Frame">Frame</span>;
+  return (
+    <span className="brand frame-wordmark" aria-label="Frame">
+      Frame
+    </span>
+  );
 }
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -264,9 +270,13 @@ function Workspace() {
     const reconcile = async () => {
       if (polling || !live) return;
       polling = true;
-      try { receive(await api<ChatSnapshot>(`/conversations/${chatId}`)); }
-      catch (e) { if (live) setError((e as Error).message); }
-      finally { polling = false; }
+      try {
+        receive(await api<ChatSnapshot>(`/conversations/${chatId}`));
+      } catch (e) {
+        if (live) setError((e as Error).message);
+      } finally {
+        polling = false;
+      }
     };
     const stream = new EventSource(`/api/conversations/${chatId}/events`);
     stream.onmessage = (event) => {
@@ -276,7 +286,11 @@ function Workspace() {
         healthy = true;
         lastEvent = Date.now();
         setConnected(true);
-      } catch { healthy = false; setConnected(false); void reconcile(); }
+      } catch {
+        healthy = false;
+        setConnected(false);
+        void reconcile();
+      }
     };
     stream.onerror = () => {
       if (!live) return;
@@ -289,18 +303,28 @@ function Workspace() {
       if (!healthy || (running && Date.now() - lastEvent > 3000)) void reconcile();
     }, 2000);
     void reconcile();
-    return () => { live = false; clearInterval(poll); stream.close(); };
+    return () => {
+      live = false;
+      clearInterval(poll);
+      stream.close();
+    };
   }, [chatId]);
   useEffect(() => {
     if (!chatId || snapshot.running) return;
     let live = true;
     void api<{ name: string }[]>(`/conversations/${chatId}/artifacts`)
-      .then((items) => { if (live && currentChat.current === chatId) setArtifacts(items); })
-      .catch((e) => { if (live) setError(e.message); });
+      .then((items) => {
+        if (live && currentChat.current === chatId) setArtifacts(items);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
     void api<Conversation[]>('/conversations')
       .then(setChats)
       .catch(() => {});
-    return () => { live = false; };
+    return () => {
+      live = false;
+    };
   }, [chatId, snapshot.running]);
   const newChat = async () => {
     if (!projectId) {
@@ -335,9 +359,9 @@ function Workspace() {
         documentIds: request.documentIds,
       });
       setLastSubmitted(request);
-      setPending((current) => current?.id === request.id ? undefined : current);
+      setPending((current) => (current?.id === request.id ? undefined : current));
       if (currentChat.current === id) {
-        setDraft((current) => current.trim() === request.text ? '' : current);
+        setDraft((current) => (current.trim() === request.text ? '' : current));
         setAttached([]);
       }
       const updated = await api<ChatSnapshot>(`/conversations/${id}`);
@@ -358,8 +382,11 @@ function Workspace() {
     try {
       await api(`/conversations/${id}/stop`, 'POST', { runId: snapshot.runId });
       applySnapshot(id, await api<ChatSnapshot>(`/conversations/${id}`));
-    } catch (e) { if (currentChat.current === id) setError((e as Error).message); }
-    finally { setStoppingChat((current) => current === id ? '' : current); }
+    } catch (e) {
+      if (currentChat.current === id) setError((e as Error).message);
+    } finally {
+      setStoppingChat((current) => (current === id ? '' : current));
+    }
   };
   const compact = async () => {
     if (!chatId || compacting || snapshot.running) return;
@@ -429,10 +456,16 @@ function Workspace() {
         </nav>
         <div className="nav-heading">
           CONVERSATIONS
-          <button title="New conversation" aria-label="New conversation" onClick={() => {
-            setPending(undefined);
-            void newChat().catch((e) => setError(e.message));
-          }}>+</button>
+          <button
+            title="New conversation"
+            aria-label="New conversation"
+            onClick={() => {
+              setPending(undefined);
+              void newChat().catch((e) => setError(e.message));
+            }}
+          >
+            +
+          </button>
         </div>
         <input
           className="chat-search"
@@ -635,7 +668,11 @@ function Workspace() {
                       <summary>
                         {m.failed ? '×' : '✓'} {m.name || 'Tool result'}
                       </summary>
-                      <pre>{m.text}</pre>
+                      {m.sqlResult ? (
+                        <SqlResultTable result={m.sqlResult} chatId={chatId} />
+                      ) : (
+                        <pre>{m.text}</pre>
+                      )}
                       {!snapshot.running && (
                         <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
                           {m.proposal ? 'Review knowledge draft' : 'Save useful result'}
@@ -653,7 +690,10 @@ function Workspace() {
                           ))}
                         </div>
                       )}
-                      <RichMarkdown text={m.text} streaming={snapshot.running && i === snapshot.messages.length - 1} />
+                      <RichMarkdown
+                        text={m.text}
+                        streaming={snapshot.running && i === snapshot.messages.length - 1}
+                      />
                       {m.role === 'assistant' && !!m.text && !snapshot.running && (
                         <div className="message-actions">
                           <CopyMessage text={m.text} />
@@ -664,6 +704,13 @@ function Workspace() {
                       )}
                     </article>
                   ),
+                )}
+                {snapshot.sqlApproval && (
+                  <SqlApprovalCard
+                    key={snapshot.sqlApproval.id}
+                    approval={snapshot.sqlApproval}
+                    chatId={chatId}
+                  />
                 )}
                 {!!artifacts.length && (
                   <div className="artifacts">
@@ -717,9 +764,11 @@ function Workspace() {
               <div className="status-row">
                 <div className="status" aria-live="polite">
                   {chatId && !connected
-                    ? `${snapshot.running ? stoppingChat === chatId ? 'Stopping' : snapshot.status : 'Checking task status…'} · Live updates reconnecting`
+                    ? `${snapshot.running ? (stoppingChat === chatId ? 'Stopping' : snapshot.status) : 'Checking task status…'} · Live updates reconnecting`
                     : snapshot.running
-                      ? stoppingChat === chatId ? 'Stopping' : snapshot.status
+                      ? stoppingChat === chatId
+                        ? 'Stopping'
+                        : snapshot.status
                       : project?.toolsEnabled
                         ? 'Trusted tools enabled · Host-account permissions'
                         : 'Chat mode · Project knowledge available · Host tools disabled'}
@@ -741,14 +790,23 @@ function Workspace() {
                   void submit();
                 }}
               >
-                {!!attached.length && <div className="composer-attachments">
-                  {attached.map((id) => <span key={id}>
-                    <span>{documents.find((d) => d.id === id)?.name || 'Document'}</span>
-                    <button type="button" aria-label={`Remove attachment ${documents.find((d) => d.id === id)?.name || 'document'}`}
-                      disabled={snapshot.running || !!pending || uploading}
-                      onClick={() => setAttached((ids) => ids.filter((value) => value !== id))}>×</button>
-                  </span>)}
-                </div>}
+                {!!attached.length && (
+                  <div className="composer-attachments">
+                    {attached.map((id) => (
+                      <span key={id}>
+                        <span>{documents.find((d) => d.id === id)?.name || 'Document'}</span>
+                        <button
+                          type="button"
+                          aria-label={`Remove attachment ${documents.find((d) => d.id === id)?.name || 'document'}`}
+                          disabled={snapshot.running || !!pending || uploading}
+                          onClick={() => setAttached((ids) => ids.filter((value) => value !== id))}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <textarea
                   aria-label="Message Frame"
                   placeholder="Ask Frame anything about your work…"
@@ -766,14 +824,25 @@ function Workspace() {
                   }}
                 />
                 <div className="composer-footer">
-                  <AttachmentPicker key={projectId} projectId={projectId} documents={documents}
-                    attached={attached} disabled={!projectId || snapshot.running || !!pending || sending}
+                  <AttachmentPicker
+                    key={projectId}
+                    projectId={projectId}
+                    documents={documents}
+                    attached={attached}
+                    disabled={!projectId || snapshot.running || !!pending || sending}
                     onBusy={setUploading}
-                    onToggle={(id) => setAttached((ids) => ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id].slice(0, 5))}
+                    onToggle={(id) =>
+                      setAttached((ids) =>
+                        ids.includes(id)
+                          ? ids.filter((value) => value !== id)
+                          : [...ids, id].slice(0, 5),
+                      )
+                    }
                     onUploaded={(doc) => {
                       setDocuments((docs) => [doc, ...docs.filter((d) => d.id !== doc.id)]);
                       setAttached((ids) => [...new Set([...ids, doc.id])].slice(0, 5));
-                    }} />
+                    }}
+                  />
                   <span className="composer-hint">
                     {project?.name || 'Select a project'}
                     <span className="separator">·</span>Shift + Enter for a new line
@@ -787,12 +856,16 @@ function Workspace() {
                       title="Stop generation"
                       onClick={() => void stop()}
                     >
-                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor" /></svg>
+                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                        <rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor" />
+                      </svg>
                     </button>
                   ) : (
                     <button
                       className="send"
-                      disabled={sending || uploading || !draft.trim() || !projectId || !settings?.modelId}
+                      disabled={
+                        sending || uploading || !draft.trim() || !projectId || !settings?.modelId
+                      }
                       aria-label="Send message"
                     >
                       {sending ? '…' : '↑'}
@@ -824,8 +897,8 @@ function Workspace() {
 
 function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () => Promise<void> }) {
   const [form, setForm] = useState(initial);
-  const tabs = ['model', 'context', 'instructions', 'documents'] as const;
-  const [tab, setTab] = useState<typeof tabs[number]>('model');
+  const tabs = ['model', 'context', 'instructions', 'documents', 'plugins'] as const;
+  const [tab, setTab] = useState<(typeof tabs)[number]>('model');
   const [key, setKey] = useState('');
   const [clear, setClear] = useState(false);
   const [notice, setNotice] = useState('');
@@ -836,15 +909,40 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
       <h1>Settings</h1>
       <p className="muted">Configure your model, context, instructions, and document tools.</p>
       <div className="settings-tabs" role="tablist" aria-label="Settings topics">
-        {tabs.map((name, i) => <button key={name} type="button" id={`tab-${name}`} role="tab"
-          aria-selected={tab === name} aria-controls={`settings-${name}`} tabIndex={tab === name ? 0 : -1}
-          onClick={() => setTab(name)}
-          onKeyDown={(e) => {
-            const index = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : -1;
-            if (index >= 0) { e.preventDefault(); setTab(tabs[index]!); document.getElementById(`tab-${tabs[index]}`)?.focus(); }
-          }}>{name[0]!.toUpperCase() + name.slice(1)}</button>)}
+        {tabs.map((name, i) => (
+          <button
+            key={name}
+            type="button"
+            id={`tab-${name}`}
+            role="tab"
+            aria-selected={tab === name}
+            aria-controls={`settings-${name}`}
+            tabIndex={tab === name ? 0 : -1}
+            onClick={() => setTab(name)}
+            onKeyDown={(e) => {
+              const index =
+                e.key === 'ArrowRight'
+                  ? (i + 1) % tabs.length
+                  : e.key === 'ArrowLeft'
+                    ? (i + tabs.length - 1) % tabs.length
+                    : e.key === 'Home'
+                      ? 0
+                      : e.key === 'End'
+                        ? tabs.length - 1
+                        : -1;
+              if (index >= 0) {
+                e.preventDefault();
+                setTab(tabs[index]!);
+                document.getElementById(`tab-${tabs[index]}`)?.focus();
+              }
+            }}
+          >
+            {name[0]!.toUpperCase() + name.slice(1)}
+          </button>
+        ))}
       </div>
-      <form hidden={tab === 'documents'}
+      <form
+        hidden={tab === 'documents' || tab === 'plugins'}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -867,123 +965,144 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           }
         }}
       >
-        <fieldset id="settings-model" role="tabpanel" aria-labelledby="tab-model" hidden={tab !== 'model'} disabled={tab !== 'model' || busy} className="settings-topic">
-        <label>
-          Endpoint URL
-          <input
-            required
-            value={form.baseUrl}
-            onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
-          />
-          <small>
-            Example: http://127.0.0.1:8080/v1 · localhost refers to the Frame server, not your
-            browser.
-          </small>
-        </label>
-        <label>
-          Model ID
-          <input
-            required
-            placeholder="The model alias served by llama.cpp"
-            value={form.modelId}
-            onChange={(e) => setForm({ ...form, modelId: e.target.value })}
-          />
-        </label>
-        <label>
-          Endpoint token (optional)
-          <input
-            type="password"
-            autoComplete="new-password"
-            placeholder={
-              initial.hasApiKey
-                ? 'Saved token — leave blank to keep'
-                : 'No authentication token required by default'
-            }
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-          />
-        </label>
-        <label className="checkbox">
-          <input type="checkbox" checked={clear} onChange={(e) => setClear(e.target.checked)} />
-          Remove saved endpoint token
-        </label>
-        </fieldset>
-        <fieldset id="settings-context" role="tabpanel" aria-labelledby="tab-context" hidden={tab !== 'context'} disabled={tab !== 'context' || busy} className="settings-topic">
-        <div className="form-row">
+        <fieldset
+          id="settings-model"
+          role="tabpanel"
+          aria-labelledby="tab-model"
+          hidden={tab !== 'model'}
+          disabled={tab !== 'model' || busy}
+          className="settings-topic"
+        >
           <label>
-            Context window
+            Endpoint URL
             <input
               required
-              type="number"
-              min={2048}
-              max={2000000}
-              value={form.contextWindow}
-              onChange={(e) => setForm({ ...form, contextWindow: Number(e.target.value) })}
+              value={form.baseUrl}
+              onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
+            />
+            <small>
+              Example: http://127.0.0.1:8080/v1 · localhost refers to the Frame server, not your
+              browser.
+            </small>
+          </label>
+          <label>
+            Model ID
+            <input
+              required
+              placeholder="The model alias served by llama.cpp"
+              value={form.modelId}
+              onChange={(e) => setForm({ ...form, modelId: e.target.value })}
             />
           </label>
           <label>
-            Maximum output tokens
+            Endpoint token (optional)
             <input
-              required
-              type="number"
-              min={128}
-              max={131072}
-              value={form.maxTokens}
-              onChange={(e) => setForm({ ...form, maxTokens: Number(e.target.value) })}
+              type="password"
+              autoComplete="new-password"
+              placeholder={
+                initial.hasApiKey
+                  ? 'Saved token — leave blank to keep'
+                  : 'No authentication token required by default'
+              }
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
             />
           </label>
-        </div>
-        <small>
-          Match the context allocated per llama.cpp slot. Model size is not context size.
-        </small>
-        <fieldset className="context-settings">
-          <legend>Context management</legend>
           <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.autoCompaction}
-              onChange={(e) => setForm({ ...form, autoCompaction: e.target.checked })}
-            />
-            Automatically compact older context
+            <input type="checkbox" checked={clear} onChange={(e) => setClear(e.target.checked)} />
+            Remove saved endpoint token
           </label>
+        </fieldset>
+        <fieldset
+          id="settings-context"
+          role="tabpanel"
+          aria-labelledby="tab-context"
+          hidden={tab !== 'context'}
+          disabled={tab !== 'context' || busy}
+          className="settings-topic"
+        >
+          <div className="form-row">
+            <label>
+              Context window
+              <input
+                required
+                type="number"
+                min={2048}
+                max={2000000}
+                value={form.contextWindow}
+                onChange={(e) => setForm({ ...form, contextWindow: Number(e.target.value) })}
+              />
+            </label>
+            <label>
+              Maximum output tokens
+              <input
+                required
+                type="number"
+                min={128}
+                max={131072}
+                value={form.maxTokens}
+                onChange={(e) => setForm({ ...form, maxTokens: Number(e.target.value) })}
+              />
+            </label>
+          </div>
+          <small>
+            Match the context allocated per llama.cpp slot. Model size is not context size.
+          </small>
+          <fieldset className="context-settings">
+            <legend>Context management</legend>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.autoCompaction}
+                onChange={(e) => setForm({ ...form, autoCompaction: e.target.checked })}
+              />
+              Automatically compact older context
+            </label>
+            <label>
+              Compact at used percentage
+              <input
+                type="number"
+                min={50}
+                max={90}
+                required
+                value={form.compactAtPercent}
+                onChange={(e) => setForm({ ...form, compactAtPercent: Number(e.target.value) })}
+              />
+            </label>
+            <small>
+              Default: 75%. Frame may start earlier to reserve your output limit and template
+              headroom. Recent exchanges stay in context; older history becomes a checkpoint.
+            </small>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.pruneToolOutputs}
+                onChange={(e) => setForm({ ...form, pruneToolOutputs: e.target.checked })}
+              />
+              Shorten older read-only tool outputs
+            </label>
+            <small>
+              Keeps the latest two user turns, errors, and results from tools that make changes.
+              Full results stay in conversation history.
+            </small>
+          </fieldset>
+        </fieldset>
+        <fieldset
+          id="settings-instructions"
+          role="tabpanel"
+          aria-labelledby="tab-instructions"
+          hidden={tab !== 'instructions'}
+          disabled={tab !== 'instructions' || busy}
+          className="settings-topic"
+        >
           <label>
-            Compact at used percentage
-            <input
-              type="number"
-              min={50}
-              max={90}
-              required
-              value={form.compactAtPercent}
-              onChange={(e) => setForm({ ...form, compactAtPercent: Number(e.target.value) })}
+            Organization instructions
+            <textarea
+              rows={4}
+              value={form.instructions}
+              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
             />
           </label>
-          <small>
-            Default: 75%. Frame may start earlier to reserve your output limit and template
-            headroom. Recent exchanges stay in context; older history becomes a checkpoint.
-          </small>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.pruneToolOutputs}
-              onChange={(e) => setForm({ ...form, pruneToolOutputs: e.target.checked })}
-            />
-            Shorten older read-only tool outputs
-          </label>
-          <small>
-            Keeps the latest two user turns, errors, and results from tools that make changes. Full
-            results stay in conversation history.
-          </small>
-        </fieldset>
-        </fieldset>
-        <fieldset id="settings-instructions" role="tabpanel" aria-labelledby="tab-instructions" hidden={tab !== 'instructions'} disabled={tab !== 'instructions' || busy} className="settings-topic">
-        <label>
-          Organization instructions
-          <textarea
-            rows={4}
-            value={form.instructions}
-            onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-          />
-        </label>
         </fieldset>
         <div className="button-row">
           <button className="primary" disabled={busy}>
@@ -1026,8 +1145,21 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           </p>
         )}
       </form>
-      <div id="settings-documents" role="tabpanel" aria-labelledby="tab-documents" hidden={tab !== 'documents'}>
+      <div
+        id="settings-documents"
+        role="tabpanel"
+        aria-labelledby="tab-documents"
+        hidden={tab !== 'documents'}
+      >
         {tab === 'documents' && <DocumentTools />}
+      </div>
+      <div
+        id="settings-plugins"
+        role="tabpanel"
+        aria-labelledby="tab-plugins"
+        hidden={tab !== 'plugins'}
+      >
+        {tab === 'plugins' && <PluginSettings />}
       </div>
       <div className="scope-note">
         <strong>V1 · Single administrator</strong>
@@ -1111,6 +1243,7 @@ function ProjectForm({
           </p>
         )}
       </form>
+      {project && <ProjectPlugins projectId={project.id} />}
     </section>
   );
 }

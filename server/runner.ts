@@ -1,3 +1,4 @@
+import type { MssqlPlugin } from './plugins/mssql/service.js';
 import { fork, type ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import path from 'node:path';
@@ -17,13 +18,26 @@ type ActiveRun = {
 export class Runner extends EventEmitter {
   private revision = Date.now() * 1000;
   readonly active = new Map<string, ActiveRun>();
-  constructor(readonly store: Store) {
+  constructor(
+    readonly store: Store,
+    readonly mssql?: MssqlPlugin,
+  ) {
     super();
     this.setMaxListeners(100);
+    mssql?.on('change', (id: string) => this.emit(id));
   }
   snapshot(id: string): ChatSnapshot {
     const live = this.active.get(id);
-    if (live) return { ...live.snapshot, runId: live.runId, revision: ++this.revision };
+    if (live) {
+      const sqlApproval = this.mssql?.approval(id);
+      return {
+        ...live.snapshot,
+        sqlApproval,
+        status: sqlApproval && !live.stopRequested ? 'Awaiting SQL approval' : live.snapshot.status,
+        runId: live.runId,
+        revision: ++this.revision,
+      };
+    }
     const settings = this.store.settings();
     const project = this.store.project(this.store.conversation(id)!.projectId)!;
     const saved = this.store.meta(`metrics:${id}`);
@@ -65,6 +79,10 @@ export class Runner extends EventEmitter {
     }
     const conversation = this.store.conversation(id)!;
     const project = this.store.project(conversation.projectId)!;
+    if (this.mssql?.schema.jobs.has(project.id))
+      throw Object.assign(new Error('Wait for schema initialization to finish.'), {
+        statusCode: 409,
+      });
     if (this.projectBusy(project.id))
       throw Object.assign(new Error('Another task is running in this project. Stop it or wait.'), {
         statusCode: 409,
@@ -139,7 +157,27 @@ export class Runner extends EventEmitter {
       this.stop(id);
     }, 600_000);
     child.on('message', (event: WorkerOutput) => {
-      if (event.type === 'snapshot') {
+      if (this.active.get(id) !== active || active.stopRequested) return;
+      if (event.type === 'plugin_call') {
+        if (!this.mssql) return;
+        void this.mssql.invoke(id, runId, event.action, event.args).then(
+          (result) => {
+            if (child.connected && this.active.get(id) === active && !active.stopRequested)
+              child.send({ type: 'plugin_result', id: event.id, result }, () => {});
+          },
+          (error) => {
+            if (child.connected && this.active.get(id) === active && !active.stopRequested)
+              child.send(
+                {
+                  type: 'plugin_result',
+                  id: event.id,
+                  error: error instanceof Error ? error.message : 'SQL tool failed',
+                },
+                () => {},
+              );
+          },
+        );
+      } else if (event.type === 'snapshot') {
         active.snapshot = {
           messages: event.messages,
           running: true,
@@ -157,6 +195,7 @@ export class Runner extends EventEmitter {
       if (finished) return;
       finished = true;
       clearTimeout(deadline);
+      this.mssql?.cancelRun(runId);
       this.killGroup(child);
       const status = error
         ? 'failed'
@@ -196,6 +235,10 @@ export class Runner extends EventEmitter {
         pythonPath,
         knowledge,
         operation,
+        mssql:
+          this.mssql?.projectEnabled(project.id) && this.mssql.settings().enabled
+            ? { databases: this.mssql.settings().databases }
+            : undefined,
       },
       (sendError) => {
         if (sendError) {
@@ -211,9 +254,13 @@ export class Runner extends EventEmitter {
     const run = this.active.get(id);
     if (!run) return;
     if (expectedRunId && run.runId !== expectedRunId)
-      throw Object.assign(new Error('This task has already ended. Refresh before stopping another task.'), { statusCode: 409 });
+      throw Object.assign(
+        new Error('This task has already ended. Refresh before stopping another task.'),
+        { statusCode: 409 },
+      );
     if (run.stopRequested) return;
     run.stopRequested = true;
+    this.mssql?.cancelRun(run.runId);
     run.snapshot.status = 'Stopping';
     this.emit(id);
     if (run.process.connected) run.process.send({ type: 'abort' }, () => {});
