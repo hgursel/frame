@@ -19,6 +19,15 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Configurable automatic compaction with scaled local-model budgets, manual/interruptible compaction, and reversible older read-only tool-result pruning.
 - Local mock SDK and browser coverage. Real-model long-context quality and llama.cpp timing validation remain acceptance work; see [context research](CONTEXT.md).
 
+## 0.4 — Navigation and content refinements (implemented)
+
+- Clean Frame wordmark, stronger sidebar headings, and a conversation creation button beside the section title.
+- Shared chat/knowledge Markdown renderer with GFM tables, task lists, copyable code, and local Mermaid diagrams with expansion and source fallback.
+- Chat composer attachment menu for project knowledge or computer uploads, with removable selections.
+- Confirmed knowledge file/page removal with revision and activity guards, catalog cleanup, and rollback on catalog-update failure.
+- Model, Context, Instructions, and Documents settings tabs with retained drafts and keyboard navigation.
+- CI validates TypeScript, 17 API/SDK/Python tests, production build, and desktop/mobile browser workflows. Browser screenshots are retained as workflow artifacts.
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.

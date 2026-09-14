@@ -5,13 +5,19 @@ Frame combines Google's [Open Knowledge Format 0.2](https://github.com/GoogleClo
 ## Everyday workflow
 
 1. In a project, open **Knowledge** and upload a source. Frame preserves the original and extracts bounded text. Source documents are read-only.
-2. Attach a source to a question, or ask Frame to search project knowledge. `search_knowledge` finds literal terms across titles/content; `read_knowledge` reads the page with its provenance in bounded sections. These tools work without enabling host tools.
+2. Use **+** beside the chat composer, then **Attach from knowledge** or **Upload from computer**. Computer uploads are saved to the project's knowledge and attached to the next prompt. Remove a selection using its chip's remove button; this does not delete the source. Attach a source to a question, or ask Frame to search project knowledge. `search_knowledge` finds literal terms across titles/content; `read_knowledge` reads the page with its provenance in bounded sections. These tools work without enabling host tools.
 3. Ask: “Synthesize this source into a reusable knowledge note. Link related pages and flag contradictions.” The model can call `propose_knowledge`, which returns a draft without saving anything.
 4. Click **Review knowledge draft**, **Useful · Save to knowledge**, or **Save useful result**. Edit the useful content, remove mistakes, and add evidence or uncertainty.
 5. Create a new page or choose an existing one. An ordinary response is appended to the current page for review; a model-proposed full revision is shown with the current page available for comparison. Save applies the complete reviewed text. A stale target revision returns a conflict instead of overwriting newer work.
 6. Check “I checked these claims against their sources” only when you have done so. Merely saving a liked response does not record verification. Later edits clear prior verification unless explicitly reconfirmed.
 
 The model can find saved pages in subsequent turns and other conversations in that project. No background ingestion, automatic verification, automatic training, vector database, or cloud service is involved. Ask the model to maintain links and document disagreements; V1 does not provide an unattended wiki maintenance/lint engine.
+
+## Reading and removing content
+
+Chat and knowledge share Markdown rendering for tables, task lists, fenced code with copying, and Mermaid diagrams. Diagrams render locally after a streamed response finishes; use **Expand diagram** for a larger view. Invalid or unsupported diagram content shows its source instead. External images, diagram configuration directives, and interactive diagram links are disabled; Mermaid source is limited to 20,000 characters.
+
+Open a source or page in **Knowledge**, choose **Remove file** or **Remove page**, and confirm its name. Removal deletes its stored original/content, captured evidence, saved revisions, and generated wiki page, then refreshes the active catalog and export. A newer revision or active project task blocks removal. Removing a catalog entry is not an erasure of past conversations: previously attached excerpts, citations in other pages, prior exports, and backups remain. Other pages are not silently rewritten, so review links and provenance that referred to the removed document.
 
 ## Format and ownership
 
@@ -38,7 +44,7 @@ No OCR, image understanding, spreadsheets beyond CSV, legacy DOC, or macro execu
 
 ## Python document workflow
 
-Install Ubuntu's `python3-venv` prerequisite, then use **Settings → Document tools**. Installation requires explicitly allowing package downloads. It creates `data/python/venv/` using the pinned `python/requirements.txt`; no package installer runs on application startup or model request. The CLI equivalent is `npm run python:setup`.
+Install Ubuntu's `python3-venv` prerequisite, then use **Settings → Documents**. Installation requires explicitly allowing package downloads. It creates `data/python/venv/` using the pinned `python/requirements.txt`; no package installer runs on application startup or model request. The CLI equivalent is `npm run python:setup`.
 
 Organization proxies and pip index/certificate settings are passed to the installer only. Air-gapped deployments can provision the same requirements into a virtual environment and set the deployment variable `FRAME_PYTHON` to its interpreter; Frame will not modify an externally managed environment.
 
