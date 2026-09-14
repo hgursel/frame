@@ -1,0 +1,23 @@
+name: Resolve Frame UI dependencies
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --package-lock-only --ignore-scripts
+      - name: Export dependency lock for review
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          const lock=JSON.stringify(JSON.parse(readFileSync('package-lock.json','utf8')));
+          for(let i=0;i<lock.length;i+=3000) console.log('FRAME_LOCK_CHUNK '+JSON.stringify(lock.slice(i,i+3000)));
+          JS
