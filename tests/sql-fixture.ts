@@ -82,3 +82,51 @@ export class FakeSql implements SqlDriver {
     };
   }
 }
+import type { Generator } from '../server/plugins/mssql/generate.js';
+/** Answers every enrichment prompt shape; one deliberately invents a column to exercise validation. */
+export class FakeGenerator implements Generator {
+  calls: string[] = [];
+  fail = false;
+  prose = false;
+  gapTarget: string | false = false;
+  async complete(
+    request: { system: string; prompt: string; maxTokens: number },
+    signal: AbortSignal,
+  ) {
+    signal.throwIfAborted();
+    this.calls.push(request.prompt);
+    if (this.fail) throw new Error('model unavailable');
+    const wrap = (json: string) =>
+      this.prose ? `Sure! Here you go:\n\`\`\`json\n${json}\n\`\`\`` : json;
+    if (request.prompt.includes('"title"')) {
+      const first = /^(\w+)\.(\w+) \(/m.exec(request.prompt);
+      return wrap(
+        JSON.stringify({
+          title: 'Sales',
+          summary: 'Orders and the tables that hang off them.',
+          coreTables: [first ? `${first[1]}.${first[2]}` : 'dbo.Nope', 'dbo.NotInCluster'],
+        }),
+      );
+    }
+    if (request.prompt.includes('"terms"'))
+      return wrap(JSON.stringify({ terms: { Table: 'A business table.', Nonsense: 'invented' } }));
+    if (request.prompt.includes('"question"'))
+      return wrap(JSON.stringify({ question: 'Which rows are in the table?' }));
+    if (request.prompt.includes('"meaning"'))
+      return wrap(JSON.stringify({ meaning: '1 = open, 2 = closed.' }));
+    if (request.prompt.includes('"object"'))
+      return wrap(
+        JSON.stringify({ object: /found nothing/.test(request.prompt) && this.gapTarget }),
+      );
+    return wrap(
+      JSON.stringify({
+        purpose: 'Holds business records.',
+        grain: 'one row per record',
+        aliases: ['cari hesap', 'müşteri'],
+        columnNotes: { parentId: 'Parent record.', ghostColumn: 'Does not exist.' },
+        domain: 'Sales',
+        confidence: 'high',
+      }),
+    );
+  }
+}

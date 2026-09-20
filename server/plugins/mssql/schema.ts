@@ -94,7 +94,7 @@ export function importanceOf(rows: number, referencedBy: number, kind: string, h
 // Text relevance dominates; importance only separates objects that match equally well.
 const IMPORTANCE_WEIGHT = 0.35;
 const COLUMNS =
-  'projectId,generation,id,databaseName,schemaName,name,kind,text,obsolete,at,rowCount,refCount,importance,summary,label,terms';
+  'projectId,generation,id,databaseName,schemaName,name,kind,text,obsolete,at,rowCount,refCount,importance,summary,label,terms,refs';
 const CARD =
   'id,databaseName AS database,schemaName AS schema,name,kind,at,obsolete,rowCount,summary';
 const card = (row: any) => ({ ...row, obsolete: !!row.obsolete });
@@ -106,6 +106,8 @@ export class SchemaCache {
   >();
   /** False when SQLite has no FTS5 support; search then falls back to substring scanning. */
   readonly fts: boolean;
+  /** Set by the plugin so saved notes can re-index their aliases into a fresh generation. */
+  afterImport?: (projectId: string) => void;
   private readonly ranked = new Map<string, boolean>();
   constructor(
     readonly store: Store,
@@ -121,6 +123,7 @@ export class SchemaCache {
       'summary TEXT',
       'label TEXT',
       'terms TEXT',
+      'refs TEXT',
     ])
       try {
         store.db.exec(`ALTER TABLE mssql_schema ADD COLUMN ${column}`);
@@ -296,6 +299,39 @@ export class SchemaCache {
       status: this.status(projectId),
     };
   }
+  generation(projectId: string) {
+    return this.current(projectId);
+  }
+  /** Every current object with the mechanical facts an enrichment prompt is built from. */
+  facts(projectId: string) {
+    return this.store.db
+      .prepare(
+        'SELECT id,databaseName AS database,schemaName AS schema,name,kind,rowCount,refCount,importance,refs,summary,text FROM mssql_schema WHERE projectId=? AND generation=? AND obsolete=0 ORDER BY importance DESC, databaseName, schemaName, name',
+      )
+      .all(projectId, this.current(projectId)) as any[];
+  }
+  /**
+   * Fold a note's business aliases into the object's searchable terms, so a question asked in the
+   * organization's own vocabulary reaches a table whose name never contained that word.
+   */
+  applyTerms(projectId: string, id: string, extra: string) {
+    const generation = this.current(projectId);
+    const row = this.store.db
+      .prepare(
+        'SELECT rowid,terms,label FROM mssql_schema WHERE projectId=? AND generation=? AND id=?',
+      )
+      .get(projectId, generation, id) as any;
+    if (!row) return false;
+    const terms = (String(row.terms || '') + ' ' + extra).slice(0, 16000);
+    this.store.db
+      .prepare('UPDATE mssql_schema SET terms=? WHERE projectId=? AND generation=? AND id=?')
+      .run(terms, projectId, generation, id);
+    if (this.fts)
+      this.store.db
+        .prepare('UPDATE mssql_schema_fts SET terms=? WHERE rowid=?')
+        .run(terms, row.rowid);
+    return true;
+  }
   read(projectId: string, databases: string[], id: string): SchemaObject {
     const row = this.store.db
       .prepare(`SELECT ${CARD},text FROM mssql_schema WHERE projectId=? AND generation=? AND id=?`)
@@ -459,6 +495,9 @@ export class SchemaCache {
       text,
       label,
       terms,
+      refs: JSON.stringify([
+        ...new Set(relationships.map((f) => `${f.referencedSchema}.${f.referencedTable}`)),
+      ]),
       summary: summary.slice(0, 220),
       rows,
       referencedByCount,
@@ -533,6 +572,7 @@ export class SchemaCache {
               page.summary,
               page.label,
               page.terms,
+              page.refs,
             );
             if (this.fts) index.run(Number(written.lastInsertRowid), page.label, page.terms);
           }
@@ -548,7 +588,7 @@ export class SchemaCache {
         if (previous?.source === source) {
           this.store.db
             .prepare(
-              `INSERT OR IGNORE INTO mssql_schema (${COLUMNS}) SELECT projectId,?,id,databaseName,schemaName,name,kind,text,1,at,rowCount,refCount,importance,summary,label,terms FROM mssql_schema WHERE projectId=? AND generation=?`,
+              `INSERT OR IGNORE INTO mssql_schema (${COLUMNS}) SELECT projectId,?,id,databaseName,schemaName,name,kind,text,1,at,rowCount,refCount,importance,summary,label,terms,refs FROM mssql_schema WHERE projectId=? AND generation=?`,
             )
             .run(generation, projectId, previous.generation);
           // Objects carried over from a cache built before the index still need searchable text.
@@ -574,6 +614,7 @@ export class SchemaCache {
         throw error;
       }
       this.ranked.clear();
+      this.afterImport?.(projectId);
     } catch (error) {
       this.purge('projectId=? AND generation=?', projectId, generation);
       this.ranked.clear();

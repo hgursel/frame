@@ -74,6 +74,21 @@ export function mssqlTools(databases: string[]) {
       },
     }),
     defineTool({
+      name: 'mssql_knowledge_search',
+      label: 'Search SQL subject areas and recipes',
+      description:
+        'Search generated database knowledge: subject-area pages that name what a group of related tables covers, a glossary of abbreviations this schema repeats, decoded lookup-table values for status and type columns, and recipes recording SQL that already ran successfully here. Start here when a question uses business vocabulary rather than table names, then confirm the objects with mssql_schema_search. All of it is model-written interpretation and may be wrong; the catalog tables in mssql_schema_read are authoritative.',
+      parameters: Type.Object({
+        query: Type.String(),
+        kind: Type.Optional(
+          Type.Union(['domain', 'glossary', 'recipe', 'codes', 'any'].map((v) => Type.Literal(v))),
+        ),
+      }),
+      async execute(_id, args, signal) {
+        return result(await invoke('notes_search', args, signal));
+      },
+    }),
+    defineTool({
       name: 'mssql_query',
       label: 'Run SQL query',
       description:

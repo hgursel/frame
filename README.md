@@ -29,7 +29,7 @@ Runnable, single-administrator application. Multi-user support is planned for **
 - Authenticated, download-only artifacts from each conversation’s output folder.
 - TypeScript checking, security/API tests, and real-SDK integration tests against a local mock endpoint.
 
-- Built-in MSSQL plugin: separate SQL read/write logins, system restrictions and per-project enablement, exact write/procedure approvals, searchable cached schema knowledge, result tables, and CSV downloads. [Setup and limits](docs/MSSQL.md).
+- Built-in MSSQL plugin: separate SQL read/write logins, system restrictions and per-project enablement, exact write/procedure approvals, ranked cached schema knowledge, optional model-generated notes and subject areas for large schemas, result tables, and CSV downloads. [Setup and limits](docs/MSSQL.md).
 
 ### Planned, not implemented
 
@@ -61,7 +61,7 @@ Open **http://127.0.0.1:3000**. Use the setup token printed by the server to cre
 5. Send a prompt. Enable trusted tools only after reading the warning and confirming the model’s chat template supports tool calling.
 6. Open **Knowledge** to manage sources and Markdown notes. Use **+** beside the chat composer to attach from knowledge or upload from your computer, or ask Frame to search the project knowledge. Ask it to synthesize a source into a knowledge draft, then review and save the result.
 
-For SQL, configure **Settings → Plugins**, enable MSSQL in **Project settings**, and initialize database knowledge. See [the MSSQL guide](docs/MSSQL.md).
+For SQL, configure **Settings → Plugins**, enable MSSQL in **Project settings**, and initialize database knowledge. On a large schema, generate database knowledge afterwards so the model has subject areas and business vocabulary to search with. See [the MSSQL guide](docs/MSSQL.md).
 
 See [the knowledge workflow](docs/KNOWLEDGE.md) for OKF structure, conversation updates, Python setup, and current limits.
 
