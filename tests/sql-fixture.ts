@@ -41,9 +41,14 @@ export class FakeSql implements SqlDriver {
           `Table${i}`,
           'USER_TABLE',
           `Business table ${i}`,
-          '[{"name":"id","dataType":"int","nullable":false}]',
-          '[{"name":"PK","primaryKey":true,"columnName":"id"}]',
-          '[{"columnName":"parentId","referencedSchema":"dbo","referencedTable":"Table1","referencedColumn":"id"}]',
+          i * 10,
+          i === 1 ? 1104 : 0,
+          '[{"name":"id","dataType":"int","maxLength":4,"nullable":false,"identityColumn":true},{"name":"parentId","dataType":"int","maxLength":4,"nullable":true},{"name":"value","dataType":"nvarchar","maxLength":200,"nullable":true},{"name":"açıklama","dataType":"nvarchar","maxLength":400,"nullable":true,"description":"Şube açıklaması"}]',
+          '[{"name":"PK","primaryKey":true,"columnName":"id","ordinal":1}]',
+          '[{"name":"FK_parent","columnName":"parentId","referencedSchema":"dbo","referencedTable":"Table1","referencedColumn":"id"}]',
+          i === 1
+            ? '[{"name":"FK_parent","referencingSchema":"dbo","referencingTable":"Table2","referencingColumn":"parentId","columnName":"id"}]'
+            : '[]',
           '[]',
         ]);
       return {
@@ -53,9 +58,12 @@ export class FakeSql implements SqlDriver {
           'objectName',
           'kind',
           'description',
+          'approxRows',
+          'referencedByCount',
           'columnsJson',
           'indexesJson',
           'relationshipsJson',
+          'referencedByJson',
           'parametersJson',
         ],
         rows,

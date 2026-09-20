@@ -50,15 +50,21 @@ export interface SqlApproval {
   kind: 'data' | 'schema' | 'procedure';
   expiresAt: number;
 }
-export interface SchemaObject {
+export interface SchemaCard {
   id: string;
   database: string;
   schema: string;
   name: string;
   kind: string;
-  text: string;
   obsolete: boolean;
   at: string;
+  /** Approximate catalog row count; null for caches imported before row counts were collected. */
+  rowCount: number | null;
+  /** One line of catalog facts, shown in search results so triage needs no read. */
+  summary: string | null;
+}
+export interface SchemaObject extends SchemaCard {
+  text: string;
 }
 export interface SchemaStatus {
   state: 'empty' | 'running' | 'ready' | 'stale' | 'error' | 'cancelled';

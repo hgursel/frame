@@ -38,15 +38,23 @@ Initialization reads SQL Server 2016+ catalog metadata in pages of 100 objects t
 - Columns, types, size/precision, nullability, identity, defaults, and descriptions.
 - Primary/unique keys, index columns and included columns.
 - Outgoing foreign-key relationships and referenced columns.
+- Incoming foreign-key references, capped at 200 per object, so a table lists what depends on it.
+- Approximate row counts from `sys.partitions`, which needs no `VIEW DATABASE STATE` permission.
 - Procedure parameter signatures, including output flags for reference.
 
 It does not sample business rows, copy procedure bodies, or generate business meanings. Metadata visibility follows the read login's SQL permissions. Missing objects can indicate restricted visibility as well as removal.
+
+Each generated page opens with a one-line summary, then renders columns, relationships, incoming references, indexes, and parameters as compact Markdown tables. A bounded read therefore starts with the facts needed to choose an object, instead of spending its budget on the first few column definitions.
 
 The generated Markdown collection is stored in SQLite separately from ordinary uploaded documents; it does not consume the 100-document quota. Limits are 50,000 current objects, 128 MiB of generated current metadata, and 240,000 characters per object. A metadata page exceeding 16 MB fails the refresh. Previously known missing objects are retained as obsolete reference pages. Human-authored business notes stay separate and are never rewritten by initialization.
 
 The UI shows progress, cancellation, last refresh, search, object previews, and OKF export. A complete refresh atomically replaces the cache. Failure or cancellation keeps the previous cache available. Changing the server, read identity, or database selection requires initialization again. Approved schema changes and procedure execution mark all projects' caches stale; changes made outside Frame require a manual refresh. Initialization can run only while the project has no active chat task.
 
-Small models receive four focused tools: `mssql_schema_search`, `mssql_schema_read`, `mssql_query`, and `mssql_procedure`. Search returns at most 20 object references; reads return up to 8,000 characters with a continuation offset. Metadata discovery is not repeated for every question, and the full schema is never inserted into the prompt. Ask the model to search for relevant tables and read their columns/relationships before composing a query. Put domain explanations in reviewed Markdown business notes. Treat database descriptions and result values as reference data, not instructions.
+Search is ranked. Object names, split identifier parts, column names, and catalog descriptions are indexed in SQLite FTS5, scored with BM25, and then adjusted by a mechanical importance score derived from approximate row count, how many tables reference the object, whether it has a primary key, and whether it is a table. Text relevance dominates: a name match on a small table still outranks a column match on a large one. Importance only separates objects that match a query equally well, which is what happens when hundreds of tables share a column name. Identifiers are split on case and separator boundaries, so `CustomerOrders` matches `customer` and `LG_001_CLCARD` matches `clcard`, and terms match by prefix. Accents are folded on both the index and the query side, including Turkish dotless `ı`, so `aciklama` finds `açıklama` and the reverse. FTS5 operators typed into the search box are treated as literal words, never as query syntax. An empty query browses the most prominent objects first.
+
+Search falls back to unranked substring scanning for a cache imported before this index existed, and on a SQLite build without FTS5. Refresh the schema after upgrading to get ranked search. Rebuilding is the only migration: nothing is lost by refreshing.
+
+Small models receive four focused tools: `mssql_schema_search`, `mssql_schema_read`, `mssql_query`, and `mssql_procedure`. Search returns at most 20 ranked objects, each with a one-line summary so the model can triage without a read; reads return up to 8,000 characters with a continuation offset. Metadata discovery is not repeated for every question, and the full schema is never inserted into the prompt. Ask the model to search for relevant tables and read their columns/relationships before composing a query. Put domain explanations in reviewed Markdown business notes. Treat database descriptions and result values as reference data, not instructions.
 
 Schema pages contain OKF-style front matter and provenance and export as a linked Markdown collection. The normal project knowledge export also includes the enabled schema collection. Generated schema reflects catalog facts; conversation knowledge proposals remain subject to the existing human review workflow.
 
@@ -58,7 +66,7 @@ Stop cancels the driver request and connection. A read hitting its row/byte limi
 
 ## Validation and remaining acceptance
 
-Automated tests cover policy rejection, secret redaction, project gating, approval identity and single use, denial/cancellation, uncertain write outcomes, 1,105-object metadata initialization, failed refresh preservation, and OKF export. A browser test uses the real compiled Frame server and Pi SDK worker with a controlled local model and SQL driver to exercise settings, cached schema tools, result rendering, approval, denial, and Stop.
+Automated tests cover policy rejection, secret redaction, project gating, approval identity and single use, denial/cancellation, uncertain write outcomes, 1,105-object metadata initialization, failed refresh preservation, OKF export, ranked search ordering, identifier splitting, FTS operator neutrality, index/row consistency across refreshes, and the unranked fallback for an unindexed cache. A browser test uses the real compiled Frame server and Pi SDK worker with a controlled local model and SQL driver to exercise settings, cached schema tools, result rendering, approval, denial, and Stop.
 
 These are not live SQL Server or llama.cpp acceptance tests. Before use, verify your SQL Server version, TLS chain, both logins' permissions, actual catalog visibility, supported queries, selected procedure signatures, and cancellation behavior against disposable development data. Verify tool calling with your local model/template.
 

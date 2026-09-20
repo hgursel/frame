@@ -499,7 +499,9 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
           setOffset(0);
         }}
       />
-      <p className="muted small">{total} matching objects</p>
+      <p className="muted small">
+        {total} matching objects{query ? ', most relevant first' : ', most prominent first'}
+      </p>
       <div className="schema-results">
         {objects.map((o) => (
           <button
@@ -517,7 +519,7 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
             }}
           >
             {o.database}.{o.schema}.{o.name}
-            <small>{o.kind}</small>
+            <small>{o.summary || o.kind}</small>
           </button>
         ))}
       </div>

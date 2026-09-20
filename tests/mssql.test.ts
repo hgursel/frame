@@ -7,6 +7,13 @@ import { randomUUID } from 'node:crypto';
 import { unzipSync, strFromU8 } from 'fflate';
 import { createApp } from '../server/app.js';
 import { classify } from '../server/plugins/mssql/policy.js';
+import {
+  SchemaCache,
+  importanceOf,
+  matchExpression,
+  typeName,
+  words,
+} from '../server/plugins/mssql/schema.js';
 import { config, FakeSql } from './sql-fixture.js';
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), 'frame-sql-'));
@@ -247,8 +254,11 @@ test('Schema import scales past 1000 objects, is project-scoped, preserves prior
     const search: any = f.mssql.schema.search(f.project.id, ['Dev'], 'Table1105');
     assert.equal(search.total, 1);
     const object = f.mssql.schema.read(f.project.id, ['Dev'], search.objects[0].id);
-    assert.match(object.text, /primaryKey/);
-    assert.match(object.text, /referencedTable/);
+    assert.match(object.text, /## Summary/);
+    assert.match(object.text, /\| 1 \| id \| int identity \| no \| PK \|/);
+    assert.match(object.text, /FK → dbo\.Table1\.id/);
+    assert.equal(object.rowCount, 11050);
+    assert.match(String(search.objects[0].summary), /4 columns/);
     assert.equal(f.mssql.schema.search(randomUUID(), ['Dev'], '').total, 0);
     assert.throws(() => f.mssql.schema.read(f.project.id, ['Other'], object.id));
     const exported = unzipSync(
@@ -266,6 +276,13 @@ test('Schema import scales past 1000 objects, is project-scoped, preserves prior
     await f.mssql.schema.jobs.get(f.project.id)!.done;
     assert.equal(f.mssql.schema.status(f.project.id).state, 'error');
     assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], '').total, 1104);
+    // Index entries never outlive their rows; a recycled SQLite rowid cannot resurrect an object.
+    const counts = f.store.db
+      .prepare(
+        'SELECT (SELECT count(*) FROM mssql_schema) AS stored, (SELECT count(*) FROM mssql_schema_fts) AS indexed',
+      )
+      .get() as any;
+    assert.equal(counts.indexed, counts.stored);
     f.mssql.save({ ...config, server: 'other.internal' });
     assert.throws(
       () => f.mssql.schema.ensureSource(f.project.id, f.mssql.settings()),
@@ -298,6 +315,65 @@ test('SQL cancellation aborts an executing driver and records writes as uncertai
       'unknown',
     );
     assert.equal(f.driver.calls.length, 1);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Schema search ranks by relevance and prominence, and falls back for unindexed caches', async () => {
+  const f = await fixture();
+  try {
+    assert.equal(words('LG_001_CLCARD'), 'LG 001 CLCARD');
+    assert.equal(words('CustomerOrderLine'), 'Customer Order Line');
+    assert.equal(matchExpression('cari "hesap*'), '"cari"* AND "hesap"*');
+    // Turkish dotless i and cedillas fold on both sides, so ASCII typing finds accented metadata.
+    assert.equal(words('AÇIKLAMA'), 'ACIKLAMA');
+    assert.equal(words('ŞubeKodu'), 'Sube Kodu');
+    assert.equal(matchExpression('Açıklama'), '"Aciklama"*');
+    assert.equal(matchExpression('   '), '');
+    // sys.columns.max_length is bytes: 200 bytes of nvarchar is 100 characters.
+    assert.equal(typeName({ dataType: 'nvarchar', maxLength: 200 }), 'nvarchar(100)');
+    assert.equal(typeName({ dataType: 'varchar', maxLength: 200 }), 'varchar(200)');
+    assert.equal(typeName({ dataType: 'varchar', maxLength: -1 }), 'varchar(max)');
+    assert.equal(typeName({ dataType: 'decimal', precision: 18, scale: 2 }), 'decimal(18,2)');
+    assert(importanceOf(1_000_000, 40, 'USER_TABLE', true) > importanceOf(5, 0, 'VIEW', false));
+
+    f.mssql.save(config);
+    f.mssql.setProject(f.project.id, true);
+    f.driver.count = 300;
+    f.mssql.schema.start(f.project.id, config);
+    await f.mssql.schema.jobs.get(f.project.id)!.done;
+    assert.equal(f.mssql.schema.fts, true);
+
+    // Column names are searchable, and the most referenced table wins an otherwise equal match.
+    const columnHit: any = f.mssql.schema.search(f.project.id, ['Dev'], 'parentId');
+    assert.equal(columnHit.total, 300);
+    assert.equal(columnHit.objects[0].name, 'Table1');
+    assert.equal(columnHit.objects[0].obsolete, false);
+    // Prefixes and split identifier parts match without a full-text substring scan.
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'paren').total, 300);
+    // Accented column names and descriptions are reachable by their ASCII spelling.
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'aciklama').total, 300);
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'açıklama').total, 300);
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'sube').total, 300);
+    // A name match still outranks a merely prominent object.
+    const named: any = f.mssql.schema.search(f.project.id, ['Dev'], 'Table297');
+    assert.equal(named.total, 1);
+    assert.equal(named.objects[0].name, 'Table297');
+    // Browsing with no query leads with the objects that carry the most structure.
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], '').objects[0].name, 'Table1');
+    // FTS operators in user input are literal terms, never syntax: OR does not widen the match.
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'Table297 OR Table298').total, 0);
+    // Input with nothing tokenizable browses instead of failing.
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], '*').total, 300);
+
+    // A cache imported before the index exists still searches, unranked.
+    f.store.db.exec('UPDATE mssql_schema SET label=NULL');
+    const legacy = new SchemaCache(f.store, f.driver);
+    const scanned: any = legacy.search(f.project.id, ['Dev'], 'Table297');
+    assert.equal(scanned.total, 1);
+    assert.equal(scanned.objects[0].name, 'Table297');
+    assert.equal(legacy.search(f.project.id, ['Dev'], 'no-such-object').total, 0);
   } finally {
     await f.cleanup();
   }

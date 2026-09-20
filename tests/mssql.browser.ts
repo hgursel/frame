@@ -141,7 +141,7 @@ try {
   });
   await page.getByLabel('Search SQL schema knowledge').fill('Table1105');
   await page.getByRole('button', { name: 'Dev.dbo.Table1105' }).click();
-  await expect(page.locator('.schema-preview')).toContainText('primaryKey');
+  await expect(page.locator('.schema-preview')).toContainText('Referenced by');
   const project = ctx.store.projects()[0];
   schemaId = ctx.mssql.schema.search(project.id, ['Dev'], 'Table1105').objects[0].id;
   const metadataCalls = driver.calls.length;
