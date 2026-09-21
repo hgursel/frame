@@ -75,7 +75,7 @@ export async function createApp(options: {
   const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
   const runner = new Runner(store, mssql);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
-  mssql.notes.busy = (projectId) => runner.projectBusy(projectId);
+  mssql.notes.busy = () => runner.active.size > 0;
   const python = new PythonRuntime(store.root);
   const knowledge = new Knowledge(store, python);
   const wiki = new Wiki(knowledge);
@@ -165,7 +165,7 @@ export async function createApp(options: {
     return { ...settings, hasApiKey: !!apiKey };
   });
   app.put('/api/settings', async (request) => {
-    if (runner.active.size)
+    if (runner.active.size || mssql.notes.jobs.size)
       throw Object.assign(new Error('Stop running tasks before changing settings.'), {
         statusCode: 409,
       });

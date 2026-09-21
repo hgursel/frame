@@ -90,7 +90,11 @@ export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runn
           .regex(/^[a-f0-9]{64}$/)
           .parse(r.params.object),
       );
-      return { ...doc, text: doc.text + plugin.notesSection(id, doc) };
+      return {
+        ...doc,
+        text: doc.text + plugin.notesSection(id, doc),
+        noteVersion: plugin.notes.version(id, doc.database, doc.schema, doc.name),
+      };
     },
   );
   app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/status', (r) =>
@@ -111,7 +115,7 @@ export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runn
     '/api/projects/:id/mssql/notes/pages',
     (r) => {
       const id = project(r.params.id);
-      plugin.requireProject(id);
+      plugin.schema.ensureSource(id, plugin.requireProject(id));
       const v = z
         .object({
           q: z.string().max(200).default(''),
@@ -123,21 +127,23 @@ export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runn
   );
   app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/gaps', (r) => {
     const id = project(r.params.id);
-    plugin.requireProject(id);
+    plugin.schema.ensureSource(id, plugin.requireProject(id));
     return { gaps: plugin.notes.gaps(id) };
   });
   app.post<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/decide', async (r) => {
     const id = project(r.params.id);
-    plugin.requireProject(id);
+    plugin.schema.ensureSource(id, plugin.requireProject(id));
+    idle(id);
     const v = z
       .object({
         database: identifier,
         schema: identifier,
         name: identifier,
         accept: z.boolean(),
+        version: z.string().regex(/^[a-f0-9]{64}$/),
       })
       .parse(r.body);
-    return plugin.notes.decide(id, v.database, v.schema, v.name, v.accept);
+    return plugin.notes.decide(id, v.database, v.schema, v.name, v.accept, v.version);
   });
   app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/schema/export', async (r, reply) => {
     const id = project(r.params.id),

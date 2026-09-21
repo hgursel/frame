@@ -92,7 +92,7 @@ export function importanceOf(rows: number, referencedBy: number, kind: string, h
   );
 }
 // Text relevance dominates; importance only separates objects that match equally well.
-const IMPORTANCE_WEIGHT = 0.35;
+
 const COLUMNS =
   'projectId,generation,id,databaseName,schemaName,name,kind,text,obsolete,at,rowCount,refCount,importance,summary,label,terms,refs';
 const CARD =
@@ -124,6 +124,7 @@ export class SchemaCache {
       'label TEXT',
       'terms TEXT',
       'refs TEXT',
+      'noteTerms TEXT',
     ])
       try {
         store.db.exec(`ALTER TABLE mssql_schema ADD COLUMN ${column}`);
@@ -145,7 +146,7 @@ export class SchemaCache {
     );
     if (fts)
       store.db.exec(
-        'INSERT INTO mssql_schema_fts(rowid,name,terms) SELECT rowid,label,terms FROM mssql_schema WHERE label IS NOT NULL AND rowid NOT IN (SELECT rowid FROM mssql_schema_fts)',
+        "INSERT INTO mssql_schema_fts(rowid,name,terms) SELECT rowid,label,terms||' '||COALESCE(noteTerms,'') FROM mssql_schema WHERE label IS NOT NULL AND rowid NOT IN (SELECT rowid FROM mssql_schema_fts)",
       );
   }
   /** Index entries are removed with their rows so recycled SQLite rowids cannot resurrect them. */
@@ -248,7 +249,7 @@ export class SchemaCache {
     const args = [...(match ? [match] : []), projectId, generation, ...databases];
     const total = (this.store.db.prepare(`SELECT count(*) AS n ${where}`).get(...args) as any).n;
     const order = match
-      ? `bm25(mssql_schema_fts, 10.0, 1.0) - COALESCE(s.importance,0) * ${IMPORTANCE_WEIGHT}`
+      ? 'bm25(mssql_schema_fts, 10.0, 1.0), COALESCE(s.importance,0) DESC, s.databaseName, s.schemaName, s.name'
       : 'COALESCE(s.importance,0) DESC, s.databaseName, s.schemaName, s.name';
     const objects = this.store.db
       .prepare(
@@ -278,7 +279,7 @@ export class SchemaCache {
       terms
         .map(
           () =>
-            " AND instr(lower(databaseName||' '||schemaName||' '||name||' '||text), lower(?))>0",
+            " AND instr(lower(databaseName||' '||schemaName||' '||name||' '||text||' '||COALESCE(noteTerms,'')), lower(?))>0",
         )
         .join('');
     const args = [projectId, generation, ...databases, ...terms];
@@ -322,10 +323,10 @@ export class SchemaCache {
       )
       .get(projectId, generation, id) as any;
     if (!row) return false;
-    const terms = (String(row.terms || '') + ' ' + extra).slice(0, 16000);
+    const terms = String(row.terms || '') + ' ' + extra.slice(0, 4000);
     this.store.db
-      .prepare('UPDATE mssql_schema SET terms=? WHERE projectId=? AND generation=? AND id=?')
-      .run(terms, projectId, generation, id);
+      .prepare('UPDATE mssql_schema SET noteTerms=? WHERE projectId=? AND generation=? AND id=?')
+      .run(extra.slice(0, 4000), projectId, generation, id);
     if (this.fts)
       this.store.db
         .prepare('UPDATE mssql_schema_fts SET terms=? WHERE rowid=?')
@@ -519,9 +520,9 @@ export class SchemaCache {
         .map(() => '?')
         .join(',')})`,
     );
-    const index = this.store.db.prepare(
-      'INSERT INTO mssql_schema_fts(rowid,name,terms) VALUES (?,?,?)',
-    );
+    const index = this.fts
+      ? this.store.db.prepare('INSERT INTO mssql_schema_fts(rowid,name,terms) VALUES (?,?,?)')
+      : undefined;
     try {
       for (const database of settings.databases) {
         let after = 0;
@@ -574,7 +575,7 @@ export class SchemaCache {
               page.terms,
               page.refs,
             );
-            if (this.fts) index.run(Number(written.lastInsertRowid), page.label, page.terms);
+            index?.run(Number(written.lastInsertRowid), page.label, page.terms);
           }
           if (result.rows.length < 100) break;
         }
@@ -607,6 +608,7 @@ export class SchemaCache {
         this.store.db
           .prepare('INSERT OR REPLACE INTO mssql_schema_state VALUES (?,?,?,?,?,?,?)')
           .run(projectId, generation, 'ready', status.count, at, null, source);
+        this.afterImport?.(projectId);
         this.purge('projectId=? AND generation<>?', projectId, generation);
         this.store.db.exec('COMMIT');
       } catch (error) {
@@ -614,7 +616,6 @@ export class SchemaCache {
         throw error;
       }
       this.ranked.clear();
-      this.afterImport?.(projectId);
     } catch (error) {
       this.purge('projectId=? AND generation=?', projectId, generation);
       this.ranked.clear();

@@ -4,7 +4,7 @@
 
 Frame brings local models, project context, conversations, and agent tools into a browser-based workspace. It embeds the Pi SDK and connects to a llama.cpp server you operate. No separately installed Pi CLI, cloud-provider setup, or cloud fallback.
 
-## Status: 0.5.0 — single-administrator V1
+## Status: 0.5.1 — single-administrator V1
 
 Runnable, single-administrator application. Multi-user support is planned for **V2**. Trusted host tools run with the Frame Linux account's permissions; use a dedicated account and authenticated private access.
 

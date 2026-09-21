@@ -1,6 +1,6 @@
 # MSSQL plugin
 
-Frame 0.5 includes a built-in SQL Server plugin. It uses a Node TDS driver; no Pi CLI, MCP server, ODBC installation, or `sqlcmd` is required. It works independently of trusted host tools. V1 retains one Frame administrator and one shared connection profile.
+Frame 0.5.1 includes a built-in SQL Server plugin. It uses a Node TDS driver; no Pi CLI, MCP server, ODBC installation, or `sqlcmd` is required. It works independently of trusted host tools. V1 retains one Frame administrator and one shared connection profile.
 
 Intended for development databases. Approved operations can change or delete data. Frame deliberately has no production/development selector: the administrator is responsible for choosing appropriate databases and SQL Server permissions.
 
@@ -72,7 +72,7 @@ The run makes several passes, most prominent objects first, so it is useful befo
   summarized, so a thousand peer tables become a few dozen navigable areas.
 - **Glossary.** Name fragments the schema repeats at least three times are defined once.
 - **Recipes.** Read statements that already completed against this database are recorded with the
-  question they answer. A query that ran is better evidence than any inference from names.
+  question the model thinks they answer. Successful execution is evidence of valid syntax and permissions, not proof of business correctness.
 - **Lookup values.** Optional and off by default; see below.
 - **Vocabulary gaps.** Searches that returned nothing are recorded. A later run asks which known
   object each missing word names and, when the answer is a real object, adds it as an alias so the
@@ -97,16 +97,14 @@ is what stops a small model guessing table names on its first search.
 
 Review is deliberately partial. Per-object notes are usable while unreviewed and labelled as such;
 **Mark note reviewed** records a human decision on the object's page. Requiring review of a thousand
-notes before any of them helps would mean none of it is ever used.
+notes before any of them helps would mean none of it is ever used. Rejecting an object note removes it from model-facing pages and removes its aliases from search. Review decisions apply to the displayed version and cannot silently apply to a changed note. Unchanged imports preserve review status; rejected notes are not automatically regenerated. When catalog facts change, derived overview pages are invalidated and accepted object notes require review again if regenerated. Changing the connection identity clears generated notes/pages and vocabulary gaps; human wiki pages are preserved. Recipes only use completed reads recorded under the current connection identity.
 
 Enrichment shares one local model with chat, so it pauses between items whenever a chat task is
-running in the project and resumes when the project is idle. Plugin settings cannot be changed
-while a run is in flight.
+running in any project. An in-flight request finishes or times out before the pause takes effect. Only one enrichment job runs at a time. Model and plugin settings cannot change during generation. Requests have a two-minute timeout, a 1 MB response limit, and a conservative prompt budget scaled to the configured context window. Model errors stop the job visibly and retain completed notes.
 
 ### Reading rows from lookup tables
 
-**Allow enrichment to read rows from small lookup tables** is off by default and is the only setting
-that lets Frame read business data. Everything else in this plugin reads catalog metadata only.
+**Allow enrichment to read rows from small lookup tables** is off by default and controls only the enrichment sampling pass. Ordinary SQL queries can read business data independently through the read login; this switch does not disable them.
 
 When enabled, the lookup-value pass reads up to 50 rows, through the read login, from tables that
 are referenced by at least one other table and have 500 rows or fewer, and asks the model what the

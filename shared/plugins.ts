@@ -67,6 +67,7 @@ export interface SchemaCard {
 }
 export interface SchemaObject extends SchemaCard {
   text: string;
+  noteVersion?: string;
 }
 export interface SchemaNote {
   purpose: string;

@@ -60,13 +60,22 @@ export class MssqlPlugin extends EventEmitter {
     store.db
       .exec(`CREATE TABLE IF NOT EXISTS project_plugins (projectId TEXT, plugin TEXT, enabled INTEGER NOT NULL, PRIMARY KEY(projectId,plugin));
       CREATE TABLE IF NOT EXISTS mssql_operations (id TEXT PRIMARY KEY, conversationId TEXT, runId TEXT, databaseName TEXT, kind TEXT, sql TEXT, parameters TEXT, status TEXT, at TEXT);`);
+    if (
+      !(store.db.prepare('PRAGMA table_info(mssql_operations)').all() as any[]).some(
+        (c) => c.name === 'source',
+      )
+    )
+      store.db.exec('ALTER TABLE mssql_operations ADD COLUMN source TEXT');
     store.db.exec(
       "UPDATE mssql_operations SET status='unknown' WHERE status='executing'; UPDATE mssql_operations SET status='expired' WHERE status='awaiting_approval';",
     );
   }
   settings(): MssqlSettings {
     const file = path.join(this.store.root, 'mssql.json');
-    return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : structuredClone(defaults);
+    return {
+      ...structuredClone(defaults),
+      ...(existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}),
+    };
   }
   publicSettings(): PublicMssqlSettings {
     const s = this.settings();
@@ -100,7 +109,10 @@ export class MssqlPlugin extends EventEmitter {
     const file = path.join(this.store.root, 'mssql.json');
     writeFileSync(file + '.tmp', JSON.stringify(s, null, 2), { mode: 0o600 });
     renameSync(file + '.tmp', file);
-    if (this.schema.source(prior) !== this.schema.source(s)) this.schema.invalidate();
+    if (this.schema.source(prior) !== this.schema.source(s)) {
+      this.schema.invalidate();
+      this.notes.reset();
+    }
     return this.publicSettings();
   }
   projectEnabled(id: string) {
@@ -150,7 +162,7 @@ export class MssqlPlugin extends EventEmitter {
   async invoke(conversation: string, runId: string, action: string, args: unknown) {
     const projectId = this.store.conversation(conversation)!.projectId;
     const settings = this.requireProject(projectId);
-    if (action === 'schema_search' || action === 'schema_read')
+    if (action === 'schema_search' || action === 'schema_read' || action === 'notes_search')
       this.schema.ensureSource(projectId, settings);
     if (action === 'schema_search') {
       const v = z
@@ -199,7 +211,9 @@ export class MssqlPlugin extends EventEmitter {
     this.controllers.set(runId, controller);
     const sql = commandText(command);
     this.store.db
-      .prepare('INSERT INTO mssql_operations VALUES (?,?,?,?,?,?,?,?,?)')
+      .prepare(
+        'INSERT INTO mssql_operations (id,conversationId,runId,databaseName,kind,sql,parameters,status,at,source) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      )
       .run(
         operation,
         conversation,
@@ -210,6 +224,7 @@ export class MssqlPlugin extends EventEmitter {
         JSON.stringify(command.parameters),
         kind === 'read' ? 'ready' : 'awaiting_approval',
         new Date().toISOString(),
+        this.schema.source(settings),
       );
     let executing = false;
     try {
@@ -329,6 +344,14 @@ export class MssqlPlugin extends EventEmitter {
       this.controllers.delete(runId);
       this.pending.delete(operation);
       this.emit('change', conversation);
+    }
+  }
+  knowledgeMap(projectId: string) {
+    try {
+      this.schema.ensureSource(projectId, this.requireProject(projectId));
+      return this.notes.map(projectId);
+    } catch {
+      return '';
     }
   }
   /** Model-written notes render below the catalog facts on every page that has one. */

@@ -365,6 +365,18 @@ test('Schema search ranks by relevance and prominence, and falls back for uninde
     const named: any = f.mssql.schema.search(f.project.id, ['Dev'], 'Table297');
     assert.equal(named.total, 1);
     assert.equal(named.objects[0].name, 'Table297');
+    const other: any = f.mssql.schema
+      .search(f.project.id, ['Dev'], 'Table298')
+      .objects.find((o: any) => o.name === 'Table298');
+    f.mssql.schema.applyTerms(f.project.id, other.id, 'Table297');
+    f.store.db.prepare('UPDATE mssql_schema SET importance=100000000 WHERE id=?').run(other.id);
+    assert.equal(
+      f.mssql.schema.search(f.project.id, ['Dev'], 'Table297').objects[0].name,
+      'Table297',
+      'Table size must not override textual relevance',
+    );
+    f.store.db.prepare('UPDATE mssql_schema SET importance=0 WHERE id=?').run(other.id);
+    f.mssql.schema.applyTerms(f.project.id, other.id, '');
     // Browsing with no query leads with the objects that carry the most structure.
     assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], '').objects[0].name, 'Table1');
     // FTS operators in user input are literal terms, never syntax: OR does not widen the match.
@@ -455,7 +467,7 @@ test('Schema enrichment validates model output, survives refresh, and never over
 
     // The prompt map stays small enough to sit in a system prompt.
     const map = f.mssql.notes.map(f.project.id);
-    assert.match(map, /Subject areas: Sales/);
+    assert.match(map, /Subject areas: Dev: Sales/);
     assert.match(map, /Most connected objects/);
     assert(map.length < 4000);
 
@@ -610,6 +622,7 @@ test('Enrichment endpoints are authenticated, project-scoped, and blocked while 
           schema: 'dbo',
           name: 'Missing',
           accept: true,
+          version: '0'.repeat(64),
         })
       ).statusCode,
       404,
@@ -638,6 +651,7 @@ test('Enrichment reports model failure, yields to chat, and can be cancelled', a
     f.mssql.notes.start(f.project.id, config);
     await f.mssql.notes.jobs.get(f.project.id)!.done;
     assert.equal(f.mssql.notes.status(f.project.id).count, 0);
+    assert.equal(f.mssql.notes.status(f.project.id).state, 'error');
     assert.equal(f.mssql.notes.note(f.project.id, 'Dev', 'dbo', 'Table1'), undefined);
     f.generator.fail = false;
 
@@ -661,6 +675,137 @@ test('Enrichment reports model failure, yields to chat, and can be cancelled', a
     paused = false;
     await f.mssql.notes.jobs.get(f.project.id)!.done;
     assert.equal(f.mssql.notes.status(f.project.id).state, 'cancelled');
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Review decisions survive unchanged refreshes; rejection removes aliases and source changes clear interpretations', async () => {
+  const f = await fixture();
+  try {
+    f.mssql.save(config);
+    f.mssql.setProject(f.project.id, true);
+    f.store.saveSettings({ ...f.store.settings(), modelId: 'test-model' });
+    f.driver.count = 2;
+    const refresh = async () => {
+      f.mssql.schema.start(f.project.id, f.mssql.settings());
+      await f.mssql.schema.jobs.get(f.project.id)!.done;
+    };
+    const generate = async () => {
+      f.mssql.notes.start(f.project.id, f.mssql.settings());
+      await f.mssql.notes.jobs.get(f.project.id)!.done;
+    };
+    await refresh();
+    await generate();
+    const doc = f.mssql.schema.search(f.project.id, ['Dev'], 'Table1').objects[0]!;
+    const before = f.mssql.notes.version(f.project.id, 'Dev', 'dbo', 'Table1')!;
+    const decide = (accept: boolean, version = before) =>
+      f.auth(`/projects/${f.project.id}/mssql/notes/decide`, 'POST', {
+        database: 'Dev',
+        schema: 'dbo',
+        name: 'Table1',
+        accept,
+        version,
+      });
+    assert.equal((await decide(true)).statusCode, 200);
+    assert.equal(
+      (await decide(false)).statusCode,
+      409,
+      'An older review must not apply to a changed note',
+    );
+    await refresh();
+    const calls = f.generator.calls.length;
+    await generate();
+    assert.equal(
+      f.generator.calls.slice(calls).filter((c) => c.includes('"columnNotes"')).length,
+      0,
+      'Import timestamps must not trigger regeneration',
+    );
+    assert.equal(f.mssql.notes.note(f.project.id, 'Dev', 'dbo', 'Table1')?.state, 'accepted');
+    assert.equal(
+      (await decide(false, f.mssql.notes.version(f.project.id, 'Dev', 'dbo', 'Table1')!))
+        .statusCode,
+      200,
+    );
+    const read: any = await f.mssql.invoke(f.conversation.id, randomUUID(), 'schema_read', {
+      id: doc.id,
+    });
+    assert.doesNotMatch(read.text, /Holds business records/);
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'cari hesap').total, 1);
+    await refresh();
+    await generate();
+    assert.equal(
+      f.mssql.schema.search(f.project.id, ['Dev'], 'cari hesap').total,
+      1,
+      'Refresh must not resurrect rejected aliases',
+    );
+    f.mssql.save({ ...config, server: 'different.internal' });
+    assert.equal(f.mssql.knowledgeMap(f.project.id), '');
+    assert.equal((await f.auth(`/projects/${f.project.id}/mssql/notes/pages`)).statusCode, 409);
+    await refresh();
+    assert.equal(f.mssql.notes.pages(f.project.id).length, 0);
+    assert.equal(f.mssql.notes.note(f.project.id, 'Dev', 'dbo', 'Table1'), undefined);
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'cari hesap').total, 0);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Schema publication rolls back reindex failures and supports SQLite without FTS', async () => {
+  const f = await fixture();
+  try {
+    f.driver.count = 2;
+    f.mssql.schema.start(f.project.id, config);
+    await f.mssql.schema.jobs.get(f.project.id)!.done;
+    const original = f.mssql.schema.generation(f.project.id);
+    f.mssql.schema.afterImport = () => {
+      throw new Error('index failed');
+    };
+    f.driver.count = 3;
+    f.mssql.schema.start(f.project.id, config);
+    await f.mssql.schema.jobs.get(f.project.id)!.done;
+    assert.equal(f.mssql.schema.status(f.project.id).state, 'error');
+    assert.equal(f.mssql.schema.generation(f.project.id), original);
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], '').total, 2);
+    // Simulate a build without the optional FTS5 module, including the table being absent.
+    Object.defineProperty(f.mssql.schema, 'fts', { value: false });
+    f.store.db.exec('DROP TABLE mssql_schema_fts');
+    f.mssql.schema.afterImport = undefined;
+    f.mssql.schema.start(f.project.id, config);
+    await f.mssql.schema.jobs.get(f.project.id)!.done;
+    assert.equal(f.mssql.schema.status(f.project.id).state, 'ready');
+    assert.equal(f.mssql.schema.search(f.project.id, ['Dev'], 'Table3').total, 1);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Foreign-key groups stay within databases and source-specific recipes do not cross connections', async () => {
+  assert.deepEqual(
+    components([
+      { database: 'A', schema: 'dbo', name: 'Parent', refs: '[]' },
+      { database: 'A', schema: 'dbo', name: 'Child', refs: '["dbo.Parent"]' },
+      { database: 'B', schema: 'dbo', name: 'Parent', refs: '[]' },
+      { database: 'B', schema: 'dbo', name: 'Child', refs: '["dbo.Parent"]' },
+    ]).map((c) => new Set(c.map((o) => o.database)).size),
+    [1, 1],
+  );
+  const f = await fixture();
+  try {
+    f.mssql.save(config);
+    f.mssql.setProject(f.project.id, true);
+    f.driver.count = 1;
+    f.store.saveSettings({ ...f.store.settings(), modelId: 'test-model' });
+    await f.mssql.invoke(f.conversation.id, randomUUID(), 'query', {
+      database: 'Dev',
+      sql: 'SELECT 1',
+    });
+    f.mssql.save({ ...config, server: 'different.internal' });
+    f.mssql.schema.start(f.project.id, f.mssql.settings());
+    await f.mssql.schema.jobs.get(f.project.id)!.done;
+    f.mssql.notes.start(f.project.id, f.mssql.settings());
+    await f.mssql.notes.jobs.get(f.project.id)!.done;
+    assert.equal(f.mssql.notes.pages(f.project.id, 'recipe').length, 0);
   } finally {
     await f.cleanup();
   }

@@ -456,6 +456,27 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
       clearTimeout(timer);
     };
   }, [enabled, projectId, query, offset, status?.at, status?.state]);
+  const reviewNote = async (accept: boolean) => {
+    if (!selected) return;
+    const n = ++selectedRequest.current;
+    setError('');
+    try {
+      await api(`/projects/${projectId}/mssql/notes/decide`, 'POST', {
+        database: selected.database,
+        schema: selected.schema,
+        name: selected.name,
+        accept,
+        version: selected.noteVersion,
+      });
+      if (n !== selectedRequest.current) return;
+      const value = await api<SchemaObject>(
+        `/projects/${projectId}/mssql/schema/objects/${selected.id}`,
+      );
+      if (n === selectedRequest.current) setSelected(value);
+    } catch (error) {
+      if (n === selectedRequest.current) setError((error as Error).message);
+    }
+  };
   if (!enabled) return null;
   return (
     <details className="sql-knowledge">
@@ -557,34 +578,8 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
           <RichMarkdown text={selected.text} />
           {selected.text.includes('## Notes') && (
             <div className="button-row">
-              <button
-                onClick={() =>
-                  void api(`/projects/${projectId}/mssql/notes/decide`, 'POST', {
-                    database: selected.database,
-                    schema: selected.schema,
-                    name: selected.name,
-                    accept: true,
-                  })
-                    .then(() => setSelected({ ...selected }))
-                    .catch((e) => setError((e as Error).message))
-                }
-              >
-                Mark note reviewed
-              </button>
-              <button
-                onClick={() =>
-                  void api(`/projects/${projectId}/mssql/notes/decide`, 'POST', {
-                    database: selected.database,
-                    schema: selected.schema,
-                    name: selected.name,
-                    accept: false,
-                  })
-                    .then(() => setSelected({ ...selected }))
-                    .catch((e) => setError((e as Error).message))
-                }
-              >
-                Reject note
-              </button>
+              <button onClick={() => void reviewNote(true)}>Mark note reviewed</button>
+              <button onClick={() => void reviewNote(false)}>Reject note</button>
             </div>
           )}
         </section>

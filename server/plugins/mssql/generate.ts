@@ -21,10 +21,28 @@ export class LocalGenerator implements Generator {
     const settings = this.settings();
     if (!settings.modelId) throw new Error('Configure your local model in Settings first.');
     const endpoint = localEndpoint(settings.baseUrl);
+    const maxTokens = Math.min(
+      request.maxTokens,
+      settings.maxTokens,
+      Math.floor(settings.contextWindow / 4),
+    );
+    // Conservative byte budget leaves space for role/template overhead and the generated answer.
+    const budget = Math.max(
+      256,
+      settings.contextWindow - maxTokens - 512 - Buffer.byteLength(request.system),
+    );
+    const rawPrompt = Buffer.from(request.prompt);
+    const prompt =
+      rawPrompt.length <= budget
+        ? request.prompt
+        : rawPrompt.subarray(0, Math.floor(budget * 0.65)).toString() +
+          '\n[Catalog excerpt shortened]\n' +
+          rawPrompt.subarray(-Math.floor(budget * 0.3)).toString();
+    const boundedSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)]);
     const response = await fetch(endpoint + '/chat/completions', {
       method: 'POST',
       redirect: 'error',
-      signal,
+      signal: boundedSignal,
       headers: {
         'content-type': 'application/json',
         authorization: `Bearer ${settings.apiKey || 'frame-local-no-key'}`,
@@ -33,16 +51,39 @@ export class LocalGenerator implements Generator {
         model: settings.modelId,
         temperature: 0,
         stream: false,
-        max_tokens: Math.min(request.maxTokens, settings.maxTokens),
+        max_tokens: maxTokens,
         messages: [
           { role: 'system', content: request.system },
-          { role: 'user', content: request.prompt },
+          { role: 'user', content: prompt },
         ],
       }),
     });
-    if (!response.ok)
+    if (!response.ok) {
+      await response.body?.cancel();
       throw new Error(`Local model returned ${response.status}. Check the endpoint and model ID.`);
-    const body = (await response.json()) as any;
+    }
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('Local model returned no response body.');
+    const chunks: Uint8Array[] = [];
+    let bytes = 0;
+    try {
+      while (true) {
+        const part = await reader.read();
+        if (part.done) break;
+        if ((bytes += part.value.byteLength) > 1_000_000)
+          throw new Error('Local model response exceeded its size limit.');
+        chunks.push(part.value);
+      }
+    } catch (error) {
+      await reader.cancel();
+      throw error;
+    }
+    boundedSignal.throwIfAborted();
+    const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as any;
+    if (body?.choices?.[0]?.finish_reason === 'length')
+      throw new Error(
+        'Local model exhausted its output limit. Increase the model output limit or use a model that can return concise JSON.',
+      );
     const text = body?.choices?.[0]?.message?.content;
     if (typeof text !== 'string') throw new Error('Local model returned no completion text.');
     return text;

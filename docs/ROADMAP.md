@@ -47,6 +47,13 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Ranked schema search: FTS5 with BM25 over object names, split identifier parts, column names, and descriptions, adjusted by a mechanical importance score, with accent folding and an unranked fallback for caches built before the index.
 - Generated database knowledge: a local model writes per-object notes, subject areas, a glossary, recipes from queries that already ran, and aliases closing recorded search gaps. Output is validated against real column names, stored apart from catalog facts, and labelled with its model and review state. Reading rows from small lookup tables is a separate, default-off setting. Note quality against a real schema and model is unverified.
 
+## 0.5.1 — SQL knowledge improvements (implemented)
+
+- Compact catalog pages, incoming references, ranked SQLite FTS search, identifier splitting and Turkish accent folding.
+- Optional local-model object notes, subject areas, glossary, completed-query recipes and default-off lookup sampling.
+- Generation cancellation and bounded requests; review decisions with version checks, rejected alias removal, connection-aware invalidation, and atomic schema publication.
+- Regression tests cover refresh failure, unavailable FTS, multi-database grouping, generation transport limits, and browser review/reject behavior. Live-model interpretation quality still needs acceptance testing.
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
