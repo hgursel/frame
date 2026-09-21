@@ -25,6 +25,8 @@ export const settingsSchema = z.object({
   allowDataChanges: z.boolean(),
   allowSchemaChanges: z.boolean(),
   allowProcedures: z.boolean(),
+  /** Off by default: this is the only setting that lets Frame read business rows. */
+  allowValueSampling: z.boolean().default(false),
   procedures: z
     .array(z.object({ database: identifier, schema: identifier, name: identifier }))
     .max(500),

@@ -237,7 +237,10 @@ export class Runner extends EventEmitter {
         operation,
         mssql:
           this.mssql?.projectEnabled(project.id) && this.mssql.settings().enabled
-            ? { databases: this.mssql.settings().databases }
+            ? {
+                databases: this.mssql.settings().databases,
+                map: this.mssql.knowledgeMap(project.id),
+              }
             : undefined,
       },
       (sendError) => {

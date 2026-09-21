@@ -7,6 +7,8 @@ import type {
   SqlResult,
   SchemaStatus,
   SchemaObject,
+  NotesStatus,
+  NotesPage,
 } from '../shared/plugins.js';
 export function PluginSettings() {
   const [form, setForm] = useState<PublicMssqlSettings>();
@@ -200,6 +202,20 @@ export function PluginSettings() {
             />
             Allow selected stored procedures with approval
           </label>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={form.allowValueSampling}
+              onChange={(e) => change('allowValueSampling', e.target.checked)}
+            />
+            Allow enrichment to read rows from small lookup tables
+          </label>
+          <p className="muted small">
+            Off by default. When on, generating database knowledge reads up to 50 rows from
+            referenced tables of 500 rows or fewer, through the read login, so status and type codes
+            can be decoded. Those values are stored in generated knowledge pages and appear in
+            exports.
+          </p>
           <label>
             Allowed stored procedures
             <textarea
@@ -370,6 +386,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
         </p>
       )}
       <SqlKnowledge key={`${projectId}-${savedVersion}`} projectId={projectId} />
+      <SqlGeneratedKnowledge key={`generated-${projectId}-${savedVersion}`} projectId={projectId} />
     </section>
   );
 }
@@ -439,6 +456,27 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
       clearTimeout(timer);
     };
   }, [enabled, projectId, query, offset, status?.at, status?.state]);
+  const reviewNote = async (accept: boolean) => {
+    if (!selected) return;
+    const n = ++selectedRequest.current;
+    setError('');
+    try {
+      await api(`/projects/${projectId}/mssql/notes/decide`, 'POST', {
+        database: selected.database,
+        schema: selected.schema,
+        name: selected.name,
+        accept,
+        version: selected.noteVersion,
+      });
+      if (n !== selectedRequest.current) return;
+      const value = await api<SchemaObject>(
+        `/projects/${projectId}/mssql/schema/objects/${selected.id}`,
+      );
+      if (n === selectedRequest.current) setSelected(value);
+    } catch (error) {
+      if (n === selectedRequest.current) setError((error as Error).message);
+    }
+  };
   if (!enabled) return null;
   return (
     <details className="sql-knowledge">
@@ -499,7 +537,9 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
           setOffset(0);
         }}
       />
-      <p className="muted small">{total} matching objects</p>
+      <p className="muted small">
+        {total} matching objects{query ? ', most relevant first' : ', most prominent first'}
+      </p>
       <div className="schema-results">
         {objects.map((o) => (
           <button
@@ -517,7 +557,7 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
             }}
           >
             {o.database}.{o.schema}.{o.name}
-            <small>{o.kind}</small>
+            <small>{o.summary || o.kind}</small>
           </button>
         ))}
       </div>
@@ -536,7 +576,137 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
           </h3>
           {selected.obsolete && <p>Obsolete or no longer visible.</p>}
           <RichMarkdown text={selected.text} />
+          {selected.text.includes('## Notes') && (
+            <div className="button-row">
+              <button onClick={() => void reviewNote(true)}>Mark note reviewed</button>
+              <button onClick={() => void reviewNote(false)}>Reject note</button>
+            </div>
+          )}
         </section>
+      )}
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+    </details>
+  );
+}
+export function SqlGeneratedKnowledge({ projectId }: { projectId: string }) {
+  const [enabled, setEnabled] = useState(false);
+  const [status, setStatus] = useState<NotesStatus>(),
+    [pages, setPages] = useState<NotesPage[]>([]),
+    [gaps, setGaps] = useState<{ term: string; seen: number; resolved?: string }[]>([]),
+    [query, setQuery] = useState(''),
+    [error, setError] = useState(''),
+    [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void api<{ mssql: boolean; systemEnabled: boolean }>(`/projects/${projectId}/plugins`)
+      .then((v) => live && setEnabled(v.mssql && v.systemEnabled))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    const poll = () =>
+      void api<NotesStatus>(`/projects/${projectId}/mssql/notes/status`)
+        .then((v) => live && setStatus(v))
+        .catch(() => {});
+    poll();
+    const timer = setInterval(poll, 2000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [enabled, projectId]);
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    const timer = setTimeout(() => {
+      void api<{ pages: NotesPage[] }>(
+        `/projects/${projectId}/mssql/notes/pages?q=${encodeURIComponent(query)}`,
+      )
+        .then((v) => live && setPages(v.pages))
+        .catch((e) => live && setError(e.message));
+      void api<{ gaps: typeof gaps }>(`/projects/${projectId}/mssql/notes/gaps`)
+        .then((v) => live && setGaps(v.gaps))
+        .catch(() => {});
+    }, 200);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [enabled, projectId, query, status?.at, status?.state]);
+  if (!enabled) return null;
+  return (
+    <details className="sql-knowledge">
+      <summary>
+        Generated database knowledge {status ? `· ${status.count} items · ${status.state}` : ''}
+      </summary>
+      <p className="muted small">
+        A local model reads the cached catalog and writes subject areas, a glossary of repeated
+        abbreviations, per-object notes, and recipes from queries that already ran. All of it is
+        interpretation, not catalog fact, and is labelled with the model that wrote it. Notes are
+        validated against real column names before they are stored.
+      </p>
+      {status?.progress && <p role="status">{status.progress}</p>}
+      {status?.error && <p className="error">{status.error}</p>}
+      <div className="button-row">
+        <button
+          disabled={busy || status?.state === 'running'}
+          onClick={async () => {
+            setBusy(true);
+            setError('');
+            try {
+              await api(`/projects/${projectId}/mssql/notes`, 'POST', {});
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {status?.count ? 'Update generated knowledge' : 'Generate database knowledge'}
+        </button>
+        {status?.state === 'running' && (
+          <button
+            onClick={() =>
+              void api(`/projects/${projectId}/mssql/notes/cancel`, 'POST', {}).catch((e) =>
+                setError(e.message),
+              )
+            }
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+      <input
+        aria-label="Search generated database knowledge"
+        placeholder="Search subject areas, glossary, recipes…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <div className="schema-results">
+        {pages.map((p) => (
+          <article key={p.id}>
+            <h4>
+              {p.title} <small>{p.kind}</small>
+            </h4>
+            <RichMarkdown text={p.body} />
+          </article>
+        ))}
+      </div>
+      {!!gaps.length && (
+        <p className="muted small">
+          Searches that found nothing:{' '}
+          {gaps
+            .map((g) => `${g.term}${g.resolved ? ` → ${g.resolved}` : ''} (${g.seen})`)
+            .join(', ')}
+        </p>
       )}
       {error && (
         <p role="alert" className="error">

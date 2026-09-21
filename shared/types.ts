@@ -70,7 +70,7 @@ export interface ChatMetrics {
 }
 export interface WorkerInput {
   operation?: 'prompt' | 'compact';
-  mssql?: { databases: string[] };
+  mssql?: { databases: string[]; map?: string };
   cwd: string;
   agentDir: string;
   sessionFile: string;

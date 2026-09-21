@@ -13,6 +13,8 @@ import type {
 } from '../../../shared/plugins.js';
 import { classify, commandSchema, commandText, fail, settingsSchema } from './policy.js';
 import { SchemaCache } from './schema.js';
+import { SchemaNotes, factHashOf } from './notes.js';
+import { LocalGenerator, type Generator } from './generate.js';
 import { TediousDriver, type SqlDriver } from './driver.js';
 export const defaults: MssqlSettings = {
   enabled: false,
@@ -24,6 +26,7 @@ export const defaults: MssqlSettings = {
   allowDataChanges: false,
   allowSchemaChanges: false,
   allowProcedures: false,
+  allowValueSampling: false,
   procedures: [],
   trustServerCertificate: false,
   timeoutSeconds: 30,
@@ -36,25 +39,43 @@ type Pending = {
 };
 export class MssqlPlugin extends EventEmitter {
   readonly schema: SchemaCache;
+  readonly notes: SchemaNotes;
   readonly pending = new Map<string, Pending>();
   readonly controllers = new Map<string, AbortController>();
   readonly inFlight = new Set<Promise<unknown>>();
   constructor(
     readonly store: Store,
     readonly driver: SqlDriver = new TediousDriver(),
+    generator: Generator = new LocalGenerator(() => store.settings()),
   ) {
     super();
     this.schema = new SchemaCache(store, driver);
+    this.notes = new SchemaNotes(
+      store,
+      this.schema,
+      generator,
+      () => store.settings(),
+      () => this.driver,
+    );
     store.db
       .exec(`CREATE TABLE IF NOT EXISTS project_plugins (projectId TEXT, plugin TEXT, enabled INTEGER NOT NULL, PRIMARY KEY(projectId,plugin));
       CREATE TABLE IF NOT EXISTS mssql_operations (id TEXT PRIMARY KEY, conversationId TEXT, runId TEXT, databaseName TEXT, kind TEXT, sql TEXT, parameters TEXT, status TEXT, at TEXT);`);
+    if (
+      !(store.db.prepare('PRAGMA table_info(mssql_operations)').all() as any[]).some(
+        (c) => c.name === 'source',
+      )
+    )
+      store.db.exec('ALTER TABLE mssql_operations ADD COLUMN source TEXT');
     store.db.exec(
       "UPDATE mssql_operations SET status='unknown' WHERE status='executing'; UPDATE mssql_operations SET status='expired' WHERE status='awaiting_approval';",
     );
   }
   settings(): MssqlSettings {
     const file = path.join(this.store.root, 'mssql.json');
-    return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : structuredClone(defaults);
+    return {
+      ...structuredClone(defaults),
+      ...(existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}),
+    };
   }
   publicSettings(): PublicMssqlSettings {
     const s = this.settings();
@@ -88,7 +109,10 @@ export class MssqlPlugin extends EventEmitter {
     const file = path.join(this.store.root, 'mssql.json');
     writeFileSync(file + '.tmp', JSON.stringify(s, null, 2), { mode: 0o600 });
     renameSync(file + '.tmp', file);
-    if (this.schema.source(prior) !== this.schema.source(s)) this.schema.invalidate();
+    if (this.schema.source(prior) !== this.schema.source(s)) {
+      this.schema.invalidate();
+      this.notes.reset();
+    }
     return this.publicSettings();
   }
   projectEnabled(id: string) {
@@ -138,7 +162,7 @@ export class MssqlPlugin extends EventEmitter {
   async invoke(conversation: string, runId: string, action: string, args: unknown) {
     const projectId = this.store.conversation(conversation)!.projectId;
     const settings = this.requireProject(projectId);
-    if (action === 'schema_search' || action === 'schema_read')
+    if (action === 'schema_search' || action === 'schema_read' || action === 'notes_search')
       this.schema.ensureSource(projectId, settings);
     if (action === 'schema_search') {
       const v = z
@@ -147,7 +171,10 @@ export class MssqlPlugin extends EventEmitter {
           offset: z.number().int().min(0).max(50000).default(0),
         })
         .parse(args);
-      return this.schema.search(projectId, settings.databases, v.query, v.offset);
+      const found = this.schema.search(projectId, settings.databases, v.query, v.offset);
+      // A search that found nothing names vocabulary the notes are missing; enrichment reads these.
+      if (!v.offset) this.notes.recordGap(projectId, v.query, found.total);
+      return found;
     }
     if (action === 'schema_read') {
       const v = z
@@ -157,12 +184,22 @@ export class MssqlPlugin extends EventEmitter {
         })
         .parse(args);
       const doc = this.schema.read(projectId, settings.databases, v.id);
+      const page = doc.text + this.notesSection(projectId, doc);
       return {
         ...doc,
-        text: doc.text.slice(v.offset, v.offset + 8000),
-        nextOffset: v.offset + 8000 < doc.text.length ? v.offset + 8000 : null,
+        text: page.slice(v.offset, v.offset + 8000),
+        nextOffset: v.offset + 8000 < page.length ? v.offset + 8000 : null,
         status: this.schema.status(projectId),
       };
+    }
+    if (action === 'notes_search') {
+      const v = z
+        .object({
+          query: z.string().max(200).default(''),
+          kind: z.enum(['domain', 'glossary', 'recipe', 'codes', 'any']).default('any'),
+        })
+        .parse(args);
+      return this.notes.search(projectId, v.query, v.kind);
     }
     if (action !== 'query') throw fail('Unknown MSSQL action.');
     if (this.controllers.has(runId)) throw fail('Wait for the current SQL request.', 409);
@@ -174,7 +211,9 @@ export class MssqlPlugin extends EventEmitter {
     this.controllers.set(runId, controller);
     const sql = commandText(command);
     this.store.db
-      .prepare('INSERT INTO mssql_operations VALUES (?,?,?,?,?,?,?,?,?)')
+      .prepare(
+        'INSERT INTO mssql_operations (id,conversationId,runId,databaseName,kind,sql,parameters,status,at,source) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      )
       .run(
         operation,
         conversation,
@@ -185,6 +224,7 @@ export class MssqlPlugin extends EventEmitter {
         JSON.stringify(command.parameters),
         kind === 'read' ? 'ready' : 'awaiting_approval',
         new Date().toISOString(),
+        this.schema.source(settings),
       );
     let executing = false;
     try {
@@ -306,6 +346,39 @@ export class MssqlPlugin extends EventEmitter {
       this.emit('change', conversation);
     }
   }
+  knowledgeMap(projectId: string) {
+    try {
+      this.schema.ensureSource(projectId, this.requireProject(projectId));
+      return this.notes.map(projectId);
+    } catch {
+      return '';
+    }
+  }
+  /** Model-written notes render below the catalog facts on every page that has one. */
+  notesSection(
+    projectId: string,
+    doc: { database: string; schema: string; name: string; text: string },
+  ) {
+    return this.notes.section(projectId, doc.database, doc.schema, doc.name, factHashOf(doc.text));
+  }
+  /** The OKF export carries the catalog pages, their notes, and the generated knowledge pages. */
+  exportPages(projectId: string, databases: string[]) {
+    const pages: Record<string, string> = {};
+    for (const [file, body] of Object.entries(this.schema.pages(projectId, databases))) {
+      const id = file.replace(/^mssql\/|\.md$/g, '');
+      // Hash the stored page, not the export body: the obsolete marker is not a catalog change.
+      const doc = this.store.db
+        .prepare(
+          'SELECT databaseName AS database,schemaName AS schema,name,text FROM mssql_schema WHERE projectId=? AND generation=? AND id=?',
+        )
+        .get(projectId, this.schema.generation(projectId), id) as any;
+      pages[file] = doc ? body + this.notesSection(projectId, doc) : body;
+    }
+    for (const page of this.notes.pages(projectId))
+      pages[`mssql-knowledge/${page.kind}-${page.id.slice(0, 16)}.md`] =
+        `---\n${JSON.stringify({ type: 'Database Knowledge', title: page.title, kind: page.kind, generated: { by: `model:${page.modelId}`, at: page.at }, review: page.state })}\n---\n\n# ${page.title}\n\nModel-written interpretation of catalog metadata, not a catalog fact.\n\n${page.body}\n`;
+    return pages;
+  }
   async test(database: string, login: 'read' | 'write') {
     const s = this.settings();
     if (!s.databases.includes(database) || !s[login].username || !s[login].password)
@@ -323,6 +396,7 @@ export class MssqlPlugin extends EventEmitter {
   async close() {
     for (const run of this.controllers.keys()) this.cancelRun(run);
     await Promise.allSettled([...this.inFlight]);
+    await this.notes.close();
     await this.schema.close();
   }
 }

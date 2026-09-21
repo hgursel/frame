@@ -12,6 +12,8 @@ export interface MssqlSettings {
   allowDataChanges: boolean;
   allowSchemaChanges: boolean;
   allowProcedures: boolean;
+  /** Enables sampling rows from small lookup tables during enrichment. Off by default. */
+  allowValueSampling: boolean;
   procedures: { database: string; schema: string; name: string }[];
   trustServerCertificate: boolean;
   timeoutSeconds: number;
@@ -50,15 +52,52 @@ export interface SqlApproval {
   kind: 'data' | 'schema' | 'procedure';
   expiresAt: number;
 }
-export interface SchemaObject {
+export interface SchemaCard {
   id: string;
   database: string;
   schema: string;
   name: string;
   kind: string;
-  text: string;
   obsolete: boolean;
   at: string;
+  /** Approximate catalog row count; null for caches imported before row counts were collected. */
+  rowCount: number | null;
+  /** One line of catalog facts, shown in search results so triage needs no read. */
+  summary: string | null;
+}
+export interface SchemaObject extends SchemaCard {
+  text: string;
+  noteVersion?: string;
+}
+export interface SchemaNote {
+  purpose: string;
+  grain: string;
+  domain: string;
+  aliases: string[];
+  columnNotes: Record<string, string>;
+  confidence: 'high' | 'medium' | 'low';
+  /** How many annotated columns did not exist; a hallucination signal kept for review. */
+  invented: number;
+  factHash?: string;
+  modelId?: string;
+  at?: string;
+  state?: 'proposed' | 'accepted' | 'rejected';
+}
+export interface NotesPage {
+  id: string;
+  kind: 'domain' | 'glossary' | 'recipe' | 'codes';
+  title: string;
+  body: string;
+  at: string;
+  modelId: string;
+  state: string;
+}
+export interface NotesStatus {
+  state: 'empty' | 'running' | 'ready' | 'error' | 'cancelled';
+  count: number;
+  at?: string;
+  error?: string;
+  progress?: string;
 }
 export interface SchemaStatus {
   state: 'empty' | 'running' | 'ready' | 'stale' | 'error' | 'cancelled';

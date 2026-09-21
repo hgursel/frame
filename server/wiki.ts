@@ -243,7 +243,7 @@ export class Wiki {
       files['wiki/mssql/index.md'] = strToU8(
         '# SQL schema knowledge\n\n' +
           Object.keys(schema)
-            .map((p) => '- [' + p + '](' + p.slice(6) + ')')
+            .map((p) => '- [' + p + '](' + path.posix.relative('mssql', p) + ')')
             .join('\n'),
       );
     }

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { FakeSql } from './sql-fixture.js';
+import { FakeSql, FakeGenerator } from './sql-fixture.js';
 const { createApp } = await import(new URL('../dist/server/app.js', import.meta.url).href);
 const driver = new FakeSql();
 let schemaId = '',
@@ -87,6 +87,7 @@ const ctx = await createApp({
   setupToken: 'sql-test',
   webDir: path.resolve('dist/web'),
   sqlDriver: driver,
+  generator: new FakeGenerator(),
 });
 ctx.store.saveSettings({
   ...ctx.store.settings(),
@@ -134,14 +135,29 @@ try {
   await expect(page.locator('.sql-knowledge')).toHaveCount(0);
   await page.getByLabel('Enable MSSQL for this project').check();
   await page.getByRole('button', { name: 'Save project plugins' }).click();
-  await page.locator('.sql-knowledge summary').click();
+  await page.locator('.sql-knowledge summary').filter({ hasText: 'SQL schema knowledge' }).click();
   await page.getByRole('button', { name: 'Initialize database knowledge' }).click();
-  await expect(page.locator('.sql-knowledge summary')).toContainText('1105 objects · ready', {
+  await expect(
+    page.locator('.sql-knowledge summary').filter({ hasText: 'SQL schema knowledge' }),
+  ).toContainText('1105 objects · ready', {
     timeout: 15000,
   });
   await page.getByLabel('Search SQL schema knowledge').fill('Table1105');
   await page.getByRole('button', { name: 'Dev.dbo.Table1105' }).click();
-  await expect(page.locator('.schema-preview')).toContainText('primaryKey');
+  await expect(page.locator('.schema-preview')).toContainText('Referenced by');
+  await page.locator('summary').filter({ hasText: 'Generated database knowledge' }).click();
+  await page.getByRole('button', { name: 'Generate database knowledge', exact: true }).click();
+  await expect(
+    page.locator('summary').filter({ hasText: 'Generated database knowledge' }),
+  ).toContainText('ready', { timeout: 30000 });
+  await page.getByRole('button', { name: 'Dev.dbo.Table1105' }).click();
+  await expect(page.locator('.schema-preview')).toContainText('not reviewed');
+  await page.getByRole('button', { name: 'Mark note reviewed', exact: true }).click();
+  await expect(page.locator('.schema-preview')).toContainText('sql-test, reviewed');
+  await page.getByRole('button', { name: 'Reject note', exact: true }).click();
+  await expect(page.locator('.schema-preview')).not.toContainText('Holds business records');
+  await expect(page.getByRole('button', { name: 'Reject note', exact: true })).toHaveCount(0);
+
   const project = ctx.store.projects()[0];
   schemaId = ctx.mssql.schema.search(project.id, ['Dev'], 'Table1105').objects[0].id;
   const metadataCalls = driver.calls.length;

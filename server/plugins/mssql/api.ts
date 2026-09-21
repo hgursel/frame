@@ -13,10 +13,16 @@ export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runn
   const idle = (id?: string) => {
     if (
       id
-        ? runner.projectBusy(id) || plugin.schema.jobs.has(id)
-        : runner.active.size || plugin.schema.jobs.size || plugin.controllers.size
+        ? runner.projectBusy(id) || plugin.schema.jobs.has(id) || plugin.notes.jobs.has(id)
+        : runner.active.size ||
+          plugin.schema.jobs.size ||
+          plugin.notes.jobs.size ||
+          plugin.controllers.size
     )
-      throw fail('Stop active tasks and schema imports before changing plugin settings.', 409);
+      throw fail(
+        'Stop active tasks, schema imports, and knowledge generation before changing plugin settings.',
+        409,
+      );
   };
   app.get('/api/plugins/mssql', () => plugin.publicSettings());
   app.put('/api/plugins/mssql', async (r) => {
@@ -76,7 +82,7 @@ export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runn
       const id = project(r.params.id),
         s = plugin.requireProject(id);
       plugin.schema.ensureSource(id, s);
-      return plugin.schema.read(
+      const doc = plugin.schema.read(
         id,
         s.databases,
         z
@@ -84,13 +90,66 @@ export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runn
           .regex(/^[a-f0-9]{64}$/)
           .parse(r.params.object),
       );
+      return {
+        ...doc,
+        text: doc.text + plugin.notesSection(id, doc),
+        noteVersion: plugin.notes.version(id, doc.database, doc.schema, doc.name),
+      };
     },
   );
+  app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/status', (r) =>
+    plugin.notes.status(project(r.params.id)),
+  );
+  app.post<{ Params: { id: string } }>('/api/projects/:id/mssql/notes', async (r, reply) => {
+    const id = project(r.params.id);
+    idle(id);
+    const s = plugin.requireProject(id);
+    plugin.schema.ensureSource(id, s);
+    return reply.code(202).send(plugin.notes.start(id, s));
+  });
+  app.post<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/cancel', async (r) => {
+    plugin.notes.cancel(project(r.params.id));
+    return { ok: true };
+  });
+  app.get<{ Params: { id: string }; Querystring: { q?: string; kind?: string } }>(
+    '/api/projects/:id/mssql/notes/pages',
+    (r) => {
+      const id = project(r.params.id);
+      plugin.schema.ensureSource(id, plugin.requireProject(id));
+      const v = z
+        .object({
+          q: z.string().max(200).default(''),
+          kind: z.enum(['domain', 'glossary', 'recipe', 'codes', 'any']).default('any'),
+        })
+        .parse({ q: r.query.q || '', kind: r.query.kind || 'any' });
+      return plugin.notes.search(id, v.q, v.kind);
+    },
+  );
+  app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/gaps', (r) => {
+    const id = project(r.params.id);
+    plugin.schema.ensureSource(id, plugin.requireProject(id));
+    return { gaps: plugin.notes.gaps(id) };
+  });
+  app.post<{ Params: { id: string } }>('/api/projects/:id/mssql/notes/decide', async (r) => {
+    const id = project(r.params.id);
+    plugin.schema.ensureSource(id, plugin.requireProject(id));
+    idle(id);
+    const v = z
+      .object({
+        database: identifier,
+        schema: identifier,
+        name: identifier,
+        accept: z.boolean(),
+        version: z.string().regex(/^[a-f0-9]{64}$/),
+      })
+      .parse(r.body);
+    return plugin.notes.decide(id, v.database, v.schema, v.name, v.accept, v.version);
+  });
   app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/schema/export', async (r, reply) => {
     const id = project(r.params.id),
       s = plugin.requireProject(id);
     plugin.schema.ensureSource(id, s);
-    const pages = plugin.schema.pages(id, s.databases);
+    const pages = plugin.exportPages(id, s.databases);
     const index =
       '---\nokf_version: "0.2"\n---\n\n# MSSQL schema knowledge\n\n' +
       Object.keys(pages)

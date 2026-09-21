@@ -1,6 +1,7 @@
 import { MssqlPlugin } from './plugins/mssql/service.js';
 import { mssqlApi } from './plugins/mssql/api.js';
 import type { SqlDriver } from './plugins/mssql/driver.js';
+import type { Generator } from './plugins/mssql/generate.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import staticFiles from '@fastify/static';
@@ -67,11 +68,14 @@ export async function createApp(options: {
   setupToken: string;
   webDir?: string;
   sqlDriver?: SqlDriver;
+  generator?: Generator;
 }) {
   const origin = new URL(options.origin).origin;
   const store = new Store(path.resolve(options.dataDir));
-  const mssql = new MssqlPlugin(store, options.sqlDriver);
+  const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
   const runner = new Runner(store, mssql);
+  // Enrichment shares one local model with chat, so it pauses instead of competing for it.
+  mssql.notes.busy = () => runner.active.size > 0;
   const python = new PythonRuntime(store.root);
   const knowledge = new Knowledge(store, python);
   const wiki = new Wiki(knowledge);
@@ -161,7 +165,7 @@ export async function createApp(options: {
     return { ...settings, hasApiKey: !!apiKey };
   });
   app.put('/api/settings', async (request) => {
-    if (runner.active.size)
+    if (runner.active.size || mssql.notes.jobs.size)
       throw Object.assign(new Error('Stop running tasks before changing settings.'), {
         statusCode: 409,
       });
@@ -372,7 +376,7 @@ export async function createApp(options: {
     try {
       const settings = mssql.requireProject(id);
       mssql.schema.ensureSource(id, settings);
-      return mssql.schema.pages(id, settings.databases);
+      return mssql.exportPages(id, settings.databases);
     } catch {
       return {};
     }
