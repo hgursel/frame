@@ -810,3 +810,66 @@ test('Foreign-key groups stay within databases and source-specific recipes do no
     await f.cleanup();
   }
 });
+
+test('A 3000-object catalog is enriched sequentially, checkpoints each object, and resumes after failure', async () => {
+  const f = await fixture();
+  try {
+    f.mssql.save(config);
+    f.mssql.setProject(f.project.id, true);
+    f.store.saveSettings({ ...f.store.settings(), modelId: 'small-local-model' });
+    f.driver.count = 3000;
+    f.mssql.schema.start(f.project.id, config);
+    await f.mssql.schema.jobs.get(f.project.id)!.done;
+    const complete = f.generator.complete.bind(f.generator);
+    let active = 0,
+      maximum = 0,
+      failOnce = true;
+    const completed = new Set<string>();
+    f.generator.complete = async (request, signal) => {
+      maximum = Math.max(maximum, ++active);
+      try {
+        const object = /^Dev\.dbo\.Table\d+$/m.exec(request.prompt)?.[0];
+        if (request.prompt.startsWith('Catalog facts for one database object:')) {
+          assert(object);
+          assert.equal(request.prompt.match(/^Dev\.dbo\.Table\d+$/gm)?.length, 1);
+          assert(request.prompt.length < 11000);
+          assert(!completed.has(object), 'completed object must not be generated again');
+          assert.match(f.mssql.notes.status(f.project.id).progress || '', new RegExp(object));
+          if (completed.size === 2 && failOnce) {
+            failOnce = false;
+            throw new Error('single-item output limit');
+          }
+        } else if (request.prompt.includes('"title"')) {
+          assert((request.prompt.match(/^dbo\.Table\d+ \(/gm) || []).length <= 12);
+        } else if (request.prompt.includes('"terms"')) {
+          assert((request.prompt.match(/dbo\.Table\d+/g) || []).length <= 5);
+        }
+        // Yield so accidental parallelization would actually overlap requests.
+        await new Promise((resolve) => setImmediate(resolve));
+        const result = await complete(request, signal);
+        if (object) completed.add(object);
+        return result;
+      } finally {
+        active--;
+      }
+    };
+    const run = async () => {
+      f.mssql.notes.start(f.project.id, config);
+      await f.mssql.notes.jobs.get(f.project.id)!.done;
+    };
+    await run();
+    assert.equal(f.mssql.notes.status(f.project.id).state, 'error');
+    assert.equal(f.mssql.notes.status(f.project.id).count, 2);
+    assert.equal((f.store.db.prepare('SELECT count(*) AS n FROM mssql_notes').get() as any).n, 2);
+    await run();
+    assert.equal(f.mssql.notes.status(f.project.id).state, 'ready');
+    assert.equal(completed.size, 3000);
+    assert.equal(maximum, 1);
+    assert.equal(
+      (f.store.db.prepare('SELECT count(*) AS n FROM mssql_notes').get() as any).n,
+      3000,
+    );
+  } finally {
+    await f.cleanup();
+  }
+});

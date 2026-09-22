@@ -21,73 +21,136 @@ export class LocalGenerator implements Generator {
     const settings = this.settings();
     if (!settings.modelId) throw new Error('Configure your local model in Settings first.');
     const endpoint = localEndpoint(settings.baseUrl);
-    const maxTokens = Math.min(
-      request.maxTokens,
+    // A reasoning model may spend the entire old 700-token cap before emitting any JSON.
+    // Keep the answer small, but allow one retry up to the configured output limit.
+    let ceiling = Math.min(
       settings.maxTokens,
-      Math.floor(settings.contextWindow / 4),
+      Math.floor(settings.contextWindow / 2),
+      Math.max(128, settings.contextWindow - 512 - Buffer.byteLength(request.system) - 768),
     );
-    // Conservative byte budget leaves space for role/template overhead and the generated answer.
-    const budget = Math.max(
-      256,
-      settings.contextWindow - maxTokens - 512 - Buffer.byteLength(request.system),
-    );
-    const rawPrompt = Buffer.from(request.prompt);
-    const prompt =
-      rawPrompt.length <= budget
-        ? request.prompt
-        : rawPrompt.subarray(0, Math.floor(budget * 0.65)).toString() +
-          '\n[Catalog excerpt shortened]\n' +
-          rawPrompt.subarray(-Math.floor(budget * 0.3)).toString();
+    let maxTokens = Math.min(Math.max(1024, request.maxTokens), ceiling);
+    let promptLimit = 8192;
     const boundedSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)]);
-    const response = await fetch(endpoint + '/chat/completions', {
-      method: 'POST',
-      redirect: 'error',
-      signal: boundedSignal,
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${settings.apiKey || 'frame-local-no-key'}`,
-      },
-      body: JSON.stringify({
-        model: settings.modelId,
-        temperature: 0,
-        stream: false,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: request.system },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-    if (!response.ok) {
-      await response.body?.cancel();
-      throw new Error(`Local model returned ${response.status}. Check the endpoint and model ID.`);
-    }
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('Local model returned no response body.');
-    const chunks: Uint8Array[] = [];
-    let bytes = 0;
-    try {
-      while (true) {
-        const part = await reader.read();
-        if (part.done) break;
-        if ((bytes += part.value.byteLength) > 1_000_000)
-          throw new Error('Local model response exceeded its size limit.');
-        chunks.push(part.value);
-      }
-    } catch (error) {
-      await reader.cancel();
-      throw error;
-    }
-    boundedSignal.throwIfAborted();
-    const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as any;
-    if (body?.choices?.[0]?.finish_reason === 'length')
-      throw new Error(
-        'Local model exhausted its output limit. Increase the model output limit or use a model that can return concise JSON.',
+    for (let attempt = 0; attempt < 3; attempt++) {
+      boundedSignal.throwIfAborted();
+      // One byte per token is conservative for catalog identifiers and multilingual descriptions.
+      const budget = Math.min(
+        promptLimit,
+        settings.contextWindow - maxTokens - 512 - Buffer.byteLength(request.system),
       );
-    const text = body?.choices?.[0]?.message?.content;
-    if (typeof text !== 'string') throw new Error('Local model returned no completion text.');
-    return text;
+      if (budget < 256)
+        throw new Error('The configured context window is too small for a knowledge request.');
+      const prompt = shorten(request.prompt, budget);
+      const response = await fetch(endpoint + '/chat/completions', {
+        method: 'POST',
+        redirect: 'error',
+        signal: boundedSignal,
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${settings.apiKey || 'frame-local-no-key'}`,
+        },
+        body: JSON.stringify({
+          model: settings.modelId,
+          temperature: 0,
+          stream: false,
+          max_tokens: maxTokens,
+          // llama.cpp supports these per-request options; normal chat thinking is unchanged.
+          response_format: { type: 'json_object' },
+          chat_template_kwargs: { enable_thinking: false },
+          reasoning_effort: 'none',
+          messages: [
+            { role: 'system', content: request.system },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      });
+      const raw = await readBounded(response, response.ok ? 1_000_000 : 16_384);
+      boundedSignal.throwIfAborted();
+      if (!response.ok) {
+        // Some servers run a smaller per-slot context than Frame's configured window.
+        // Retry this read-only generation with a smaller excerpt, never with catalog history.
+        let error: any;
+        try {
+          error = JSON.parse(raw)?.error;
+        } catch {
+          /* Generic HTTP error below. */
+        }
+        const contextError =
+          [400, 413].includes(response.status) &&
+          (error?.type === 'exceed_context_size_error' ||
+            /(?:context|prompt).*(?:exceed|too (?:large|long))|(?:exceed|too (?:large|long)).*(?:context|prompt)/i.test(
+              String(error?.message || ''),
+            ));
+        if (contextError) {
+          if (attempt < 2) {
+            promptLimit = Math.floor(Buffer.byteLength(prompt) / 2);
+            ceiling = Math.max(128, Math.floor(maxTokens / 2));
+            maxTokens = ceiling;
+            continue;
+          }
+          throw new Error(
+            'This single-item request exceeds the llama.cpp context. Match Frame’s context window to the server’s per-slot size. Completed notes are kept.',
+          );
+        }
+        throw new Error(
+          `Local model returned ${response.status}. Check the endpoint and model ID.`,
+        );
+      }
+      const body = JSON.parse(raw) as any;
+      if (body?.choices?.[0]?.finish_reason === 'length') {
+        if (attempt < 2 && maxTokens < ceiling) {
+          maxTokens = ceiling;
+          continue;
+        }
+        throw new Error(
+          `This single-item response reached its ${maxTokens}-token output limit. Increase Maximum output tokens in Model settings or use a non-thinking template. Completed notes are kept.`,
+        );
+      }
+      const text = body?.choices?.[0]?.message?.content;
+      if (typeof text !== 'string') throw new Error('Local model returned no completion text.');
+      return text;
+    }
+    throw new Error('Local knowledge generation could not complete this item.');
   }
+}
+/** Preserve the object identity and trailing JSON instructions without splitting UTF-8 characters. */
+function shorten(prompt: string, budget: number) {
+  const bytes = Buffer.from(prompt);
+  if (bytes.length <= budget) return prompt;
+  const marker = '\n[Catalog excerpt shortened]\n';
+  const available = budget - Buffer.byteLength(marker);
+  const shape = prompt.lastIndexOf('Reply with exactly this JSON shape:');
+  const instructions = shape >= 0 ? Buffer.byteLength(prompt.slice(shape)) : 0;
+  if (instructions > available - 64)
+    throw new Error(
+      'This single-item request cannot fit its JSON instructions in the available context. Check the llama.cpp per-slot size and Frame context setting. Completed notes are kept.',
+    );
+  const tail = Math.max(instructions, Math.ceil(available * 0.4));
+  const head = available - tail;
+  // Streaming decoding drops an incomplete trailing code point; skip leading continuation bytes.
+  const prefix = new TextDecoder().decode(bytes.subarray(0, head), { stream: true });
+  let start = bytes.length - tail;
+  while ((bytes[start]! & 0xc0) === 0x80) start++;
+  return prefix + marker + bytes.subarray(start).toString('utf8');
+}
+async function readBounded(response: Response, limit: number) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Local model returned no response body.');
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  try {
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      if ((bytes += part.value.byteLength) > limit)
+        throw new Error('Local model response exceeded its size limit.');
+      chunks.push(part.value);
+    }
+  } catch (error) {
+    await reader.cancel();
+    throw error;
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 /**
  * Small local models wrap JSON in prose or code fences. Take the outermost balanced object and

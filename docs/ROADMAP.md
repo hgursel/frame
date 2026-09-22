@@ -51,6 +51,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 - Compact catalog pages, incoming references, ranked SQLite FTS search, identifier splitting and Turkish accent folding.
 - Optional local-model object notes, subject areas, glossary, completed-query recipes and default-off lookup sampling.
+- Sequential per-object generation with immediate checkpoints, one-term glossary requests, compact subject-area summaries, JSON/non-thinking requests, and bounded context/output recovery.
 - Generation cancellation and bounded requests; review decisions with version checks, rejected alias removal, connection-aware invalidation, and atomic schema publication.
 - Regression tests cover refresh failure, unavailable FTS, multi-database grouping, generation transport limits, and browser review/reject behavior. Live-model interpretation quality still needs acceptance testing.
 
