@@ -491,7 +491,7 @@ export class SchemaNotes {
     for (const object of objects) {
       await this.yield(signal, projectId, status);
       index++;
-      status.progress = `Describing objects · ${index}/${objects.length}`;
+      status.progress = `Describing objects · ${index}/${objects.length} · ${object.database}.${object.schema}.${object.name}`;
       const hash = factHashOf(String(object.text || ''));
       const existing = this.store.db
         .prepare(
@@ -541,8 +541,11 @@ export class SchemaNotes {
       index++;
       status.progress = `Naming subject areas · ${index}/${Math.min(clusters.length, MAX_DOMAINS)}`;
       const members = cluster
-        .slice(0, 60)
-        .map((o) => `${o.schema}.${o.name} (${o.summary || o.kind}) references ${o.refs || '[]'}`)
+        .slice(0, 12)
+        .map(
+          (o) =>
+            `${o.schema}.${o.name} (${text(o.summary || o.kind, 160)}) references ${JSON.stringify(JSON.parse(o.refs || '[]').slice(0, 4))}`,
+        )
         .join('\n');
       const parsed = await this.ask(domainPrompt(members), 500, signal);
       const title = text(parsed?.title, 60);
@@ -588,10 +591,10 @@ export class SchemaNotes {
       .slice(0, MAX_GLOSSARY)
       .map(([term]) => term);
     const modelId = this.settings().modelId;
-    for (let i = 0; i < terms.length; i += 40) {
+    for (let i = 0; i < terms.length; i++) {
       await this.yield(signal, projectId, status);
-      const batch = terms.slice(i, i + 40);
-      status.progress = `Defining recurring terms · ${Math.min(i + 40, terms.length)}/${terms.length}`;
+      const batch = terms.slice(i, i + 1);
+      status.progress = `Defining recurring terms · ${i + 1}/${terms.length}`;
       const parsed = await this.ask(glossaryPrompt(batch, objects), 900, signal);
       const entries = parsed?.terms;
       if (!entries || typeof entries !== 'object') continue;
@@ -699,21 +702,17 @@ function factsOf(object: any) {
 function objectPrompt(object: any, facts: string) {
   return (
     `Catalog facts for one database object:\n\n${facts}\n\n` +
-    'Write a note that helps an engineer decide whether this object answers a question, using only the facts above.\n' +
+    'Write a short note to help an engineer choose this object for a query.\n' +
     'Reply with exactly this JSON shape:\n' +
-    '{"purpose":"what this object holds, one or two sentences",' +
-    '"grain":"one row per ...",' +
-    '"aliases":["business words people would use for this, including in the language the names suggest"],' +
-    '"columnNotes":{"ExactColumnName":"what the column means, only where the name is not obvious"},' +
-    '"domain":"short subject area name",' +
-    '"confidence":"high|medium|low"}\n' +
-    'Every key of columnNotes must be a column name listed above, spelled identically. ' +
-    'Leave columnNotes empty rather than guessing. Use low confidence for cryptic names.'
+    '{"purpose":"what this object holds","grain":"one row per ...",' +
+    '"aliases":[],"columnNotes":{},"domain":"subject area","confidence":"high|medium|low"}\n' +
+    'Use at most 4 business aliases and 6 short column notes. columnNotes keys must be exact shown column names. ' +
+    'Omit guesses; use low confidence for unclear names.'
   );
 }
 function domainPrompt(members: string) {
   return (
-    `These database objects are connected to each other by foreign keys:\n\n${members}\n\n` +
+    `These representative database objects belong to one foreign-key-connected group:\n\n${members}\n\n` +
     'Name the business subject area they form and summarize what it covers and how its tables relate.\n' +
     'Reply with exactly this JSON shape:\n' +
     '{"title":"short subject area name","summary":"what this area covers and the usual join path between its tables","coreTables":["schema.Name"]}\n' +
@@ -722,7 +721,8 @@ function domainPrompt(members: string) {
 }
 function glossaryPrompt(batch: string[], objects: any[]) {
   const examples = objects
-    .slice(0, 40)
+    .filter((o) => fragments(o.name).some((part) => batch.includes(part)))
+    .slice(0, 5)
     .map((o) => `${o.schema}.${o.name}`)
     .join(', ');
   return (
@@ -748,7 +748,7 @@ function vocabularyPrompt(projectId: string, term: string, candidates: any[], no
     .map((o) => {
       const saved = notes.note(projectId, o.database, o.schema, o.name);
       const note = saved?.state === 'rejected' ? undefined : saved;
-      return `${o.database}.${o.schema}.${o.name} - ${note?.purpose || o.summary || o.kind}`;
+      return `${o.database}.${o.schema}.${o.name} - ${text(note?.purpose || o.summary || o.kind, 160)}`;
     })
     .join('\n');
   return (

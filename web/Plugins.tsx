@@ -651,7 +651,9 @@ export function SqlGeneratedKnowledge({ projectId }: { projectId: string }) {
         A local model reads the cached catalog and writes subject areas, a glossary of repeated
         abbreviations, per-object notes, and recipes from queries that already ran. All of it is
         interpretation, not catalog fact, and is labelled with the model that wrote it. Notes are
-        validated against real column names before they are stored.
+        validated against real column names before they are stored. Objects are processed one at a
+        time, with a fresh bounded request for each. Completed object notes are saved immediately;
+        running again skips unchanged notes.
       </p>
       {status?.progress && <p role="status">{status.progress}</p>}
       {status?.error && <p className="error">{status.error}</p>}
