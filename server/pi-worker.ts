@@ -1,3 +1,4 @@
+import { flushWorkerMessage } from './worker-ipc.js';
 import { chartTools } from './plugins/charts/tools.js';
 import { mssqlTools } from './plugins/mssql/tools.js';
 import {
@@ -29,6 +30,8 @@ const send = (value: WorkerOutput) => {
 };
 let session: Awaited<ReturnType<typeof createAgentSession>>['session'] | undefined;
 let stopping = false;
+let disconnectExpected = false;
+type WorkerCompletion = Extract<WorkerOutput, { type: 'done' | 'error' }>;
 const transportAbort = new AbortController();
 process.on('message', (message: WorkerInput | { type: 'abort' }) => {
   if ('type' in message) {
@@ -38,23 +41,38 @@ process.on('message', (message: WorkerInput | { type: 'abort' }) => {
     void session?.abort();
     return;
   }
-  void run(message).catch(() => {
-    send({
-      type: 'error',
-      error:
-        'Pi could not start or complete the request. Check the endpoint, model ID, and server diagnostics.',
-    });
-    process.exitCode = 1;
-    process.disconnect();
-  });
+  void complete(message);
 });
 process.on('disconnect', () => {
   transportAbort.abort();
   void session?.abort();
-  setTimeout(() => process.exit(1), 500).unref();
+  setTimeout(() => process.exit(disconnectExpected ? (process.exitCode ?? 0) : 1), 500).unref();
 });
 
-async function run(input: WorkerInput) {
+async function complete(input: WorkerInput) {
+  let result: WorkerCompletion;
+  try {
+    result = await run(input);
+  } catch {
+    process.exitCode = 1;
+    result = {
+      type: 'error',
+      error:
+        'Pi could not start or complete the request. Check the endpoint, model ID, and server diagnostics.',
+    };
+  }
+  try {
+    // The terminal send also drains earlier snapshots queued on this channel.
+    await flushWorkerMessage(result);
+  } catch {
+    process.exitCode = 1;
+  } finally {
+    disconnectExpected = true;
+    if (process.connected) process.disconnect();
+  }
+}
+
+async function run(input: WorkerInput): Promise<WorkerCompletion> {
   const { settings, project } = input;
   const budget = contextBudget(settings);
   const endpoint = localEndpoint(settings.baseUrl);
@@ -210,9 +228,7 @@ async function run(input: WorkerInput) {
   };
   if (stopping) {
     session.dispose();
-    send({ type: 'done' });
-    process.disconnect();
-    return;
+    return { type: 'done' };
   }
   let partial: unknown;
   let status = 'Waiting for model';
@@ -372,8 +388,7 @@ async function run(input: WorkerInput) {
     if (input.operation === 'compact') {
       await session.compact(compactionInstructions);
       publish(true);
-      send({ type: 'done' });
-      return;
+      return { type: 'done' };
     }
     // Include the pending turn, attachments, system prompt, and tool schemas in preflight.
     const pendingTokens = Math.ceil(
@@ -384,12 +399,11 @@ async function run(input: WorkerInput) {
       settings.maxTokens -
       Math.max(256, Math.ceil(settings.contextWindow * 0.03));
     if (pendingTokens + overhead() >= (settings.autoCompaction ? budget.threshold : inputLimit)) {
-      send({
+      return {
         type: 'done',
         error:
           'This message and its attachments exceed the available input budget. Shorten the message, attach fewer documents, or increase the configured context window.',
-      });
-      return;
+      };
     }
     if (
       settings.autoCompaction &&
@@ -400,17 +414,15 @@ async function run(input: WorkerInput) {
     ) {
       await session.compact(compactionInstructions);
       if (estimateMessages(session.messages) + overhead() + pendingTokens > inputLimit) {
-        send({
+        return {
           type: 'done',
           error:
             'The retained context plus this input is still too large after compaction. The checkpoint was saved. Shorten the message or attachments, or increase the context window.',
-        });
-        return;
+        };
       }
     }
     if (stopping) {
-      send({ type: 'done' });
-      return;
+      return { type: 'done' };
     }
     if (input.documents?.length)
       await session.sendCustomMessage(
@@ -423,8 +435,7 @@ async function run(input: WorkerInput) {
         { triggerTurn: false },
       );
     if (stopping) {
-      send({ type: 'done' });
-      return;
+      return { type: 'done' };
     }
     status = 'Waiting for model';
     publish(true);
@@ -436,22 +447,21 @@ async function run(input: WorkerInput) {
       last?.role === 'assistant' && last.stopReason === 'error'
         ? 'The local model returned an error. Check llama.cpp logs, context size, and chat-template/tool support.'
         : undefined;
-    send({ type: 'done', error: error || compactionError });
+    return { type: 'done', error: error || compactionError };
   } catch (error) {
     const noHistory =
       error instanceof Error && /nothing to compact|already compacted/i.test(error.message);
-    send({
+    return {
       type: 'done',
       error: stopping
         ? undefined
         : noHistory
           ? 'There is no older context to compact yet. Continue the conversation first.'
           : 'The local model could not complete this task or context summary. History was retained; review the conversation and llama.cpp logs before retrying.',
-    });
+    };
   } finally {
     clearTimeout(emitTimer);
     unsubscribe();
     session.dispose();
-    process.disconnect();
   }
 }

@@ -200,7 +200,7 @@ export class Runner extends EventEmitter {
       }
     });
     let finished = false;
-    const finish = () => {
+    const finish = (code: number | null, signal: NodeJS.Signals | null) => {
       if (finished) return;
       finished = true;
       clearTimeout(deadline);
@@ -210,11 +210,11 @@ export class Runner extends EventEmitter {
         ? 'failed'
         : active.stopRequested
           ? 'stopped'
-          : completed
+          : completed && code === 0 && !signal
             ? 'completed'
             : 'interrupted';
       if (status === 'interrupted')
-        error = 'Agent process exited unexpectedly. Review history before retrying.';
+        error = `Agent process exited unexpectedly (${signal ? `signal ${signal}` : `exit code ${code ?? 'unknown'}`}). Review history before retrying.`;
       this.store.db
         .prepare('UPDATE runs SET status=?, error=? WHERE id=?')
         .run(status, error || null, runId);
@@ -228,9 +228,9 @@ export class Runner extends EventEmitter {
     };
     child.once('error', () => {
       error = 'Agent process failed to start.';
-      finish();
     });
-    child.once('exit', finish);
+    // Unlike exit, close follows delivery of buffered IPC messages.
+    child.once('close', finish);
     child.send(
       {
         cwd: this.store.projectPath(project.id),
@@ -292,7 +292,7 @@ export class Runner extends EventEmitter {
   }
   async close() {
     const exits = [...this.active.values()].map(
-      (run) => new Promise<void>((resolve) => run.process.once('exit', () => resolve())),
+      (run) => new Promise<void>((resolve) => run.process.once('close', () => resolve())),
     );
     for (const id of this.active.keys()) this.stop(id);
     await Promise.all(exits);
