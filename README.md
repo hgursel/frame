@@ -39,7 +39,7 @@ The built-in **MSSQL plugin** lets you work with SQL Server through conversation
 - Run supported reads with a separate read-only login; review and approve every enabled write, schema change, or allowlisted stored procedure.
 - Initialize searchable schema knowledge so models can find table structures and relationships without rediscovering the database each time.
 - Optionally generate per-object notes and business vocabulary, processing large catalogs one object at a time.
-- Inspect result tables and download returned rows as CSV.
+- Expand a query result to inspect its table and download returned rows as CSV, without filling the conversation with automatic export files.
 
 Configure the shared connection in system settings, then enable MSSQL for individual projects. SQL Server permissions remain the final boundary; the plugin is intended for development databases.
 
