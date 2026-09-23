@@ -1,0 +1,95 @@
+.chart-card {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--canvas);
+  min-width: 0;
+}
+.chart-card figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.chart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.chart-actions button,
+.chart-actions a,
+.chart-legend button {
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 7px;
+}
+.chart-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 12px;
+}
+.chart-plot svg [tabindex]:focus {
+  outline: 2px solid var(--ink);
+}
+.chart-hover {
+  min-height: 1.8em;
+  font-size: 12px;
+  color: var(--subtle);
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.chart-legend button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.chart-legend button[aria-pressed='false'] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.chart-notice {
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+  font-size: 12px;
+}
+.chart-card .markdown-table {
+  max-height: 320px;
+  overflow: auto;
+}
+.chart-dialog {
+  width: min(1100px, 95vw);
+  max-height: 90dvh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  color: var(--ink);
+  background: var(--canvas);
+}
+.chart-dialog::backdrop {
+  background: #0008;
+}
+@media (max-width: 760px) {
+  .chart-card {
+    padding: 10px;
+  }
+  .chart-actions {
+    gap: 4px;
+  }
+}
+
+.chart-plot svg [role='button'] {
+  cursor: pointer;
+}

@@ -1,3 +1,5 @@
+import { ChartCard, ChartsSettings } from './Charts.js';
+import './charts.css';
 import { PluginSettings, ProjectPlugins, SqlApprovalCard, SqlResultTable } from './Plugins.js';
 import './plugins.css';
 import { SidebarMenu } from './SidebarMenu.js';
@@ -669,7 +671,9 @@ function Workspace() {
                   </div>
                 )}
                 {snapshot.messages.map((m, i) =>
-                  m.role === 'tool' ? (
+                  m.chart ? (
+                    <ChartCard key={i} reference={m.chart} chatId={chatId} />
+                  ) : m.role === 'tool' ? (
                     <details className="tool" key={i}>
                       <summary>
                         {m.failed ? '×' : '✓'} {toolLabel(m.name)}
@@ -1173,7 +1177,12 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         aria-labelledby="tab-plugins"
         hidden={tab !== 'plugins'}
       >
-        {tab === 'plugins' && <PluginSettings />}
+        {tab === 'plugins' && (
+          <>
+            <ChartsSettings />
+            <PluginSettings />
+          </>
+        )}
       </div>
       <div className="scope-note">
         <strong>V1 · Single administrator</strong>

@@ -60,7 +60,15 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Sidebar project/conversation action menus with confirmed deletion and scoped file/database cleanup; conversation deletion preserves shared knowledge.
 - Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.
 - Fixed 30-minute task deadline; completed SQL knowledge jobs show completion instead of their last processing phase.
-- Deferred: adjustable per-project task limits, inline charts plugin, and llama.cpp prompt-processing percentages.
+- Deferred: adjustable per-project task limits and llama.cpp prompt-processing percentages.
+
+## SQL charts (implemented)
+
+- Default-off system setting and per-project enablement; model instructed to chart only on explicit user request.
+- Bar, line, pie/donut, and scatter charts rendered inline from saved typed SQL datasets, independent of the shortened chat preview.
+- Hover/focus values, legend toggles, expanded views, data tables, PNG/CSV downloads, persistent snapshots, and scoped deletion.
+- Bounded datasets and chart points, visible SQL-limit notices, NULL gaps, and validation without arbitrary model code or cloud dependencies.
+- API and real-SDK/mock-model browser coverage; local-model acceptance remains separate. See [Charts](CHARTS.md).
 
 ## Next — Complete V1
 

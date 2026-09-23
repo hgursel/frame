@@ -98,6 +98,8 @@ export function deleteWorkspaceData(
     store.db.exec('BEGIN IMMEDIATE');
     try {
       for (const c of conversations) {
+        store.db.prepare('DELETE FROM charts WHERE conversationId=?').run(c.id);
+        store.db.prepare('DELETE FROM chart_datasets WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM mssql_operations WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM runs WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM meta WHERE key=?').run(`metrics:${c.id}`);

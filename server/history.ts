@@ -51,6 +51,10 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
           attachments: attached,
           proposal:
             m.role === 'toolResult' ? (m.details as any)?.frameKnowledgeProposal : undefined,
+          chart:
+            m.role === 'toolResult' && m.toolName === 'charts_create' && !m.isError
+              ? (m.details as any)?.chart
+              : undefined,
           sqlResult: m.role === 'toolResult' ? (m.details as any)?.sqlResult : undefined,
           knowledgeSourceId:
             m.role === 'toolResult' ? (m.details as any)?.knowledgeSourceId : undefined,
