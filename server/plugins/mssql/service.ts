@@ -76,6 +76,15 @@ export class MssqlPlugin extends EventEmitter {
       "UPDATE mssql_operations SET status='unknown' WHERE status='executing'; UPDATE mssql_operations SET status='expired' WHERE status='awaiting_approval';",
     );
   }
+  /** Automatic exports belong to their query result, not the conversation deliverables list.
+   * Match persisted operation IDs so this also covers old exports without hiding ordinary CSVs.
+   */
+  isAutomaticExport(conversation: string, name: string) {
+    if (!name.startsWith('sql-') || !name.endsWith('.csv')) return false;
+    return !!this.store.db
+      .prepare('SELECT id FROM mssql_operations WHERE id=? AND conversationId=?')
+      .get(name.slice(4, -4), conversation);
+  }
   settings(): MssqlSettings {
     const file = path.join(this.store.root, 'mssql.json');
     return {

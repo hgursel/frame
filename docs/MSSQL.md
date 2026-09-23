@@ -124,7 +124,7 @@ Schema pages contain OKF-style front matter and provenance and export as a linke
 
 ## Results and limits
 
-The conversation shows a bounded result table and an authenticated CSV download. Queries return at most the configured 1–5,000 rows (default 500), with a 1 MB result budget. Preview text is further bounded for model context. CSV contains only the returned first result set, not an unlimited database export; binary cells are placeholders. Further procedure result sets are discarded and flagged as truncated. CSV cells starting with spreadsheet formula characters are escaped.
+Expand **Run SQL query** in the conversation to view its bounded result table and **Download SQL results CSV** link. Automatic SQL exports are hidden from the conversation’s general file area, including exports from existing conversations. Requested reports and other deliverables remain visible. Export files are retained; downloading one does not rerun SQL. Queries return at most the configured 1–5,000 rows (default 500), with a 1 MB result budget. Preview text is further bounded for model context. CSV contains only the returned first result set, not an unlimited database export; binary cells are placeholders. Further procedure result sets are discarded and flagged as truncated. CSV cells starting with spreadsheet formula characters are escaped.
 
 Stop cancels the driver request and connection. A read hitting its row/byte limit is cancelled and returns the bounded result. For changes, excess result rows are discarded while the request finishes, so a display limit does not intentionally cancel a mutation. A CSV-saving failure is reported after successful execution and never turns a completed write into a retry.
 

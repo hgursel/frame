@@ -373,7 +373,7 @@ export async function createApp(options: {
     await mkdir(root, { recursive: true, mode: 0o700 });
     const entries = await readdir(root, { withFileTypes: true });
     return entries
-      .filter((e) => e.isFile() && !e.name.startsWith('.'))
+      .filter((e) => e.isFile() && !e.name.startsWith('.') && !mssql.isAutomaticExport(id, e.name))
       .map((e) => ({ name: e.name }));
   });
   app.get<{ Params: { id: string; name: string } }>(

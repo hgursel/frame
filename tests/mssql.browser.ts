@@ -1,6 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, mkdir, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
@@ -226,6 +226,11 @@ try {
     .click();
   await expect(page.locator('.sql-result')).toContainText('hello');
   await expect(page.getByRole('link', { name: 'Download SQL results CSV' })).toBeVisible();
+  await expect(page.locator('.artifacts a')).toHaveCount(0);
+  const queryDownload = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download SQL results CSV' }).click();
+  assert.match((await queryDownload).suggestedFilename(), /^sql-.*\.csv$/);
+
   await expect(page.locator('.chart-card')).toHaveCount(0);
   await send('Approve a change');
   const approval = page.getByRole('region', { name: 'SQL change approval' });
@@ -302,6 +307,11 @@ try {
   ).toBeVisible({ timeout: 30000 });
   await expect(page.getByText('Chart ready.', { exact: true })).toHaveCount(5, { timeout: 30000 });
   assert.equal(driver.calls.length, calls, 'Reusing a dataset must not execute SQL');
+  const conversation = ctx.store.conversations()[0];
+  await writeFile(
+    path.join(ctx.store.artifacts(conversation), 'requested-report.csv'),
+    'month,revenue\nJan,100',
+  );
   await page.reload();
   await page.getByRole('button', { name: 'Read database', exact: true }).click();
   await expect(page.locator('.chart-card')).toHaveCount(5, { timeout: 15000 });
@@ -309,6 +319,12 @@ try {
     page.getByRole('figure', { name: 'SQL scatter', exact: true }).locator('.chart-plot > svg'),
   ).toBeVisible();
   assert.equal(driver.calls.length, calls, 'Reloading charts must not re-execute SQL');
+  await expect(page.locator('.artifacts a')).toHaveCount(1);
+  await expect(page.locator('.artifacts a')).toContainText('requested-report.csv');
+  const firstQuery = page.locator('details.tool').filter({ hasText: 'Run SQL query' }).first();
+  await firstQuery.locator('summary').click();
+  await expect(firstQuery.getByRole('link', { name: 'Download SQL results CSV' })).toBeVisible();
+
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);
   console.log(

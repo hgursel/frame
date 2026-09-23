@@ -59,6 +59,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 - Sidebar project/conversation action menus with confirmed deletion and scoped file/database cleanup; conversation deletion preserves shared knowledge.
 - Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.
+- Automatic SQL CSV exports appear only through their query result’s download link; conversation file cards show other deliverables, including ordinary CSV reports. Existing exports are retained and filtered by persisted SQL operation IDs.
 - Fixed 30-minute task deadline; completed SQL knowledge jobs show completion instead of their last processing phase.
 - Deferred: adjustable per-project task limits and llama.cpp prompt-processing percentages.
 

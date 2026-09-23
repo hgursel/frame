@@ -1247,3 +1247,64 @@ test('Chart capture failure never replays or marks successful SQL as failed', as
     await f.cleanup();
   }
 });
+
+test('Automatic SQL CSVs stay downloadable inside query results but out of conversation deliverables', async () => {
+  const f = await fixture();
+  try {
+    const conversation = f.conversation.id;
+    f.mssql.save(config);
+    f.mssql.setProject(f.project.id, true);
+    const result: any = await f.mssql.invoke(conversation, randomUUID(), 'query', {
+      database: 'Dev',
+      sql: 'SELECT * FROM dbo.t',
+    });
+    const directory = f.store.artifacts(f.conversation);
+    const legacyId = randomUUID();
+    f.store.db
+      .prepare('INSERT INTO mssql_operations (id,conversationId,runId) VALUES (?,?,?)')
+      .run(legacyId, conversation, 'old-run');
+    await writeFile(path.join(directory, `sql-${legacyId}.csv`), 'legacy export');
+    // An unrelated conversation's operation must not classify a deliverable in this one.
+    const other = f.store.createConversation(f.project.id);
+    const otherId = randomUUID();
+    f.store.db
+      .prepare('INSERT INTO mssql_operations (id,conversationId,runId) VALUES (?,?,?)')
+      .run(otherId, other.id, 'other-run');
+    const visible = [
+      'report.pdf',
+      'requested-results.csv',
+      'sql-summary.csv',
+      `sql-${randomUUID()}.csv`,
+      `sql-${otherId}.csv`,
+    ];
+    for (const name of visible)
+      await writeFile(path.join(directory, name), 'Requested deliverable');
+    // Filtering historical exports is independent of the current plugin settings.
+    f.mssql.setProject(f.project.id, false);
+    f.mssql.save({ ...config, enabled: false });
+    const url = `/conversations/${conversation}/artifacts`;
+    assert.equal((await f.req(url)).statusCode, 401);
+    const listing = await f.auth(url);
+    assert.equal(listing.statusCode, 200);
+    assert.deepEqual(
+      listing
+        .json()
+        .map((item: { name: string }) => item.name)
+        .sort(),
+      [...visible].sort(),
+    );
+    const csv = await f.auth(`${url}/${result.csv}`);
+    assert.equal(csv.statusCode, 200);
+    assert.equal(csv.body, await readFile(path.join(directory, result.csv), 'utf8'));
+    assert.match(String(csv.headers['content-disposition']), /attachment/);
+    assert.equal((await f.auth(`${url}/sql-${legacyId}.csv`)).body, 'legacy export');
+    assert.equal((await f.req(`${url}/${result.csv}`)).statusCode, 401);
+    assert.equal(
+      (await f.auth(`/conversations/${other.id}/artifacts/${result.csv}`)).statusCode,
+      404,
+    );
+    assert.equal(f.driver.calls.length, 1, 'Listing/downloading must never rerun SQL');
+  } finally {
+    await f.cleanup();
+  }
+});
