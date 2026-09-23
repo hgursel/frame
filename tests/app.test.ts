@@ -1156,3 +1156,88 @@ test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and ro
     await f.cleanup();
   }
 });
+
+test(
+  'worker crashes retain signal diagnostics and never replay an accepted request',
+  { timeout: 30000 },
+  async () => {
+    const f = await fixture();
+    try {
+      f.store.saveSettings({ ...f.store.settings(), modelId: 'crash-test-model' });
+      const p = (await f.auth('/projects', 'POST', { name: 'Crash test' })).json();
+      const c = (await f.auth('/conversations', 'POST', { projectId: p.id })).json();
+      const requestId = randomUUID();
+      const payload = { requestId, text: 'Do not replay this task' };
+      assert.equal(
+        (await f.auth(`/conversations/${c.id}/messages`, 'POST', payload)).statusCode,
+        202,
+      );
+      const child = f.runner.active.get(c.id)!.process;
+      child.kill('SIGKILL');
+      await waitUntil(() => !f.runner.active.has(c.id));
+      const snapshot = f.runner.snapshot(c.id);
+      assert.equal(snapshot.status, 'interrupted');
+      assert.match(snapshot.error!, /signal SIGKILL/);
+      assert.equal(
+        (await f.auth(`/conversations/${c.id}/messages`, 'POST', payload)).json().duplicate,
+        true,
+      );
+      assert.equal(f.runner.active.has(c.id), false);
+    } finally {
+      await f.cleanup();
+    }
+  },
+);
+
+test(
+  'large SDK responses and follow-up history finish without false interruption',
+  { timeout: 60000 },
+  async () => {
+    const answer = 'A completed local answer. '.repeat(12000);
+    let calls = 0;
+    const mock = createServer(async (req, res) => {
+      for await (const _ of req) {
+        /* Consume the request. */
+      }
+      calls++;
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.end(
+        `data: ${JSON.stringify({ id: 'large-answer', object: 'chat.completion.chunk', created: 1, model: 'large-model', choices: [{ index: 0, delta: { role: 'assistant', content: answer }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ id: 'large-answer', object: 'chat.completion.chunk', created: 1, model: 'large-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`,
+      );
+    });
+    await new Promise<void>((resolve) => mock.listen(0, '127.0.0.1', resolve));
+    const f = await fixture();
+    try {
+      f.store.saveSettings({
+        ...f.store.settings(),
+        baseUrl: `http://127.0.0.1:${(mock.address() as { port: number }).port}/v1`,
+        modelId: 'large-model',
+        contextWindow: 262144,
+        autoCompaction: false,
+      });
+      const p = (await f.auth('/projects', 'POST', { name: 'Large history' })).json();
+      const c = (await f.auth('/conversations', 'POST', { projectId: p.id })).json();
+      for (const text of ['First answer', 'Follow up']) {
+        assert.equal(
+          (
+            await f.auth(`/conversations/${c.id}/messages`, 'POST', {
+              requestId: randomUUID(),
+              text,
+            })
+          ).statusCode,
+          202,
+        );
+        await waitUntil(() => !f.runner.active.has(c.id));
+        const snapshot = f.runner.snapshot(c.id);
+        assert.equal(snapshot.status, 'completed', snapshot.error);
+        assert.equal(snapshot.error, undefined);
+        assert.equal(snapshot.messages.at(-1)?.text, answer.slice(0, 100_000));
+      }
+      assert.equal(calls, 2);
+    } finally {
+      await f.cleanup();
+      mock.closeAllConnections();
+      await new Promise<void>((resolve) => mock.close(() => resolve()));
+    }
+  },
+);
