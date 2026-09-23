@@ -25,7 +25,7 @@ Runnable, single-administrator application. Multi-user support is planned for **
 - Read-only knowledge search/reading available in conversations; model-proposed drafts and **Useful → Save to knowledge** for answers and tool results. Review a new page or update an existing page before saving. Verification is a separate explicit action.
 - Optional managed Python installation from Settings, with tested PDF/DOCX generation through `create_document` and atomic completed-file publication.
 - Pi-native persisted JSONL history; fresh SDK worker per task resumes the exact conversation file.
-- Request-ID deduplication, one active task per project, two tasks maximum across projects, 10-minute task limit.
+- Request-ID deduplication, one active task per project, two tasks maximum across projects, 30-minute task limit (including time waiting for approval).
 - Authenticated, download-only artifacts from each conversation’s output folder.
 - TypeScript checking, security/API tests, and real-SDK integration tests against a local mock endpoint.
 
@@ -95,6 +95,8 @@ Pi is a dependency with an exact pinned version and lockfile. Frame explicitly d
 Every project has narrowly scoped `search_knowledge`, `read_knowledge`, and `propose_knowledge` tools; proposals do not write. Trusted host tools add filesystem read/write/edit/search, shell execution, and `create_document` when Python is ready. **A project directory, a worker process, and a prompt instruction are not a sandbox.** Trusted tools can reach every file, network service, and credential accessible to the Frame Linux account. Keep host tools disabled when you only need chat and knowledge. Model transport restrictions do not restrict shell/Python network access.
 
 Downloads reject traversal, symlinks, multi-linked files, and files larger than 100 MiB. They are served as attachments, never executed as HTML in Frame’s origin. These API checks cannot contain a malicious agent with host-level write access.
+
+Project and conversation actions live in each sidebar row's **⋯** menu. Deleting a conversation removes its history, worker data, run records, and generated files while preserving shared project uploads and knowledge. Deleting a project additionally removes its knowledge/revisions, SQL catalog/notes/indexes, and plugin records. Confirm deletion and stop active tasks first. Shared model/SQL settings and external databases are untouched. Only Frame-owned files are removed; external copies and backups are not erased. File cleanup uses a local recovery journal so failed database transactions restore staged files and interrupted cleanup finishes on restart.
 
 ## Deployment and development
 

@@ -12,6 +12,7 @@ import { mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { ServerResponse } from 'node:http';
+import { deleteWorkspaceData, recoverDeletions } from './deletion.js';
 import { Store } from './store.js';
 import { Runner } from './runner.js';
 import { PythonRuntime } from './python.js';
@@ -72,6 +73,7 @@ export async function createApp(options: {
 }) {
   const origin = new URL(options.origin).origin;
   const store = new Store(path.resolve(options.dataDir));
+  recoverDeletions(store);
   const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
   const runner = new Runner(store, mssql);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
@@ -232,6 +234,19 @@ export async function createApp(options: {
       return reply.code(409).send({ error: 'Stop this project’s task first' });
     return store.updateProject(id, projectSchema.parse(request.body));
   });
+  app.delete<{ Params: { id: string } }>('/api/projects/:id', (request, reply) => {
+    const id = uuid.parse(request.params.id);
+    if (!store.project(id)) return reply.code(404).send({ error: 'Project not found' });
+    z.object({ confirm: z.literal(true) }).parse(request.body);
+    return deleteWorkspaceData(store, runner, knowledge, id);
+  });
+  app.delete<{ Params: { id: string } }>('/api/conversations/:id', (request, reply) => {
+    const id = uuid.parse(request.params.id);
+    const conversation = store.conversation(id);
+    if (!conversation) return reply.code(404).send({ error: 'Conversation not found' });
+    z.object({ confirm: z.literal(true) }).parse(request.body);
+    return deleteWorkspaceData(store, runner, knowledge, conversation.projectId, id);
+  });
   app.get('/api/conversations', async () => store.conversations());
   app.post('/api/conversations', async (request, reply) => {
     const { projectId } = z.object({ projectId: uuid }).parse(request.body);
@@ -311,6 +326,10 @@ export async function createApp(options: {
     streams.add(reply.raw);
     const publish = () => {
       if (reply.raw.destroyed) return;
+      if (!store.conversation(id)) {
+        reply.raw.end();
+        return;
+      }
       const login = store.db
         .prepare('SELECT token FROM logins WHERE token=? AND expires>?')
         .get(digest(request.cookies.frame_session || ''), Date.now());

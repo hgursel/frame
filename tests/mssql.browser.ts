@@ -125,6 +125,7 @@ try {
   await page.getByRole('button', { name: 'Create project', exact: true }).click();
   await page.getByLabel('Project name', { exact: true }).fill('Database project');
   await page.getByRole('button', { name: 'Create project', exact: true }).last().click();
+  await page.getByRole('button', { name: /^Project menu:/ }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
   await page.getByLabel('Enable MSSQL for this project').check();
   await page.getByRole('button', { name: 'Save project plugins' }).click();
@@ -150,6 +151,12 @@ try {
   await expect(
     page.locator('summary').filter({ hasText: 'Generated database knowledge' }),
   ).toContainText('ready', { timeout: 30000 });
+  await expect(
+    page
+      .locator('.sql-knowledge')
+      .filter({ hasText: 'Generated database knowledge' })
+      .getByRole('status'),
+  ).toContainText('Completed');
   await page.getByRole('button', { name: 'Dev.dbo.Table1105' }).click();
   await expect(page.locator('.schema-preview')).toContainText('not reviewed');
   await page.getByRole('button', { name: 'Mark note reviewed', exact: true }).click();
@@ -174,7 +181,11 @@ try {
     'The turn must read cached metadata rather than rediscover the database',
   );
   assert.equal(driver.calls.at(-1)?.login, 'read');
-  await page.locator('details.tool').filter({ hasText: 'mssql_query' }).locator('summary').click();
+  await page
+    .locator('details.tool')
+    .filter({ hasText: 'Run SQL query' })
+    .locator('summary')
+    .click();
   await expect(page.locator('.sql-result')).toContainText('hello');
   await expect(page.getByRole('link', { name: 'Download SQL results CSV' })).toBeVisible();
   await send('Approve a change');

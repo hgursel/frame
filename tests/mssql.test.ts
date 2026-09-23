@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, mkdir, writeFile, symlink, rename, lstat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -15,6 +15,7 @@ import {
   words,
 } from '../server/plugins/mssql/schema.js';
 import { columnNames, components, validateNote } from '../server/plugins/mssql/notes.js';
+import { recoverDeletions } from '../server/deletion.js';
 import { extractJson } from '../server/plugins/mssql/generate.js';
 import { config, FakeGenerator, FakeSql } from './sql-fixture.js';
 async function fixture() {
@@ -869,6 +870,155 @@ test('A 3000-object catalog is enriched sequentially, checkpoints each object, a
       (f.store.db.prepare('SELECT count(*) AS n FROM mssql_notes').get() as any).n,
       3000,
     );
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Deleting conversations preserves shared knowledge; deleting projects cleans all scoped data and restores failed transactions', async () => {
+  const f = await fixture();
+  try {
+    const p = f.project.id,
+      c = f.conversation.id;
+    const other = f.store.createProject({ name: 'Keep', instructions: '', toolsEnabled: false });
+    const sibling = f.store.createConversation(p);
+    const doc = await f.knowledge.add(p, 'shared.md', Buffer.from('Keep for other conversations'));
+    await f.wiki.record(p, doc.id);
+    f.mssql.save(config);
+    f.mssql.setProject(p, true);
+    f.store.saveSettings({ ...f.store.settings(), modelId: 'test' });
+    f.driver.count = 2;
+    f.mssql.schema.start(p, config);
+    await f.mssql.schema.jobs.get(p)!.done;
+    f.mssql.notes.start(p, config);
+    await f.mssql.notes.jobs.get(p)!.done;
+    assert.equal(f.mssql.notes.status(p).progress, 'Completed');
+    const output = f.store.artifacts(f.conversation);
+    await mkdir(output, { recursive: true });
+    await writeFile(path.join(output, 'report.csv'), 'data');
+    await writeFile(f.store.sessionFile(c), 'session');
+    await mkdir(path.join(f.root, 'agent', c));
+    await writeFile(path.join(f.root, 'agent', c, 'auth.json'), '{}');
+    f.store.setMeta(`metrics:${c}`, '{}');
+    f.store.db.prepare('INSERT INTO runs VALUES (?,?,?,?,?)').run('run', c, 'completed', null, 1);
+    f.store.db
+      .prepare('INSERT INTO mssql_operations (id,conversationId,runId) VALUES (?,?,?)')
+      .run('op', c, 'run');
+    assert.equal((await f.req(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 401);
+    assert.equal((await f.auth(`/projects/${p}`, 'DELETE', {})).statusCode, 400);
+    f.knowledge.locks.add(p);
+    assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 409);
+    f.knowledge.locks.delete(p);
+    f.runner.active.set(c, { projectId: p } as any);
+    assert.equal(
+      (await f.auth(`/conversations/${c}`, 'DELETE', { confirm: true })).statusCode,
+      409,
+    );
+    f.runner.active.delete(c);
+    const job = { status: {}, controller: new AbortController(), done: Promise.resolve() } as any;
+    for (const jobs of [f.mssql.schema.jobs, f.mssql.notes.jobs]) {
+      jobs.set(p, job);
+      assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 409);
+      jobs.delete(p);
+    }
+    let streamClosed = false;
+    f.runner.once(c, () => {
+      streamClosed = !f.store.conversation(c);
+    });
+    assert.equal(
+      (await f.auth(`/conversations/${c}`, 'DELETE', { confirm: true })).statusCode,
+      200,
+    );
+    assert(streamClosed);
+    for (const file of [output, f.store.sessionFile(c), path.join(f.root, 'agent', c)])
+      await assert.rejects(lstat(file), { code: 'ENOENT' });
+    assert.equal(f.store.conversation(c), undefined);
+    assert(f.store.conversation(sibling.id));
+    assert.equal(f.store.meta(`metrics:${c}`), undefined);
+    assert.equal((await f.knowledge.read(p, doc.id)).text, 'Keep for other conversations');
+    assert.equal(
+      (f.store.db.prepare('SELECT count(*) AS n FROM mssql_operations').get() as any).n,
+      0,
+    );
+    // Failure after staging restores all files and SQL rows.
+    f.store.db.exec(
+      "CREATE TRIGGER prevent_delete BEFORE DELETE ON projects BEGIN SELECT RAISE(ABORT, 'test rollback'); END",
+    );
+    assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 500);
+    assert(f.store.project(p));
+    assert(f.store.conversation(sibling.id));
+    assert.equal((await f.knowledge.read(p, doc.id)).text, 'Keep for other conversations');
+    f.store.db.exec('DROP TRIGGER prevent_delete');
+    // Deleting a link inside the project must never delete another project's files.
+    await writeFile(path.join(f.store.projectPath(other.id), 'keep.txt'), 'keep');
+    await symlink(
+      f.store.projectPath(other.id),
+      path.join(f.store.projectPath(p), 'external-link'),
+    );
+    assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 200);
+    assert.equal(f.store.project(p), undefined);
+    assert.equal(f.store.conversation(sibling.id), undefined);
+    await assert.rejects(lstat(f.store.projectPath(p)), { code: 'ENOENT' });
+    for (const table of [
+      'documents',
+      'knowledge_revisions',
+      'project_plugins',
+      'mssql_schema',
+      'mssql_schema_state',
+      'mssql_notes',
+      'mssql_pages',
+      'mssql_gaps',
+      'mssql_notes_catalog',
+      'mssql_notes_state',
+    ])
+      assert.equal(
+        (f.store.db.prepare(`SELECT count(*) AS n FROM ${table} WHERE projectId=?`).get(p) as any)
+          .n,
+        0,
+        table,
+      );
+    if (f.mssql.schema.fts)
+      assert.equal(
+        (f.store.db.prepare('SELECT count(*) AS n FROM mssql_schema_fts').get() as any).n,
+        0,
+      );
+    assert.equal(
+      await readFile(path.join(f.store.projectPath(other.id), 'keep.txt'), 'utf8'),
+      'keep',
+    );
+    assert.equal(f.mssql.settings().read.password, config.read.password);
+    assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 404);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Deletion recovery restores uncommitted moves, removes committed files, and rejects replaced parent directories', async () => {
+  const f = await fixture();
+  try {
+    const c = f.conversation;
+    await mkdir(path.join(f.root, 'deleted'));
+    await writeFile(f.store.sessionFile(c.id), 'saved');
+    const from = `sessions/${c.id}.jsonl`,
+      to = `deleted/${randomUUID()}`;
+    await rename(path.join(f.root, from), path.join(f.root, to));
+    f.store.setMeta('deletion:test', JSON.stringify({ committed: false, moves: [{ from, to }] }));
+    recoverDeletions(f.store);
+    assert.equal(await readFile(f.store.sessionFile(c.id), 'utf8'), 'saved');
+    await rename(path.join(f.root, from), path.join(f.root, to));
+    f.store.setMeta('deletion:test', JSON.stringify({ committed: true, moves: [{ from, to }] }));
+    recoverDeletions(f.store);
+    await assert.rejects(lstat(path.join(f.root, to)), { code: 'ENOENT' });
+    assert.equal(f.store.meta('deletion:test'), undefined);
+    await symlink(
+      path.join(f.root, 'sessions'),
+      path.join(f.store.projectPath(c.projectId), 'outputs'),
+    );
+    assert.equal(
+      (await f.auth(`/conversations/${c.id}`, 'DELETE', { confirm: true })).statusCode,
+      409,
+    );
+    assert(f.store.conversation(c.id));
   } finally {
     await f.cleanup();
   }

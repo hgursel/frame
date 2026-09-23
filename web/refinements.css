@@ -82,3 +82,129 @@
   .diagram-block figcaption { align-items: flex-start; }
   .diagram-block figcaption > div { flex-wrap: wrap; justify-content: flex-end; }
 }
+
+
+/* Workspace navigation and the centered empty-conversation composer. */
+.sidebar-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+}
+.sidebar nav .sidebar-row > button:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar nav .row-menu-trigger {
+  width: 30px;
+  flex: 0 0 30px;
+  padding: 4px;
+  font-size: 22px;
+  opacity: 0;
+}
+.sidebar-row:hover .row-menu-trigger,
+.sidebar-row:focus-within .row-menu-trigger,
+.row-menu-trigger[aria-expanded='true'] {
+  opacity: 1;
+}
+.row-menu-panel {
+  position: fixed;
+  z-index: 100;
+  width: 204px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 28px #0002;
+}
+.row-menu-panel button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 7px;
+}
+.row-menu-panel .danger {
+  color: #bb3939;
+}
+.chat-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chat-layout.empty-chat {
+  justify-content: center;
+  overflow-y: auto;
+}
+.empty-chat .conversation {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.empty-chat .welcome {
+  margin: 0 auto;
+  padding: 24px 0 12px;
+  text-align: center;
+}
+.empty-chat .welcome h1 {
+  font-size: clamp(28px, 3.5vw, 44px);
+  margin: 0 0 20px;
+}
+.empty-chat .composer-area {
+  padding-top: 0;
+}
+.composer-footer .send {
+  margin-left: auto;
+}
+.composer-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0 0;
+  min-height: 36px;
+}
+.composer-metrics .context-popover {
+  top: auto;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: auto;
+  max-height: min(65vh, 540px);
+  overflow: auto;
+}
+.composer-metrics .context-control > summary {
+  padding: 3px 5px;
+  border: 0;
+  font-size: 11px;
+}
+.status:empty {
+  display: none;
+}
+.status-row:has(.status:empty) {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+@media (hover: none) {
+  .sidebar nav .row-menu-trigger {
+    opacity: 1;
+  }
+}
+@media (max-width: 760px) {
+  .composer-metrics {
+    flex-wrap: wrap;
+  }
+  .composer-metrics .context-popover {
+    position: absolute;
+    width: min(350px, calc(100vw - 40px));
+    left: 0;
+    right: auto;
+  }
+  .empty-chat .welcome {
+    padding-top: 16px;
+  }
+}

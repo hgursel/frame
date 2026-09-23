@@ -1,0 +1,24 @@
+const labels: Record<string, string> = {
+  mssql_schema_read: 'Read table structure',
+  mssql_schema_search: 'Search database schema',
+  mssql_knowledge_search: 'Search database knowledge',
+  mssql_query: 'Run SQL query',
+  mssql_procedure: 'Run stored procedure',
+  read: 'Read file',
+  write: 'Write file',
+  edit: 'Edit file',
+  bash: 'Run command',
+  grep: 'Search file contents',
+  find: 'Find files',
+  ls: 'List files',
+  search_knowledge: 'Search project knowledge',
+  read_knowledge: 'Read project knowledge',
+  propose_knowledge: 'Draft knowledge update',
+  create_document: 'Create document',
+};
+export const toolLabel = (name?: string) =>
+  name ? labels[name] || name.replaceAll('_', ' ') : 'Tool result';
+export const statusLabel = (status: string) =>
+  status.replace(/\b(?:mssql_\w+|(?:search|read|propose)_knowledge|create_document)\b/g, (name) =>
+    toolLabel(name),
+  );

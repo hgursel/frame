@@ -487,7 +487,14 @@ export function SqlKnowledge({ projectId }: { projectId: string }) {
         Cached structure only. Business notes remain in your Markdown pages. Initialization imports
         visible tables, views, keys, relationships, indexes, and procedure parameters.
       </p>
-      {status?.progress && <p role="status">{status.progress}</p>}
+      {status?.progress && (
+        <p role="status">
+          {status.state === 'ready' ? 'Completed' : status.progress}
+          {status.state === 'ready' && status.at
+            ? ` · ${new Date(status.at).toLocaleString()}`
+            : ''}
+        </p>
+      )}
       {status?.at && (
         <p className="muted small">
           Last completed refresh: {new Date(status.at).toLocaleString()}
@@ -655,7 +662,14 @@ export function SqlGeneratedKnowledge({ projectId }: { projectId: string }) {
         time, with a fresh bounded request for each. Completed object notes are saved immediately;
         running again skips unchanged notes.
       </p>
-      {status?.progress && <p role="status">{status.progress}</p>}
+      {status?.progress && (
+        <p role="status">
+          {status.state === 'ready' ? 'Completed' : status.progress}
+          {status.state === 'ready' && status.at
+            ? ` · ${new Date(status.at).toLocaleString()}`
+            : ''}
+        </p>
+      )}
       {status?.error && <p className="error">{status.error}</p>}
       <div className="button-row">
         <button
