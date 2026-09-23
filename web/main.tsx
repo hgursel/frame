@@ -1,5 +1,7 @@
 import { PluginSettings, ProjectPlugins, SqlApprovalCard, SqlResultTable } from './Plugins.js';
 import './plugins.css';
+import { SidebarMenu } from './SidebarMenu.js';
+import { toolLabel, statusLabel } from './tool-labels.js';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RichMarkdown } from './RichMarkdown.js';
@@ -238,9 +240,9 @@ function Workspace() {
     setProjects(p);
     setChats(c);
     setSettings(s);
-    setProjectId((prev) => prev || p[0]?.id || '');
+    setProjectId((prev) => (p.some((project) => project.id === prev) ? prev : p[0]?.id || ''));
     const selected = currentChat.current;
-    if (selected) {
+    if (selected && c.some((chat) => chat.id === selected)) {
       const updated = await api<ChatSnapshot>(`/conversations/${selected}`);
       applySnapshot(selected, updated);
     }
@@ -388,6 +390,37 @@ function Workspace() {
       setStoppingChat((current) => (current === id ? '' : current));
     }
   };
+  const remove = async (kind: 'projects' | 'conversations', id: string, name: string) => {
+    const message =
+      kind === 'projects'
+        ? `Permanently delete project “${name}”? All its conversations, knowledge, uploads, and generated files will be removed. This cannot be undone.`
+        : `Permanently delete conversation “${name}” and its generated files? Shared project knowledge and uploads will be kept. This cannot be undone.`;
+    if (!window.confirm(message)) return;
+    try {
+      await api(`/${kind}/${id}`, 'DELETE', { confirm: true });
+      if (
+        (kind === 'projects' && currentProject.current === id) ||
+        (kind === 'conversations' && currentChat.current === id)
+      ) {
+        currentChat.current = '';
+        setChatId('');
+        setPending(undefined);
+        setDraft('');
+        setAttached([]);
+        setLastSubmitted(undefined);
+        setSnapshot({ messages: [], running: false, status: 'Ready' });
+        setPage('chat');
+        if (kind === 'projects') {
+          currentProject.current = '';
+          setProjectId('');
+        }
+      }
+      await refresh();
+    } catch (error) {
+      setPage('chat');
+      setError((error as Error).message);
+    }
+  };
   const compact = async () => {
     if (!chatId || compacting || snapshot.running) return;
     const id = chatId;
@@ -439,19 +472,45 @@ function Workspace() {
         </div>
         <nav aria-label="Projects">
           {projects.map((p) => (
-            <button
-              key={p.id}
-              className={`project-link ${projectId === p.id ? 'selected' : ''}`}
-              onClick={() => {
-                setProjectId(p.id);
-                setChatId('');
-                setPage('chat');
-                setPending(undefined);
-              }}
-            >
-              <span className="folder">▱</span>
-              {p.name}
-            </button>
+            <div className="sidebar-row" key={p.id}>
+              <button
+                className={`project-link ${projectId === p.id ? 'selected' : ''}`}
+                onClick={() => {
+                  setProjectId(p.id);
+                  setChatId('');
+                  setPage('chat');
+                  setPending(undefined);
+                }}
+              >
+                <span className="folder">▱</span>
+                {p.name}
+              </button>
+              <SidebarMenu label={`Project menu: ${p.name}`}>
+                <button
+                  onClick={() => {
+                    setProjectId(p.id);
+                    setChatId('');
+                    setPending(undefined);
+                    setPage('project');
+                  }}
+                >
+                  Project settings
+                </button>
+                <button
+                  onClick={() => {
+                    setProjectId(p.id);
+                    setChatId('');
+                    setPending(undefined);
+                    setPage('knowledge');
+                  }}
+                >
+                  Knowledge
+                </button>
+                <button className="danger" onClick={() => void remove('projects', p.id, p.name)}>
+                  Delete project
+                </button>
+              </SidebarMenu>
+            </div>
           ))}
         </nav>
         <div className="nav-heading">
@@ -482,17 +541,26 @@ function Workspace() {
                 c.title.toLowerCase().includes(chatSearch.toLowerCase()),
             )
             .map((c) => (
-              <button
-                key={c.id}
-                className={chatId === c.id ? 'selected' : ''}
-                onClick={() => {
-                  setChatId(c.id);
-                  setPage('chat');
-                  setPending(undefined);
-                }}
-              >
-                {c.title}
-              </button>
+              <div className="sidebar-row" key={c.id}>
+                <button
+                  className={chatId === c.id ? 'selected' : ''}
+                  onClick={() => {
+                    setChatId(c.id);
+                    setPage('chat');
+                    setPending(undefined);
+                  }}
+                >
+                  {c.title}
+                </button>
+                <SidebarMenu label={`Conversation menu: ${c.title}`}>
+                  <button
+                    className="danger"
+                    onClick={() => void remove('conversations', c.id, c.title)}
+                  >
+                    Delete conversation
+                  </button>
+                </SidebarMenu>
+              </div>
             ))}
           {!chats.some((c) => c.projectId === projectId) && (
             <p className="muted small">Your conversations will appear here.</p>
@@ -541,51 +609,6 @@ function Workspace() {
             <span className="slash">/</span>
             {page === 'settings' ? 'Settings' : project?.name || 'Getting started'}
           </div>
-          <div className="header-actions">
-            {project && (
-              <>
-                <button
-                  className={page === 'chat' ? 'active-tab' : ''}
-                  onClick={() => setPage('chat')}
-                >
-                  Chat
-                </button>
-                <button
-                  className={page === 'knowledge' ? 'active-tab' : ''}
-                  onClick={() => {
-                    setPage('knowledge');
-                    void refreshDocuments().catch((e) => setError(e.message));
-                  }}
-                >
-                  Knowledge
-                </button>
-              </>
-            )}
-            {project && (
-              <button
-                className="project-settings-button"
-                title="Project settings"
-                onClick={() => setPage('project')}
-              >
-                Project settings
-              </button>
-            )}
-            <span className="model-pill">{settings?.modelId || 'Model not configured'}</span>
-            {page === 'chat' && (
-              <ContextPanel
-                metrics={snapshot.metrics}
-                settings={settings}
-                running={snapshot.running || compacting}
-                canCompact={
-                  !!chatId &&
-                  snapshot.messages.some((m) => m.role === 'assistant') &&
-                  !!settings?.modelId
-                }
-                onCompact={() => void compact()}
-                onSettings={() => setPage('settings')}
-              />
-            )}
-          </div>
         </header>
         {page === 'settings' && settings ? (
           <Settings initial={settings} onSaved={refresh} />
@@ -612,7 +635,9 @@ function Workspace() {
             }}
           />
         ) : (
-          <>
+          <div
+            className={`chat-layout ${!snapshot.messages.length && !snapshot.running && !sending ? 'empty-chat' : ''}`}
+          >
             <section
               className="conversation"
               aria-label="Conversation"
@@ -626,30 +651,11 @@ function Workspace() {
               <div className="conversation-inner">
                 {!snapshot.messages.length && (
                   <div className="welcome">
-                    <span className="eyebrow">A CLEAR SPACE TO THINK</span>
                     <h1>
                       Your knowledge.
                       <br />
-                      <em>Your next move.</em>
+                      <em>Your infrastructure.</em>
                     </h1>
-                    <p>
-                      Bring questions, documents, and ideas together.
-                      <br />
-                      Work with intelligence running on your infrastructure.
-                    </p>
-                    <div className="suggestions">
-                      {[
-                        'Explain a complex idea',
-                        'Draft a project brief',
-                        'Plan the next steps',
-                      ].map((text, i) => (
-                        <button key={text} onClick={() => setDraft(text)}>
-                          <span className="suggestion-number">0{i + 1}</span>
-                          {text}
-                          <span>↗</span>
-                        </button>
-                      ))}
-                    </div>
                     {!settings?.modelId && (
                       <button className="setup-link" onClick={() => setPage('settings')}>
                         Connect your llama.cpp endpoint →
@@ -666,7 +672,7 @@ function Workspace() {
                   m.role === 'tool' ? (
                     <details className="tool" key={i}>
                       <summary>
-                        {m.failed ? '×' : '✓'} {m.name || 'Tool result'}
+                        {m.failed ? '×' : '✓'} {toolLabel(m.name)}
                       </summary>
                       {m.sqlResult ? (
                         <SqlResultTable result={m.sqlResult} chatId={chatId} />
@@ -764,19 +770,13 @@ function Workspace() {
               <div className="status-row">
                 <div className="status" aria-live="polite">
                   {chatId && !connected
-                    ? `${snapshot.running ? (stoppingChat === chatId ? 'Stopping' : snapshot.status) : 'Checking task status…'} · Live updates reconnecting`
+                    ? `${snapshot.running ? (stoppingChat === chatId ? 'Stopping' : statusLabel(snapshot.status)) : 'Checking task status…'} · Live updates reconnecting`
                     : snapshot.running
                       ? stoppingChat === chatId
                         ? 'Stopping'
-                        : snapshot.status
-                      : project?.toolsEnabled
-                        ? 'Trusted tools enabled · Host-account permissions'
-                        : 'Chat mode · Project knowledge available · Host tools disabled'}
+                        : statusLabel(snapshot.status)
+                      : ''}
                 </div>
-                <Throughput
-                  metrics={snapshot.metrics}
-                  running={snapshot.running && ['Responding', 'Thinking'].includes(snapshot.status)}
-                />
               </div>
               {error && (
                 <p className="error" role="alert">
@@ -843,10 +843,6 @@ function Workspace() {
                       setAttached((ids) => [...new Set([...ids, doc.id])].slice(0, 5));
                     }}
                   />
-                  <span className="composer-hint">
-                    {project?.name || 'Select a project'}
-                    <span className="separator">·</span>Shift + Enter for a new line
-                  </span>
                   {snapshot.running ? (
                     <button
                       type="button"
@@ -873,11 +869,29 @@ function Workspace() {
                   )}
                 </div>
               </form>
+              <div className="composer-metrics">
+                <ContextPanel
+                  metrics={snapshot.metrics}
+                  settings={settings}
+                  running={snapshot.running || compacting}
+                  canCompact={
+                    !!chatId &&
+                    snapshot.messages.some((m) => m.role === 'assistant') &&
+                    !!settings?.modelId
+                  }
+                  onCompact={() => void compact()}
+                  onSettings={() => setPage('settings')}
+                />
+                <Throughput
+                  metrics={snapshot.metrics}
+                  running={snapshot.running && ['Responding', 'Thinking'].includes(snapshot.status)}
+                />
+              </div>
               <p className="footnote">
                 Frame can make mistakes. Review important answers and tool actions.
               </p>
             </div>
-          </>
+          </div>
         )}
       </main>
       {saveIndex !== undefined && chatId && (

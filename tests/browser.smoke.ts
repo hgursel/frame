@@ -33,9 +33,24 @@ const model = createServer(async (request, response) => {
     if (body.messages.at(-1)?.role !== 'tool') {
       response.write(chunk({ reasoning_content: 'I will search the project.' }));
       await new Promise((resolve) => setTimeout(resolve, 400));
-      response.write(chunk({ tool_calls: [{ index: 0, id: 'followup-search', type: 'function', function: { name: 'search_knowledge', arguments: '' } }] }));
+      response.write(
+        chunk({
+          tool_calls: [
+            {
+              index: 0,
+              id: 'followup-search',
+              type: 'function',
+              function: { name: 'search_knowledge', arguments: '' },
+            },
+          ],
+        }),
+      );
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      response.end(chunk({ tool_calls: [{ index: 0, function: { arguments: '{"query":"maintenance"}' } }] }) + chunk({}, 'tool_calls') + 'data: [DONE]\n\n');
+      response.end(
+        chunk({ tool_calls: [{ index: 0, function: { arguments: '{"query":"maintenance"}' } }] }) +
+          chunk({}, 'tool_calls') +
+          'data: [DONE]\n\n',
+      );
     } else {
       await new Promise((resolve) => setTimeout(resolve, 1200));
       response.write(chunk({ content: 'Follow-up result arrived.' }));
@@ -52,7 +67,7 @@ const model = createServer(async (request, response) => {
   response.write(reason('Comparing the migration steps.'));
   await new Promise((resolve) => setTimeout(resolve, 1200));
   response.end(
-    `data: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: { role: 'assistant', content: "Your local workspace is ready.\n\n| Phase | Status |\n| --- | --- |\n| Migration | Ready |\n\n```mermaid\nflowchart TD\nA[Sources] --> B[Review]\nB --> C[Answer]\n```\n\n```mermaid\nnot-a-valid-diagram\n```" }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`,
+    `data: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: { role: 'assistant', content: 'Your local workspace is ready.\n\n| Phase | Status |\n| --- | --- |\n| Migration | Ready |\n\n```mermaid\nflowchart TD\nA[Sources] --> B[Review]\nB --> C[Answer]\n```\n\n```mermaid\nnot-a-valid-diagram\n```' }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ id: 'browser-model', object: 'chat.completion.chunk', created: 1, model: 'local-test-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`,
   );
 });
 await new Promise<void>((resolve) => model.listen(0, '127.0.0.1', resolve));
@@ -75,7 +90,10 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors: string[] = [];
   const externalRequests: string[] = [];
-  page.on('request', (request) => { if (/^https?:/.test(request.url()) && !request.url().startsWith(`http://127.0.0.1:${port}/`)) externalRequests.push(request.url()); });
+  page.on('request', (request) => {
+    if (/^https?:/.test(request.url()) && !request.url().startsWith(`http://127.0.0.1:${port}/`))
+      externalRequests.push(request.url());
+  });
   page.on('pageerror', (error) => {
     errors.push(error.message);
     console.error('Browser error:', error.message);
@@ -84,7 +102,7 @@ try {
   await page.getByLabel('Setup token').fill('browser-test-bootstrap');
   await page.getByLabel('Administrator password').fill('browser-test-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('heading', { name: 'Your knowledge. Your next move.' }).waitFor();
+  await page.getByRole('heading', { name: 'Your knowledge. Your infrastructure.' }).waitFor();
   await page.getByRole('button', { name: 'Connect your llama.cpp endpoint' }).click();
   await page
     .getByLabel('Endpoint URL')
@@ -98,12 +116,18 @@ try {
     .getByLabel('Project instructions', { exact: true })
     .fill('Help plan reliable infrastructure.');
   await page.getByRole('button', { name: 'Create project', exact: true }).last().click();
-  assert.equal(await page.locator('.sidebar .edition, .sidebar .mark, .local-badge, .new-chat').count(), 0);
+  assert.equal(
+    await page.locator('.sidebar .edition, .sidebar .mark, .local-badge, .new-chat').count(),
+    0,
+  );
   await page.getByRole('button', { name: 'Add attachments', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Upload from computer', exact: false }).click();
-  await (await chooser).setFiles({
-    name: 'maintenance.md', mimeType: 'text/markdown',
+  await (
+    await chooser
+  ).setFiles({
+    name: 'maintenance.md',
+    mimeType: 'text/markdown',
     buffer: Buffer.from('# Maintenance\n\nMaintenance starts at 02:00 UTC.'),
   });
   await expect(page.locator('.composer-attachments')).toContainText('maintenance.md');
@@ -111,18 +135,28 @@ try {
   await page.getByRole('button', { name: 'Attach from knowledge', exact: false }).click();
   await expect(page.getByRole('dialog', { name: 'Attach from knowledge' })).toBeVisible();
   await page.getByLabel('Search attachment knowledge').fill('maintenance');
-  const selectedFile = page.getByRole('dialog', { name: 'Attach from knowledge' }).getByRole('checkbox');
-  await selectedFile.uncheck(); await selectedFile.check();
+  const selectedFile = page
+    .getByRole('dialog', { name: 'Attach from knowledge' })
+    .getByRole('checkbox');
+  await selectedFile.uncheck();
+  await selectedFile.check();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
+  assert.equal(await page.locator('.model-pill, .suggestions, .composer-hint').count(), 0);
+  await expect(page.locator('.empty-chat .composer')).toBeVisible();
+  await expect(page.locator('.composer-metrics .context-control')).toBeVisible();
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Review our migration plan.');
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({ path: process.env.FRAME_SCREENSHOT, fullPage: true });
-  await page.route('**/api/conversations/*/messages', async (route) => {
-    const response = await route.fetch();
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    await route.fulfill({ response });
-  }, { times: 1 });
+  await page.route(
+    '**/api/conversations/*/messages',
+    async (route) => {
+      const response = await route.fetch();
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Draft for the next turn');
   const thinking = page.locator('.thinking-active');
@@ -135,12 +169,18 @@ try {
   await thinking.locator('summary').click();
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
-  await expect(page.getByRole('textbox', { name: 'Message Frame' })).toHaveValue('Draft for the next turn');
+  await expect(page.getByRole('textbox', { name: 'Message Frame' })).toHaveValue(
+    'Draft for the next turn',
+  );
   await expect(page.locator('.throughput')).toContainText('tok/s');
   await expect(page.getByRole('columnheader', { name: 'Phase', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Migration', exact: true })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'Mermaid diagram', exact: true })).toBeVisible({ timeout: 20000 });
-  await expect(page.getByText('This Mermaid diagram could not be rendered.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Mermaid diagram', exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+  await expect(
+    page.getByText('This Mermaid diagram could not be rendered.', { exact: false }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Expand diagram', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Expanded Mermaid diagram' })).toBeVisible();
   await page.getByRole('button', { name: 'Close diagram', exact: true }).click();
@@ -169,6 +209,7 @@ try {
     .fill('# Migration knowledge\n\nSchedule the migration after the maintenance window.');
   await page.getByRole('button', { name: 'Save reviewed draft', exact: true }).click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
+  await page.getByLabel('Project menu: Infrastructure', { exact: true }).click();
   await page.getByRole('button', { name: 'Knowledge', exact: true }).click();
   await page.getByRole('button', { name: 'Migration knowledge.md', exact: false }).click();
   await page.getByRole('heading', { name: 'Migration knowledge.md', exact: true }).waitFor();
@@ -185,14 +226,18 @@ try {
       fullPage: true,
     });
   // A late source response must not replace the knowledge page selected afterward.
-  const download = await page.getByRole('link', { name: 'Markdown', exact: false }).getAttribute('href');
+  const download = await page
+    .getByRole('link', { name: 'Markdown', exact: false })
+    .getAttribute('href');
   const projectPath = download!.split('/documents/')[0]!;
   const docsResponse = await page.request.get(new URL(projectPath + '/documents', page.url()).href);
   const sourceDoc = (await docsResponse.json()).find((d: any) => d.name === 'maintenance.md');
   const sourcePattern = '**/documents/' + sourceDoc.id;
   let releaseSource!: () => void;
   let sourceIntercepted = false;
-  const sourceGate = new Promise<void>((resolve) => { releaseSource = resolve; });
+  const sourceGate = new Promise<void>((resolve) => {
+    releaseSource = resolve;
+  });
   await page.route(sourcePattern, async (route) => {
     const response = await route.fetch();
     sourceIntercepted = true;
@@ -202,21 +247,39 @@ try {
   await page.getByRole('button', { name: 'maintenance.md', exact: false }).click();
   await expect.poll(() => sourceIntercepted).toBe(true);
   await page.getByRole('button', { name: 'Migration knowledge.md', exact: false }).click();
-  await expect(page.getByRole('heading', { name: 'Migration knowledge.md', exact: true })).toBeVisible();
-  const sourceResponse = page.waitForResponse((response) => response.url().endsWith('/documents/' + sourceDoc.id));
-  releaseSource(); await sourceResponse;
-  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  await expect(page.getByRole('heading', { name: 'Migration knowledge.md', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Migration knowledge.md', exact: true }),
+  ).toBeVisible();
+  const sourceResponse = page.waitForResponse((response) =>
+    response.url().endsWith('/documents/' + sourceDoc.id),
+  );
+  releaseSource();
+  await sourceResponse;
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect(
+    page.getByRole('heading', { name: 'Migration knowledge.md', exact: true }),
+  ).toBeVisible();
   await page.unroute(sourcePattern);
   await page.getByRole('button', { name: 'maintenance.md', exact: false }).click();
   await page.getByRole('heading', { name: 'maintenance.md', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Remove file', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Remove file?' }).getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Remove file?' })
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
   await expect(page.getByRole('heading', { name: 'maintenance.md', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Remove file', exact: true }).click();
   await page.getByRole('button', { name: 'Remove permanently', exact: true }).click();
   await expect(page.locator('.knowledge-list')).not.toContainText('maintenance.md');
-  await page.locator('.sidebar-bottom').getByRole('button', { name: 'Settings', exact: false }).click();
+  await page
+    .locator('.sidebar-bottom')
+    .getByRole('button', { name: 'Settings', exact: false })
+    .click();
   await page.getByRole('tab', { name: 'Context', exact: true }).click();
   await page.getByLabel('Compact at used percentage').fill('70');
   await page.getByRole('tab', { name: 'Instructions', exact: true }).click();
@@ -273,7 +336,9 @@ try {
   if (await drawer.isVisible()) await drawer.click({ position: { x: 370, y: 400 } });
   await checkStopGeometry();
   await stop.click();
-  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible({
+    timeout: 15000,
+  });
   await expect.poll(() => heldConnectionsClosed).toBe(1);
   await expect(page.locator('.thinking-active')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -304,8 +369,33 @@ try {
     () => document.documentElement.scrollWidth > window.innerWidth,
   );
   assert(!overflow, 'Mobile page must not overflow horizontally');
+  // Sidebar menus work on touch screens, preserve cancellation, and clear deleted selections.
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await page.getByLabel('Search conversations').fill('');
+  const menus = page.getByRole('button', { name: /^Conversation menu:/ });
+  const beforeDelete = await menus.count();
+  await menus.first().click();
+  page.once('dialog', dialog => void dialog.accept());
+  await page.getByRole('button', { name: 'Delete conversation', exact: true }).click();
+  await expect(menus).toHaveCount(beforeDelete - 1);
+  // The portal menu closes mobile navigation after selecting an action.
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await page.getByLabel('Project menu: Infrastructure').click();
+  page.once('dialog', dialog => void dialog.dismiss());
+  await page.getByRole('button', { name: 'Delete project', exact: true }).click();
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await expect(page.getByLabel('Project menu: Infrastructure')).toBeVisible();
+  await page.getByLabel('Project menu: Infrastructure').click();
+  page.once('dialog', dialog => void dialog.accept());
+  await page.getByRole('button', { name: 'Delete project', exact: true }).click();
+  await expect(page.getByLabel('Project menu: Infrastructure')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Create your first project', exact: false })).toBeVisible();
   assert.deepEqual(errors, []);
-  assert.deepEqual(externalRequests, [], 'Markdown and diagrams must not request external resources');
+  assert.deepEqual(
+    externalRequests,
+    [],
+    'Markdown and diagrams must not request external resources',
+  );
   console.log(
     'Browser smoke passed: setup, tabbed settings with retained drafts, composer uploads and knowledge attachments, GFM tables, local Mermaid rendering/fallback/expansion, knowledge removal, streaming/context/throughput, appearance, reload, and mobile layout.',
   );

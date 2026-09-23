@@ -145,7 +145,7 @@ export class Runner extends EventEmitter {
         messages: history,
         error: undefined,
         running: true,
-        status: operation === 'compact' ? 'Compacting context' : 'Starting local model',
+        status: operation === 'compact' ? 'Compacting context' : 'Preparing conversation',
       },
       stopRequested: false,
     };
@@ -153,9 +153,9 @@ export class Runner extends EventEmitter {
     let completed = false;
     let error: string | undefined;
     const deadline = setTimeout(() => {
-      error = 'Task reached the 10-minute limit and was stopped.';
+      error = 'Task reached the 30-minute limit and was stopped.';
       this.stop(id);
-    }, 600_000);
+    }, 30 * 60_000);
     child.on('message', (event: WorkerOutput) => {
       if (this.active.get(id) !== active || active.stopRequested) return;
       if (event.type === 'plugin_call') {

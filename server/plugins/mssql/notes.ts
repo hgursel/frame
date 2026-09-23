@@ -290,6 +290,9 @@ export class SchemaNotes {
     return status;
   }
   private record(projectId: string, state: string, status: NotesStatus) {
+    if (state === 'ready') status.progress = 'Completed';
+    else if (state === 'cancelled') status.progress = 'Cancelled';
+    else if (state === 'error') status.progress = `Stopped · ${status.progress || 'Generation'}`;
     this.store.db
       .prepare('INSERT OR REPLACE INTO mssql_notes_state VALUES (?,?,?,?,?,?)')
       .run(

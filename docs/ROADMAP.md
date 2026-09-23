@@ -55,6 +55,13 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Generation cancellation and bounded requests; review decisions with version checks, rejected alias removal, connection-aware invalidation, and atomic schema publication.
 - Regression tests cover refresh failure, unavailable FTS, multi-database grouping, generation transport limits, and browser review/reject behavior. Live-model interpretation quality still needs acceptance testing.
 
+## Workspace refinements (implemented)
+
+- Sidebar project/conversation action menus with confirmed deletion and scoped file/database cleanup; conversation deletion preserves shared knowledge.
+- Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.
+- Fixed 30-minute task deadline; completed SQL knowledge jobs show completion instead of their last processing phase.
+- Deferred: adjustable per-project task limits, inline charts plugin, and llama.cpp prompt-processing percentages.
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
