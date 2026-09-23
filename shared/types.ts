@@ -1,3 +1,4 @@
+import type { ChartRef } from './charts.js';
 import type { SqlApproval, SqlResult } from './plugins.js';
 export interface ModelSettings {
   baseUrl: string;
@@ -38,6 +39,7 @@ export interface DisplayMessage {
   proposal?: { title: string; text: string; targetId?: string; revision?: string };
   knowledgeSourceId?: string;
   sqlResult?: SqlResult;
+  chart?: ChartRef;
 }
 export interface ChatSnapshot {
   /** Monotonic server observation order; HTTP and SSE share this sequence. */
@@ -70,6 +72,7 @@ export interface ChatMetrics {
 }
 export interface WorkerInput {
   operation?: 'prompt' | 'compact';
+  charts?: boolean;
   mssql?: { databases: string[]; map?: string };
   cwd: string;
   agentDir: string;

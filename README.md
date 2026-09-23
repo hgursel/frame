@@ -31,6 +31,8 @@ Runnable, single-administrator application. Multi-user support is planned for **
 
 - Built-in MSSQL plugin: separate SQL read/write logins, system restrictions and per-project enablement, exact write/procedure approvals, ranked cached schema knowledge, optional model-generated notes and subject areas for large schemas, result tables, and CSV downloads. [Setup and limits](docs/MSSQL.md).
 
+- Built-in Charts plugin: per-project SQL charts (bar, line, pie/donut, scatter), interactive inline views, PNG/CSV downloads, and persisted source snapshots. [Setup and limits](docs/CHARTS.md).
+
 ### Planned, not implemented
 
 - MCP connection management, trusted skill installation, and extension dialog bridging.

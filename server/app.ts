@@ -1,3 +1,5 @@
+import { ChartsPlugin } from './plugins/charts/service.js';
+import { chartsApi } from './plugins/charts/api.js';
 import { MssqlPlugin } from './plugins/mssql/service.js';
 import { mssqlApi } from './plugins/mssql/api.js';
 import type { SqlDriver } from './plugins/mssql/driver.js';
@@ -75,7 +77,14 @@ export async function createApp(options: {
   const store = new Store(path.resolve(options.dataDir));
   recoverDeletions(store);
   const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
-  const runner = new Runner(store, mssql);
+  const charts = new ChartsPlugin(store);
+  mssql.captureChartData = (conversation, operation, database, result) => {
+    const project = store.conversation(conversation)?.projectId;
+    return project && charts.enabled() && charts.projectEnabled(project)
+      ? charts.capture(conversation, operation, database, result)
+      : undefined;
+  };
+  const runner = new Runner(store, mssql, charts);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const python = new PythonRuntime(store.root);
@@ -390,7 +399,8 @@ export async function createApp(options: {
     },
   );
   knowledgeApi(app, knowledge, wiki, runner);
-  mssqlApi(app, mssql, runner);
+  mssqlApi(app, mssql, runner, charts);
+  chartsApi(app, charts, runner);
   wiki.schemaFiles = (id) => {
     try {
       const settings = mssql.requireProject(id);
@@ -412,5 +422,5 @@ export async function createApp(options: {
   app.addHook('onClose', async () => {
     store.close();
   });
-  return { app, store, runner, knowledge, wiki, python, mssql };
+  return { app, store, runner, knowledge, wiki, python, mssql, charts };
 }

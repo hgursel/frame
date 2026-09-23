@@ -1,3 +1,4 @@
+import type { ChartsPlugin } from './plugins/charts/service.js';
 import type { MssqlPlugin } from './plugins/mssql/service.js';
 import { fork, type ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
@@ -21,6 +22,7 @@ export class Runner extends EventEmitter {
   constructor(
     readonly store: Store,
     readonly mssql?: MssqlPlugin,
+    readonly charts?: ChartsPlugin,
   ) {
     super();
     this.setMaxListeners(100);
@@ -159,24 +161,31 @@ export class Runner extends EventEmitter {
     child.on('message', (event: WorkerOutput) => {
       if (this.active.get(id) !== active || active.stopRequested) return;
       if (event.type === 'plugin_call') {
-        if (!this.mssql) return;
-        void this.mssql.invoke(id, runId, event.action, event.args).then(
-          (result) => {
-            if (child.connected && this.active.get(id) === active && !active.stopRequested)
-              child.send({ type: 'plugin_result', id: event.id, result }, () => {});
-          },
-          (error) => {
-            if (child.connected && this.active.get(id) === active && !active.stopRequested)
-              child.send(
-                {
-                  type: 'plugin_result',
-                  id: event.id,
-                  error: error instanceof Error ? error.message : 'SQL tool failed',
-                },
-                () => {},
-              );
-          },
-        );
+        void Promise.resolve()
+          .then<unknown>(() => {
+            if (event.action === 'charts_create' && this.charts)
+              return this.charts.create(id, event.args);
+            if (event.action === 'charts_datasets' && this.charts) return this.charts.list(id);
+            if (!this.mssql) throw new Error('Plugin unavailable');
+            return this.mssql.invoke(id, runId, event.action, event.args);
+          })
+          .then(
+            (result) => {
+              if (child.connected && this.active.get(id) === active && !active.stopRequested)
+                child.send({ type: 'plugin_result', id: event.id, result }, () => {});
+            },
+            (error) => {
+              if (child.connected && this.active.get(id) === active && !active.stopRequested)
+                child.send(
+                  {
+                    type: 'plugin_result',
+                    id: event.id,
+                    error: error instanceof Error ? error.message : 'Plugin tool failed',
+                  },
+                  () => {},
+                );
+            },
+          );
       } else if (event.type === 'snapshot') {
         active.snapshot = {
           messages: event.messages,
@@ -235,6 +244,7 @@ export class Runner extends EventEmitter {
         pythonPath,
         knowledge,
         operation,
+        charts: !!this.charts?.enabled() && this.charts.projectEnabled(project.id),
         mssql:
           this.mssql?.projectEnabled(project.id) && this.mssql.settings().enabled
             ? {

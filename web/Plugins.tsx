@@ -318,6 +318,8 @@ export function PluginSettings() {
   );
 }
 export function ProjectPlugins({ projectId }: { projectId: string }) {
+  const [charts, setCharts] = useState(false);
+  const [chartsSystem, setChartsSystem] = useState(false);
   const [savedVersion, setSavedVersion] = useState(0);
   const [enabled, setEnabled] = useState(false),
     [system, setSystem] = useState(false),
@@ -327,11 +329,18 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
     [notice, setNotice] = useState('');
   useEffect(() => {
     let live = true;
-    void api<{ mssql: boolean; systemEnabled: boolean }>(`/projects/${projectId}/plugins`)
+    void api<{
+      mssql: boolean;
+      systemEnabled: boolean;
+      charts: boolean;
+      chartsSystemEnabled: boolean;
+    }>(`/projects/${projectId}/plugins`)
       .then((v) => {
         if (live) {
           setEnabled(v.mssql);
           setSystem(v.systemEnabled);
+          setCharts(v.charts);
+          setChartsSystem(v.chartsSystemEnabled);
           setLoaded(true);
         }
       })
@@ -345,6 +354,22 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project plugins</h2>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          aria-label="Enable Charts for this project"
+          disabled={!loaded || busy}
+          checked={charts}
+          onChange={(e) => setCharts(e.target.checked)}
+        />
+        Charts
+      </label>
+      <p className="muted small">
+        Charts from saved SQL results, only when you ask.{' '}
+        {chartsSystem
+          ? 'Charts is enabled system-wide.'
+          : 'Enable Charts in Settings → Plugins first.'}
+      </p>
       <label className="checkbox">
         <input
           type="checkbox"
@@ -367,7 +392,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
           setBusy(true);
           setError('');
           try {
-            await api(`/projects/${projectId}/plugins`, 'PUT', { mssql: enabled });
+            await api(`/projects/${projectId}/plugins`, 'PUT', { mssql: enabled, charts });
             setNotice('Project plugins saved.');
             setSavedVersion((v) => v + 1);
           } catch (e) {
@@ -816,6 +841,7 @@ export function SqlResultTable({ result, chatId }: { result: SqlResult; chatId: 
       <p className="muted small">
         Bounded preview. CSV contains the returned rows up to the configured limit.
       </p>
+      {result.chartNotice && <p className="notice">{result.chartNotice}</p>}
       {result.artifactNotice && <p className="notice">{result.artifactNotice}</p>}
       {result.csv && (
         <a href={`/api/conversations/${chatId}/artifacts/${encodeURIComponent(result.csv)}`}>

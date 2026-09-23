@@ -35,6 +35,8 @@ export interface SqlCommand {
   parameters?: SqlParameter[];
 }
 export interface SqlResult {
+  datasetId?: string;
+  chartNotice?: string;
   columns: string[];
   rows: unknown[][];
   affected: number;

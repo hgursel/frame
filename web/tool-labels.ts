@@ -1,4 +1,6 @@
 const labels: Record<string, string> = {
+  charts_create: 'Create chart',
+  charts_datasets: 'Find SQL chart data',
   mssql_schema_read: 'Read table structure',
   mssql_schema_search: 'Search database schema',
   mssql_knowledge_search: 'Search database knowledge',
@@ -19,6 +21,7 @@ const labels: Record<string, string> = {
 export const toolLabel = (name?: string) =>
   name ? labels[name] || name.replaceAll('_', ' ') : 'Tool result';
 export const statusLabel = (status: string) =>
-  status.replace(/\b(?:mssql_\w+|(?:search|read|propose)_knowledge|create_document)\b/g, (name) =>
-    toolLabel(name),
+  status.replace(
+    /\b(?:mssql_\w+|charts_\w+|(?:search|read|propose)_knowledge|create_document)\b/g,
+    (name) => toolLabel(name),
   );

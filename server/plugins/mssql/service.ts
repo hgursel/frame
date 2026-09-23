@@ -43,6 +43,12 @@ export class MssqlPlugin extends EventEmitter {
   readonly pending = new Map<string, Pending>();
   readonly controllers = new Map<string, AbortController>();
   readonly inFlight = new Set<Promise<unknown>>();
+  captureChartData?: (
+    conversation: string,
+    operation: string,
+    database: string,
+    result: SqlResult,
+  ) => string | undefined;
   constructor(
     readonly store: Store,
     readonly driver: SqlDriver = new TediousDriver(),
@@ -283,6 +289,14 @@ export class MssqlPlugin extends EventEmitter {
       this.store.db
         .prepare("UPDATE mssql_operations SET status='completed' WHERE id=?")
         .run(operation);
+      let datasetId: string | undefined;
+      let chartNotice: string | undefined;
+      try {
+        datasetId = this.captureChartData?.(conversation, operation, command.database, result);
+      } catch {
+        chartNotice =
+          'SQL completed, but its chart dataset could not be saved (size or storage limit). Do not repeat a change to recreate chart data.';
+      }
       const csvName = `sql-${operation}.csv`;
       const directory = this.store.artifacts(this.store.conversation(conversation)!);
       const cell = (value: unknown) => {
@@ -326,6 +340,8 @@ export class MssqlPlugin extends EventEmitter {
         ...result,
         columns,
         rows,
+        datasetId,
+        chartNotice,
         returnedRows: result.rows.length,
         previewLimited,
         csv,

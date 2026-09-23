@@ -1023,3 +1023,227 @@ test('Deletion recovery restores uncommitted moves, removes committed files, and
     await f.cleanup();
   }
 });
+
+test('Charts retain full typed SQL results, scope access, and delete with their conversation/project', async () => {
+  const f = await fixture();
+  try {
+    const c = f.conversation.id,
+      p = f.project.id;
+    f.mssql.save(config);
+    f.mssql.setProject(p, true);
+    assert.equal((await f.req('/plugins/charts')).statusCode, 401);
+    assert.equal((await f.auth('/plugins/charts', 'PUT', { enabled: true })).statusCode, 200);
+    assert.equal((await f.auth(`/projects/${p}/plugins`, 'PUT', { charts: true })).statusCode, 200);
+    assert.equal(f.mssql.projectEnabled(p), true, 'Updating Charts must preserve MSSQL');
+    f.driver.execute = async () => ({
+      columns: ['category', 'amount', 'cost'],
+      rows: Array.from({ length: 30 }, (_, i) => [
+        i === 0 ? '=unsafe' : `Month ${i}`,
+        i - 10,
+        i === 3 ? null : i * 2,
+      ]),
+      affected: 0,
+      truncated: true,
+    });
+    const result: any = await f.mssql.invoke(c, randomUUID(), 'query', {
+      database: 'Dev',
+      sql: 'SELECT category, amount, cost FROM dbo.t',
+    });
+    assert.equal(result.rows.length, 20);
+    assert(result.datasetId);
+    const definition = {
+      datasetId: result.datasetId,
+      kind: 'bar',
+      title: 'Revenue',
+      x: 'category',
+      y: ['amount', 'cost'],
+    };
+    const ref = f.charts.create(c, definition);
+    const chart = f.charts.get(c, ref.id);
+    assert.equal(
+      chart.rows.length,
+      30,
+      'Charts must use the full returned result, not the 20-row preview',
+    );
+    assert.equal(chart.rows[0]![1], -10, 'Negative values must not inherit CSV formula escaping');
+    assert.equal(chart.rows[3]![2], null);
+    assert(chart.notices.some((n) => n.includes('limit')));
+    assert(chart.notices.some((n) => n.includes('NULL')));
+    assert.equal(f.charts.list(c)[0]!.rows, 30);
+    const url = `/conversations/${c}/charts/${ref.id}`;
+    assert.equal((await f.req(url)).statusCode, 401);
+    assert.equal((await f.auth(url)).json().rows.length, 30);
+    const csv = await f.auth(url + '?format=csv');
+    assert(csv.body.includes('"\'=unsafe","-10","0"'));
+    assert.match(String(csv.headers['content-disposition']), /attachment/);
+    const sibling = f.store.createConversation(p);
+    assert.equal((await f.auth(`/conversations/${sibling.id}/charts/${ref.id}`)).statusCode, 404);
+    assert.throws(() => f.charts.create(sibling.id, definition), /not found/);
+    f.charts.setProject(p, false);
+    assert.throws(() => f.charts.create(c, definition), /disabled/);
+    assert.equal((await f.auth(url)).statusCode, 200, 'Disabling must preserve historical charts');
+    f.charts.setProject(p, true);
+    f.store.setMeta('charts:enabled', 'false');
+    assert.throws(() => f.charts.list(c), /disabled/);
+    f.store.setMeta('charts:enabled', 'true');
+    const otherDataset = f.charts.capture(sibling.id, randomUUID(), 'Dev', {
+      columns: ['x', 'y'],
+      rows: [['A', 1]],
+      affected: 0,
+      truncated: false,
+    })!;
+    const other = f.charts.create(sibling.id, {
+      datasetId: otherDataset,
+      kind: 'pie',
+      title: 'Keep',
+      x: 'x',
+      y: ['y'],
+    });
+    assert.equal(
+      (await f.auth(`/conversations/${c}`, 'DELETE', { confirm: true })).statusCode,
+      200,
+    );
+    assert.equal(f.store.db.prepare('SELECT id FROM charts WHERE id=?').get(ref.id), undefined);
+    assert.equal(
+      f.store.db.prepare('SELECT id FROM chart_datasets WHERE id=?').get(result.datasetId),
+      undefined,
+    );
+    assert.equal(f.charts.get(sibling.id, other.id).title, 'Keep');
+    assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 200);
+    assert.equal(f.store.db.prepare('SELECT count(*) AS n FROM chart_datasets').get()!.n, 0);
+    assert.equal(f.store.db.prepare('SELECT count(*) AS n FROM charts').get()!.n, 0);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Charts validate types and limits without inventing, silently dropping, or executing data', async () => {
+  const f = await fixture();
+  try {
+    f.store.setMeta('charts:enabled', 'true');
+    f.charts.setProject(f.project.id, true);
+    const c = f.conversation.id;
+    const source = (columns: string[], rows: (string | number | null)[][]) =>
+      f.charts.capture(c, randomUUID(), 'Dev', { columns, rows, affected: 0, truncated: false })!;
+    const datasetId = source(
+      ['label', 'amount', 'x'],
+      [
+        ['A', '12.50', 1],
+        ['B', '-2.25', 2],
+        ['C', null, 3],
+      ],
+    );
+    const base = { datasetId, kind: 'bar', title: 'Totals', x: 'label', y: ['amount'] };
+    for (const kind of ['bar', 'line', 'scatter']) {
+      const ref = f.charts.create(c, { ...base, kind, x: kind === 'scatter' ? 'x' : 'label' });
+      assert.deepEqual(
+        f.charts.get(c, ref.id).rows.map((row) => row[1]),
+        [12.5, -2.25, null],
+      );
+    }
+    assert.throws(() => f.charts.create(c, { ...base, kind: 'pie' }), /nonnegative/);
+    assert.throws(() => f.charts.create(c, { ...base, kind: 'scatter' }), /numeric/);
+    assert.throws(() => f.charts.create(c, { ...base, y: ['missing'] }), /Column names/);
+    assert.throws(() => f.charts.create(c, { ...base, y: ['amount', 'amount'] }), /distinct/);
+    assert.throws(() => f.charts.create(c, { ...base, donut: true }), /pie charts only/);
+    assert.throws(() => f.charts.create(c, { ...base, script: 'alert(1)' }));
+    const pieId = source(
+      ['label', 'amount'],
+      [
+        ['A', 3],
+        ['B', 7],
+      ],
+    );
+    assert.equal(
+      f.charts.get(
+        c,
+        f.charts.create(c, { ...base, datasetId: pieId, kind: 'pie', donut: true }).id,
+      ).donut,
+      true,
+    );
+    for (const rows of [
+      [
+        ['A', 0],
+        ['B', 0],
+      ],
+      [
+        ['A', 1],
+        ['A', 2],
+      ],
+      [
+        ['A', 1],
+        ['B', null],
+      ],
+    ])
+      assert.throws(() =>
+        f.charts.create(c, { ...base, kind: 'pie', datasetId: source(['label', 'amount'], rows) }),
+      );
+    assert.throws(
+      () =>
+        f.charts.create(c, {
+          ...base,
+          datasetId: source(['label', 'amount'], [['A', Number.MAX_SAFE_INTEGER + 1]]),
+        }),
+      /safely/,
+    );
+    assert.throws(
+      () =>
+        f.charts.create(c, {
+          ...base,
+          datasetId: source(['label', 'amount', 'amount'], [['A', 1, 2]]),
+        }),
+      /exactly once/,
+    );
+    assert.throws(
+      () =>
+        f.charts.create(c, {
+          ...base,
+          datasetId: source(
+            ['label', 'amount'],
+            Array.from({ length: 1001 }, (_, i) => [String(i), i]),
+          ),
+        }),
+      /1000 rows/,
+    );
+    assert.throws(
+      () =>
+        f.charts.create(c, {
+          ...base,
+          kind: 'pie',
+          datasetId: source(
+            ['label', 'amount'],
+            Array.from({ length: 21 }, (_, i) => [String(i), i]),
+          ),
+        }),
+      /20 rows/,
+    );
+    assert.equal(f.driver.calls.length, 0, 'Charting saved datasets must never execute SQL');
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('Chart capture failure never replays or marks successful SQL as failed', async () => {
+  const f = await fixture();
+  try {
+    f.mssql.save(config);
+    f.mssql.setProject(f.project.id, true);
+    f.mssql.captureChartData = () => {
+      throw new Error('disk full');
+    };
+    const result: any = await f.mssql.invoke(f.conversation.id, randomUUID(), 'query', {
+      database: 'Dev',
+      sql: 'SELECT id FROM dbo.t',
+    });
+    assert.equal(f.driver.calls.length, 1);
+    assert.equal(result.rows.length, 2);
+    assert.match(result.chartNotice, /SQL completed/);
+    assert.equal(result.datasetId, undefined);
+    assert.equal(
+      f.store.db.prepare('SELECT status FROM mssql_operations').get()!.status,
+      'completed',
+    );
+  } finally {
+    await f.cleanup();
+  }
+});

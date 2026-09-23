@@ -1,6 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
@@ -29,7 +29,38 @@ const model = createServer(async (req, res) => {
         args: { database: 'Dev', sql: 'SELECT TOP 2 id, value FROM dbo.Table1105' },
       },
     ][turnTools];
-  else if (!turnTools)
+  else if (prompt.includes('Chart ')) {
+    const saved = prompt.includes('Chart saved');
+    const kind = saved
+      ? 'bar'
+      : ['bar', 'line', 'pie', 'scatter'].find((v) => prompt.includes('Chart ' + v))!;
+    if (turnTools === 0)
+      tool = saved
+        ? { name: 'charts_datasets', args: {} }
+        : {
+            name: 'mssql_query',
+            args: { database: 'Dev', sql: 'SELECT id, value FROM dbo.Table1105' },
+          };
+    else if (turnTools === 1) {
+      const resultMessage = body.messages.slice(lastUser + 1).find((m: any) => m.role === 'tool');
+      const result = JSON.parse(
+        typeof resultMessage.content === 'string'
+          ? resultMessage.content
+          : resultMessage.content.map((v: any) => v.text).join(''),
+      );
+      tool = {
+        name: 'charts_create',
+        args: {
+          datasetId: saved ? result[0].datasetId : result.datasetId,
+          kind,
+          title: saved ? 'SQL saved' : `SQL ${kind}`,
+          x: kind === 'scatter' ? 'id' : 'value',
+          y: ['id'],
+          donut: kind === 'pie',
+        },
+      };
+    }
+  } else if (!turnTools)
     tool = {
       name: 'mssql_query',
       args: {
@@ -68,11 +99,13 @@ const model = createServer(async (req, res) => {
     res.end(
       chunk({
         role: 'assistant',
-        content: prompt.includes('Read database')
-          ? 'Database read finished.'
-          : prompt.includes('Approve')
-            ? 'Approved operation finished.'
-            : 'Denied operation finished.',
+        content: prompt.includes('Chart ')
+          ? 'Chart ready.'
+          : prompt.includes('Read database')
+            ? 'Database read finished.'
+            : prompt.includes('Approve')
+              ? 'Approved operation finished.'
+              : 'Denied operation finished.',
       }) +
         chunk({}, 'stop') +
         'data: [DONE]\n\n',
@@ -102,6 +135,7 @@ try {
     executablePath: process.env.FRAME_BROWSER_EXECUTABLE,
   });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.setDefaultTimeout(15000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${port}`);
@@ -110,6 +144,9 @@ try {
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.locator('.sidebar-bottom').getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
+  await page.getByLabel('Enable Charts system-wide').check();
+  await page.getByRole('button', { name: 'Save Charts settings' }).click();
+  await expect(page.getByText('Charts settings saved.', { exact: true })).toBeVisible();
   await page.getByLabel('SQL Server host').fill('127.0.0.1');
   await page.getByLabel('Allowed databases', { exact: true }).fill('Dev');
   await page.getByLabel('read SQL username').fill('reader');
@@ -119,7 +156,7 @@ try {
   await page.getByLabel('Enable MSSQL system-wide').check();
   await page.getByLabel('Allow INSERT, UPDATE, and DELETE with approval').check();
   await page.getByRole('button', { name: 'Save MSSQL settings', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('MSSQL settings saved');
+  await expect(page.getByRole('status').filter({ hasText: 'MSSQL settings saved' })).toBeVisible();
   assert.equal(driver.calls.length, 0, 'Saving configuration must not contact SQL Server');
   await expect(page.getByLabel('read SQL password')).toHaveValue('');
   await page.getByRole('button', { name: 'Create project', exact: true }).click();
@@ -128,6 +165,7 @@ try {
   await page.getByRole('button', { name: /^Project menu:/ }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
   await page.getByLabel('Enable MSSQL for this project').check();
+  await page.getByLabel('Enable Charts for this project').check();
   await page.getByRole('button', { name: 'Save project plugins' }).click();
   await expect(page.getByRole('status')).toContainText('Project plugins saved');
   // Repeated saves must update the panel, including a disable/re-enable cycle.
@@ -188,6 +226,7 @@ try {
     .click();
   await expect(page.locator('.sql-result')).toContainText('hello');
   await expect(page.getByRole('link', { name: 'Download SQL results CSV' })).toBeVisible();
+  await expect(page.locator('.chart-card')).toHaveCount(0);
   await send('Approve a change');
   const approval = page.getByRole('region', { name: 'SQL change approval' });
   await expect(approval).toBeVisible({ timeout: 30000 });
@@ -207,10 +246,73 @@ try {
   await page.getByRole('button', { name: 'Stop generation', exact: true }).click();
   await expect(approval).toHaveCount(0);
   assert.equal(driver.calls.length, metadataCalls + 2);
+  for (const [i, kind] of ['bar', 'line', 'pie', 'scatter'].entries()) {
+    await send(`Chart ${kind}`);
+    const card = page.getByRole('figure', { name: `SQL ${kind}`, exact: true });
+    await expect(card.locator('.chart-plot > svg')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText('Chart ready.', { exact: true })).toHaveCount(i + 1, {
+      timeout: 30000,
+    });
+    await card.locator('svg [tabindex="0"]').first().hover();
+    await expect(card.locator('.chart-hover')).not.toContainText('Hover or focus');
+    const toggle = card.getByRole('button', {
+      name: kind === 'pie' ? 'Toggle hello' : 'Toggle id',
+      exact: true,
+    });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await toggle.click();
+    await card.getByRole('button', { name: 'Expand chart' }).click();
+    await expect(page.getByRole('dialog', { name: 'Expanded chart' })).toBeVisible();
+    await page.getByRole('button', { name: 'Close chart' }).click();
+    await card.getByText('View chart data', { exact: true }).click();
+    await expect(card.locator('tbody tr')).toHaveCount(2);
+    const download = page.waitForEvent('download');
+    await card.getByRole('button', { name: 'Download PNG' }).click();
+    const file = await download;
+    const imageDir = path.dirname(
+      process.env.FRAME_SCREENSHOT || path.join(tmpdir(), 'frame-ui.png'),
+    );
+    await mkdir(imageDir, { recursive: true });
+    await file.saveAs(path.join(imageDir, `frame-ui-chart-${kind}.png`));
+    const png = await readFile(path.join(imageDir, `frame-ui-chart-${kind}.png`));
+    assert.equal(png.subarray(1, 4).toString(), 'PNG');
+    const csvDownload = page.waitForEvent('download');
+    await card.getByRole('link', { name: 'Download chart CSV' }).click();
+    const csv = await csvDownload;
+    assert.match(csv.suggestedFilename(), /chart-.*\.csv$/);
+    if (kind === 'bar') {
+      await card.screenshot({ path: path.join(imageDir, 'frame-ui-chart-desktop.png') });
+      if (
+        (await page
+          .getByRole('button', { name: 'Toggle navigation' })
+          .getAttribute('aria-expanded')) === 'true'
+      )
+        await page.getByRole('button', { name: 'Toggle navigation' }).click();
+      await page.setViewportSize({ width: 390, height: 844 });
+      await card.screenshot({ path: path.join(imageDir, 'frame-ui-chart-mobile.png') });
+      assert((await card.evaluate((el) => el.getBoundingClientRect().width)) <= 390);
+      await page.setViewportSize({ width: 1440, height: 1000 });
+    }
+  }
+  const calls = driver.calls.length;
+  await send('Chart saved results');
+  await expect(
+    page.getByRole('figure', { name: 'SQL saved', exact: true }).locator('.chart-plot > svg'),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText('Chart ready.', { exact: true })).toHaveCount(5, { timeout: 30000 });
+  assert.equal(driver.calls.length, calls, 'Reusing a dataset must not execute SQL');
+  await page.reload();
+  await page.getByRole('button', { name: 'Read database', exact: true }).click();
+  await expect(page.locator('.chart-card')).toHaveCount(5, { timeout: 15000 });
+  await expect(
+    page.getByRole('figure', { name: 'SQL scatter', exact: true }).locator('.chart-plot > svg'),
+  ).toBeVisible();
+  assert.equal(driver.calls.length, calls, 'Reloading charts must not re-execute SQL');
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);
   console.log(
-    'MSSQL browser + real SDK worker: settings, 1105-object knowledge, cached reads, result table/CSV, write approval, deny, and Stop passed.',
+    'MSSQL browser + real SDK worker: settings, 1105-object knowledge, cached reads, result table/CSV, write approval, deny, Stop, and interactive SQL charts with PNG/CSV exports and reload passed.',
   );
 } finally {
   await browser?.close();
