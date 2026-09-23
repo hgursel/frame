@@ -1,50 +1,87 @@
+<div align="center">
+
 # Frame
 
-**A self-hosted AI workspace for organizations.**
+### Your knowledge. Your infrastructure.
 
-Frame brings local models, project context, conversations, and agent tools into a browser-based workspace. It embeds the Pi SDK and connects to a llama.cpp server you operate. No separately installed Pi CLI, cloud-provider setup, or cloud fallback.
+A self-hosted AI workspace for company knowledge, SQL analysis, and local models.
 
-## Status: 0.5.1 — single-administrator V1
+[![Frame checks](https://github.com/hgursel/frame/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hgursel/frame/actions/workflows/ci.yml)
 
-Runnable, single-administrator application. Multi-user support is planned for **V2**. Trusted host tools run with the Frame Linux account's permissions; use a dedicated account and authenticated private access.
+[Features](#features) · [Quick start](#quick-start) · [Documentation](#documentation) · [Roadmap](docs/ROADMAP.md)
 
-### Implemented
+</div>
 
-- First-run browser setup with a server-console bootstrap token; password sign-in and expiring HttpOnly cookies.
-- Tabbed Model, Context, Instructions, Documents, and Plugins settings for one local endpoint, model ID, context/output limits, optional endpoint token, and organization instructions.
-- Test saved endpoint discovery through `/v1/models` (not a model-quality or tool-capability test).
-- Create/edit projects with instructions and an explicit trusted-tools toggle; managed project directories.
-- Streaming text and model reasoning, expandable thinking with an active animation, Markdown tables/task lists, copyable code blocks, locally rendered Mermaid diagrams, tool-result cards, stop generation, and reconnect-safe snapshots.
-- Ordered HTTP/SSE snapshots and polling recovery for disconnected or buffered streams; run-scoped Stop cancels transport and blocks post-cancellation continuation.
-- A centered chat interface with light/dark appearance, collapsible mobile navigation, conversation search, response copying, and scroll-aware streaming.
-- Context size/usage meter, configurable automatic compaction, manual checkpoints, reversible shortening of older read-only tool results, and observed output tokens/second. [Strategy, research, and measurement limits](docs/CONTEXT.md).
-- Chat attachment menu with knowledge selection and computer uploads; removable attachment chips.
-- Project uploads: Markdown, TXT, CSV, PDF, and DOCX; preserved originals and bounded text extraction.
-- Remove source files and knowledge pages with confirmation, revision checks, and catalog cleanup.
-- Markdown knowledge pages, revision history, conflict checks, and portable **Open Knowledge Format 0.2** export with provenance, index, and change log.
-- Read-only knowledge search/reading available in conversations; model-proposed drafts and **Useful → Save to knowledge** for answers and tool results. Review a new page or update an existing page before saving. Verification is a separate explicit action.
-- Optional managed Python installation from Settings, with tested PDF/DOCX generation through `create_document` and atomic completed-file publication.
-- Pi-native persisted JSONL history; fresh SDK worker per task resumes the exact conversation file.
-- Request-ID deduplication, one active task per project, two tasks maximum across projects, 30-minute task limit (including time waiting for approval).
-- Authenticated, download-only artifacts from each conversation’s output folder.
-- TypeScript checking, security/API tests, and real-SDK integration tests against a local mock endpoint.
+Bring your documents, project knowledge, and SQL data into one conversational workspace. Ask questions, investigate results, create charts, and turn useful answers into knowledge you can keep—all with a llama.cpp model running on your own infrastructure.
 
-- Built-in MSSQL plugin: separate SQL read/write logins, system restrictions and per-project enablement, exact write/procedure approvals, ranked cached schema knowledge, optional model-generated notes and subject areas for large schemas, result tables, and CSV downloads. [Setup and limits](docs/MSSQL.md).
+Frame embeds the **Pi SDK**, so there is no separate Pi installation to manage. Configure your model, projects, and built-in plugins through the web interface.
 
-- Built-in Charts plugin: per-project SQL charts (bar, line, pie/donut, scatter), interactive inline views, PNG/CSV downloads, and persisted source snapshots. [Setup and limits](docs/CHARTS.md).
+![Frame answering a database migration question using project knowledge, with source references and a Markdown checklist table](docs/images/knowledge-chat.png)
 
-### Planned, not implemented
+_The running Frame interface with fictional demonstration content. [Screenshot details](docs/images/README.md)._
 
-- MCP connection management, trusted skill installation, and extension dialog bridging.
-- Existing external-folder registration; V1 creates managed folders only.
-- Model/reasoning presets, richer diagnostics, administrator credential rotation, and packaged installer.
-- V2: multi-user identity, project authorization, audit events, and isolated execution.
+## Features
 
-See [the roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). No placeholder control pretends these features work.
+### Company knowledge that grows with your work
+
+- **Bring your documents.** Upload Markdown, TXT, CSV, PDF, and DOCX files. Attach sources to a conversation or ask Frame to search the project's knowledge.
+- **Keep useful answers.** Use **Useful → Save to knowledge** on answers and tool results. Review a new Markdown page or an update before saving it.
+- **Keep the history.** Knowledge pages include revisions and provenance. Export a portable **Open Knowledge Format 0.2** bundle with an index and change log.
+- **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
+
+[Explore the knowledge workflow →](docs/KNOWLEDGE.md)
+
+### SQL analysis with explicit controls
+
+The built-in **MSSQL plugin** lets you work with SQL Server through conversation:
+
+- Ask questions against administrator-selected databases using SQL Authentication.
+- Run supported reads with a separate read-only login; review and approve every enabled write, schema change, or allowlisted stored procedure.
+- Initialize searchable schema knowledge so models can find table structures and relationships without rediscovering the database each time.
+- Optionally generate per-object notes and business vocabulary, processing large catalogs one object at a time.
+- Inspect result tables and download returned rows as CSV.
+
+Configure the shared connection in system settings, then enable MSSQL for individual projects. SQL Server permissions remain the final boundary; the plugin is intended for development databases.
+
+[Set up MSSQL →](docs/MSSQL.md)
+
+### Charts, right in the conversation
+
+Ask for a **bar, line, pie/donut, or scatter chart** from SQL results. Hover for values, toggle legend entries, expand the view, inspect the data, or download PNG and CSV files.
+
+Charts use saved SQL datasets instead of asking the model to copy every value into its context. They remain available when you reopen the conversation, without rerunning the query. Source timestamps and result-limit notices keep snapshots identifiable.
+
+![Frame displaying an interactive monthly revenue bar chart from SQL results, with expansion and PNG and CSV download controls](docs/images/sql-chart.png)
+
+_Fictional sample revenue shown in the running application. Charts is enabled per project; the model is instructed to create charts only when you explicitly ask._
+
+[Set up Charts →](docs/CHARTS.md)
+
+### A familiar workspace for local models
+
+| Capability           | What you can do                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Streaming chat       | Follow responses and expandable model-provided reasoning as they arrive.                                          |
+| Rich answers         | Read Markdown tables, code blocks, and locally rendered Mermaid diagrams.                                         |
+| Context visibility   | See context usage and observed tokens/second; use automatic compaction or create a manual checkpoint.             |
+| Document generation  | Install the optional Python document runtime and generate downloadable PDF/DOCX files with trusted tools enabled. |
+| Conversation control | Resume saved chats, stop active tasks, and remove conversations or entire projects with confirmation.             |
+| Everyday interface   | Use light/dark appearance, conversation search, attachments, and mobile navigation.                               |
+
+## Try asking Frame
+
+| Start with            | Ask                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| Project documents     | “Review our migration plan and identify the remaining checks. Cite the source files.” |
+| SQL Server            | “Which products had the highest revenue last quarter? Show the query results.”        |
+| Saved SQL results     | “Turn those results into a bar chart.”                                                |
+| A useful conversation | “Draft a knowledge page explaining what we learned so I can review and save it.”      |
+
+SQL examples require the MSSQL plugin and an appropriate schema. Model-driven tools require a compatible model and chat template.
 
 ## Quick start
 
-Target platform: **Ubuntu 26.04, Node.js 24 LTS, npm**. The agent and tools run on this server, not in your browser. PDF/DOCX features need Python 3 and `python3-venv`; install their managed environment from **Settings → Documents**. Frame does not install llama.cpp or download models.
+**Requirements:** Ubuntu 26.04, Node.js 24 LTS, npm, and a running llama.cpp server. Frame does not download models or install llama.cpp.
 
 ```bash
 git clone https://github.com/hgursel/frame.git
@@ -54,79 +91,52 @@ npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:3000**. Use the setup token printed by the server to create a password (minimum 12 characters), then:
+1. Open **http://127.0.0.1:3000**. Use the setup token printed in the server console to create an administrator password.
+2. Go to **Settings → Model**. Enter your llama.cpp endpoint, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
+3. In **Settings → Context**, match the context window to your llama.cpp slot and reserve room for output.
+4. Create a project, add documents under **Knowledge**, and start a conversation.
+5. For SQL and charts, configure **Settings → Plugins**, enable the plugins in **Project settings**, and initialize database knowledge.
 
-1. Open **Settings → Model**. Enter an endpoint such as `http://127.0.0.1:8080/v1` and the model alias your llama.cpp server actually serves.
-2. In **Settings → Context**, match the context window to the context allocated per llama.cpp slot. Choose a smaller output limit.
-3. Save, then **Test saved connection**. Discovery does not prove tool calling works.
-4. Create a project. Leave tools disabled for the first chat test.
-5. Send a prompt. Enable trusted tools only after reading the warning and confirming the model’s chat template supports tool calling.
-6. Open **Knowledge** to manage sources and Markdown notes. Use **+** beside the chat composer to attach from knowledge or upload from your computer, or ask Frame to search the project knowledge. Ask it to synthesize a source into a knowledge draft, then review and save the result.
+The endpoint is reached from the Frame server. V1 accepts loopback and private IPv4 addresses; internal DNS names are not supported yet. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
 
-For SQL, configure **Settings → Plugins**, enable MSSQL in **Project settings**, and initialize database knowledge. On a large schema, generate database knowledge afterwards so the model has subject areas and business vocabulary to search with. See [the MSSQL guide](docs/MSSQL.md).
+For access from another computer, follow the [HTTPS reverse-proxy or SSH-tunnel guide](docs/DEPLOYMENT.md). Deployment-level network and storage settings are configured outside the browser.
 
-See [the knowledge workflow](docs/KNOWLEDGE.md) for OKF structure, conversation updates, Python setup, and current limits.
+## Local by design
 
-Endpoint tokens stay server-side. An empty password input in model settings preserves the stored token; the explicit remove checkbox clears it. A dummy non-secret token is used internally by the compatibility client for endpoints with no authentication.
+- **Your model endpoint.** Frame connects to the llama.cpp server you operate, with no cloud-model fallback.
+- **Your stored data.** Project files, knowledge, settings, chart datasets, and conversation history stay in the configured data directory on the Frame host.
+- **No telemetry.** Frame disables Pi install telemetry and model-catalog network refreshes. Initial dependency installation still requires package downloads.
+- **Explicit capabilities.** Enable built-in plugins per project and opt into trusted host tools when you need filesystem or Python/shell execution.
 
-### Local model support
+> [!IMPORTANT]
+> **V1 supports one administrator.** Multi-user access and isolated execution are planned for V2. Trusted host tools run with the Frame service account's permissions; project folders are not sandboxes. Use a dedicated account and authenticated private access. See [runtime and data boundaries](docs/OPERATIONS.md).
 
-Frame uses Pi’s `openai-completions` compatibility adapter for llama.cpp’s `/v1/chat/completions`. Only loopback or RFC1918 private IPv4 endpoints are accepted; `localhost` is normalized to `127.0.0.1`. Literal IPv6 loopback is also supported. Arbitrary DNS names, public IPs, metadata addresses, URL credentials, and redirects are rejected. Internal DNS and other private IPv6 ranges are deferred.
+## Documentation
 
-The thinking panel displays reasoning supplied by your model: structured `reasoning_content`/`reasoning`/`reasoning_text` through Pi, or a leading `<think>…</think>` block in ordinary text. It does not invent thinking or force the model to produce it. Expand the panel while generating to see updates; collapsed headers animate until reasoning finishes. Completed thinking persists with native history. No reasoning-effort control or image input is exposed yet. Context configuration in Frame does **not** resize llama.cpp’s KV cache. Knowledge tools and document generation require a tool-capable model/template.
+| Guide                                  | Covers                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------- |
+| [Knowledge](docs/KNOWLEDGE.md)         | Uploads, reviewed updates, Markdown pages, OKF export, and Python documents     |
+| [MSSQL](docs/MSSQL.md)                 | Connection setup, SQL permissions, approvals, and schema knowledge              |
+| [Charts](docs/CHARTS.md)               | Chart types, dataset limits, exports, and saved snapshots                       |
+| [Context management](docs/CONTEXT.md)  | Token budgets, compaction, checkpoints, and measurement limits                  |
+| [Deployment](docs/DEPLOYMENT.md)       | Ubuntu service setup, private access, updates, and backups                      |
+| [Runtime and data](docs/OPERATIONS.md) | Model compatibility, storage layout, credentials, tool boundaries, and deletion |
+| [Development](docs/DEVELOPMENT.md)     | Local development, automated checks, browser tests, and references              |
+| [Architecture](docs/ARCHITECTURE.md)   | Application structure and Pi SDK integration                                    |
+| [Roadmap](docs/ROADMAP.md)             | Implemented features, planned work, and acceptance checks                       |
 
-## Data and execution
+## Project status and contributing
 
-The default data directory is `./data`, excluded from Git:
+Frame is an actively developed **single-administrator V1**. MCP management, general skill installation, a packaged installer, and multi-user access are roadmap items. Automated tests cover API behavior, the real Pi SDK with a local mock endpoint, and browser workflows; validate your own llama.cpp model and SQL Server configuration before relying on them.
 
-| Location                                           | Purpose                                                                                       |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `frame.db`                                         | Administrator password hash, expiring login tokens, projects, conversations, and run metadata |
-| `mssql.json`                                      | SQL connection profile and two login credentials; owner-only file permissions                 |
-| `settings.json`                                    | Model configuration and endpoint token; owner-only file permissions                           |
-| `sessions/<conversation-id>.jsonl`                 | Authoritative Pi conversation history                                                         |
-| `projects/<project-id>/`                           | Managed project workspace                                                                     |
-| `projects/<project-id>/outputs/<conversation-id>/` | Flat user-facing download directory                                                           |
-| `agent/<conversation-id>/`                         | Worker-local Pi runtime data                                                                  |
-| `projects/<project-id>/knowledge/<document-id>/`   | Original files, extracted/editable content, conversation evidence                             |
-| `projects/<project-id>/knowledge/wiki/`            | Generated OKF bundle: concept pages, index, and log                                           |
-| `python/venv/`                                     | Optional managed document runtime                                                             |
+Have a bug or an idea? [Open an issue](https://github.com/hgursel/frame/issues). For code changes, read [AGENTS.md](AGENTS.md) and the [development guide](docs/DEVELOPMENT.md). Keep reports free of credentials and private organization data.
 
-Pi is a dependency with an exact pinned version and lockfile. Frame explicitly disables install telemetry and catalog network refreshes. Project extensions, packages, ambient skills, and arbitrary `AGENTS.md` files are **not automatically discovered** in this foundation. Only the instructions saved through Frame are loaded. MCP/skill integration must deliberately add resource loading and approvals later.
+## Built with
 
-Every project has narrowly scoped `search_knowledge`, `read_knowledge`, and `propose_knowledge` tools; proposals do not write. Trusted host tools add filesystem read/write/edit/search, shell execution, and `create_document` when Python is ready. **A project directory, a worker process, and a prompt instruction are not a sandbox.** Trusted tools can reach every file, network service, and credential accessible to the Frame Linux account. Keep host tools disabled when you only need chat and knowledge. Model transport restrictions do not restrict shell/Python network access.
+[Pi SDK](https://pi.dev/docs/latest/sdk) · [llama.cpp](https://github.com/ggml-org/llama.cpp) · React · TypeScript · Fastify · SQLite
 
-Downloads reject traversal, symlinks, multi-linked files, and files larger than 100 MiB. They are served as attachments, never executed as HTML in Frame’s origin. These API checks cannot contain a malicious agent with host-level write access.
+The knowledge workflow draws on [Google's Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md) and [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
-Project and conversation actions live in each sidebar row's **⋯** menu. Deleting a conversation removes its history, worker data, run records, and generated files while preserving shared project uploads and knowledge. Deleting a project additionally removes its knowledge/revisions, SQL catalog/notes/indexes, and plugin records. Confirm deletion and stop active tasks first. Shared model/SQL settings and external databases are untouched. Only Frame-owned files are removed; external copies and backups are not erased. File cleanup uses a local recovery journal so failed database transactions restore staged files and interrupted cleanup finishes on restart.
+## License
 
-## Deployment and development
-
-Optional settings are documented in [.env.example](.env.example); copy it to `.env` if needed. Both `npm start` and `npm run dev` read `.env`. Runtime model and project configuration is managed in the browser. Deployment-level bind/origin/storage choices remain outside the UI.
-
-For access from another computer, use an HTTPS reverse proxy with the exact `FRAME_ORIGIN`, or a local SSH tunnel. The Node service binds only to loopback. See [deployment notes](docs/DEPLOYMENT.md).
-
-```bash
-npm run check
-npm test
-npm run build
-npm run dev
-```
-
-`dev` runs the TypeScript server and serves the previously built frontend. Rebuild after frontend changes. No separate frontend process or HMR is required for this scaffold.
-
-Tests use local temporary directories and a mock OpenAI-compatible HTTP server, including a real Pi SDK worker. They do not require a GPU or spend API credits. **A test pass is not verification against your real llama.cpp/model configuration.**
-
-For Python integration coverage, run `npm run python:setup`, then run tests with `FRAME_PYTHON` set to the absolute path of `data/python/venv/bin/python`. CI installs that runtime and runs the PDF/DOCX and complete SDK tool workflow tests. Without `FRAME_PYTHON`, those two tests are explicitly skipped.
-
-For the optional browser smoke test, run `npx playwright install chromium --only-shell`, then `npm run build && npm run test:ui`. The browser binary is a development dependency, not needed to run Frame.
-
-## References
-
-- [Pi SDK](https://pi.dev/docs/latest/sdk)
-- [Pi security model](https://pi.dev/docs/latest/security)
-- [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server)
-- [Google Open Knowledge Format 0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md)
-- [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
-
-No license for Frame’s source has been selected yet. Dependency licenses remain applicable.
+A source license for Frame has not been selected yet. Dependency licenses remain applicable.
