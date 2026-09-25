@@ -6,7 +6,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 ## 0.2 — Knowledge and document workflow (implemented)
 
-- One animated activity row per request with streamed reasoning, tool details, and SQL results in a bounded inline panel. Intermediate replies, charts, files, approvals, and errors stay visible; task status lives in the row rather than above the composer.
+- Chronological activity rows between intermediate replies, with only the current row animated. Streamed reasoning, tool details, and SQL results expand in bounded inline panels; completed rows show their own step counts. One FRAME heading per user turn; replies, charts, files, approvals, and errors stay visible. Waiting, stopping, and reconnecting status lives in the current row rather than above the composer.
 - Project document uploads, preserved sources, bounded PDF/DOCX extraction, Markdown notes and revision history.
 - OKF 0.2 concept files, provenance, cross-links, index/log, and bundle export.
 - Conversation knowledge search/read, model draft proposals, and reviewed saves/updates from useful answers and tool results.

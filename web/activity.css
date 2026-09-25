@@ -4,6 +4,10 @@
 .response-text + .response-text {
   margin-top: 22px;
 }
+.response-text + .activity,
+.chart-card + .activity {
+  margin-top: 16px;
+}
 .activity {
   margin: 0 0 16px;
   color: var(--subtle);
