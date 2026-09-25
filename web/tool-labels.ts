@@ -25,8 +25,21 @@ const labels: Record<string, string> = {
 };
 export const toolLabel = (name?: string) =>
   name ? labels[name] || name.replaceAll('_', ' ') : 'Tool result';
-export const statusLabel = (status: string) =>
-  status.replace(
-    /\b(?:mssql_\w+|charts_\w+|(?:search|read|propose)_knowledge|create_document)\b/g,
-    (name) => toolLabel(name),
-  );
+export function statusLabel(status: string) {
+  if (!status.startsWith('Running ')) return status;
+  const label = toolLabel(status.slice('Running '.length));
+  const verbs: Record<string, string> = {
+    Run: 'Running',
+    Read: 'Reading',
+    Write: 'Writing',
+    Edit: 'Editing',
+    Search: 'Searching',
+    Find: 'Finding',
+    List: 'Listing',
+    Create: 'Creating',
+    Import: 'Importing',
+    Calculate: 'Calculating',
+    Draft: 'Drafting',
+  };
+  return label.replace(/^\w+/, (verb) => verbs[verb] || `Running ${verb}`);
+}

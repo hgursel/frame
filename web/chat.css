@@ -321,17 +321,6 @@ pre code {
   border-radius: 12px;
   color: var(--subtle);
 }
-.thinking {
-  border-color: var(--line);
-  color: var(--subtle);
-}
-.thinking-active summary {
-  color: var(--accent);
-}
-.thinking-orbit {
-  border-color: var(--line);
-  border-top-color: var(--accent);
-}
 .composer-area {
   position: relative;
   max-width: 824px;

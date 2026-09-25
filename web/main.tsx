@@ -1,13 +1,10 @@
 import { PluginCatalog } from './PluginCatalog.js';
-import { ChartCard } from './Charts.js';
 import './charts.css';
-import { ProjectPlugins, SqlApprovalCard, SqlResultTable } from './Plugins.js';
+import { ProjectPlugins, SqlApprovalCard } from './Plugins.js';
 import './plugins.css';
 import { SidebarMenu } from './SidebarMenu.js';
-import { toolLabel, statusLabel } from './tool-labels.js';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RichMarkdown } from './RichMarkdown.js';
 import { AttachmentPicker } from './AttachmentPicker.js';
 import type {
   ChatSnapshot,
@@ -18,12 +15,13 @@ import type {
 } from '../shared/types.js';
 import { api } from './api.js';
 import { newerSnapshot } from './snapshots.js';
-import { Thinking } from './Thinking.js';
-import { ContextPanel, Throughput, CopyMessage } from './ContextPanel.js';
+import { ConversationMessages } from './ConversationMessages.js';
+import { ContextPanel, Throughput } from './ContextPanel.js';
 import { KnowledgePanel, SaveKnowledge, DocumentTools } from './Knowledge.js';
 import './style.css';
 import './chat.css';
 import './refinements.css';
+import './activity.css';
 
 function Logo() {
   return (
@@ -652,7 +650,7 @@ function Workspace() {
               }}
             >
               <div className="conversation-inner">
-                {!snapshot.messages.length && (
+                {!snapshot.messages.length && !snapshot.running && (
                   <div className="welcome">
                     <h1>
                       Your knowledge.
@@ -671,51 +669,14 @@ function Workspace() {
                     )}
                   </div>
                 )}
-                {snapshot.messages.map((m, i) =>
-                  m.chart ? (
-                    <ChartCard key={i} reference={m.chart} chatId={chatId} />
-                  ) : m.role === 'tool' ? (
-                    <details className="tool" key={i}>
-                      <summary>
-                        {m.failed ? '×' : '✓'} {toolLabel(m.name)}
-                      </summary>
-                      {m.sqlResult ? (
-                        <SqlResultTable result={m.sqlResult} chatId={chatId} />
-                      ) : (
-                        <pre>{m.text}</pre>
-                      )}
-                      {!snapshot.running && (
-                        <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
-                          {m.proposal ? 'Review knowledge draft' : 'Save useful result'}
-                        </button>
-                      )}
-                    </details>
-                  ) : (
-                    <article key={i} className={`message ${m.role}`}>
-                      <div className="message-author">{m.role === 'user' ? 'YOU' : 'FRAME'}</div>
-                      <Thinking text={m.thinking} active={m.thinkingActive && snapshot.running} />
-                      {!!m.attachments?.length && (
-                        <div className="attachment-chips">
-                          {m.attachments.map((a) => (
-                            <span key={a.id}>▤ {a.name}</span>
-                          ))}
-                        </div>
-                      )}
-                      <RichMarkdown
-                        text={m.text}
-                        streaming={snapshot.running && i === snapshot.messages.length - 1}
-                      />
-                      {m.role === 'assistant' && !!m.text && !snapshot.running && (
-                        <div className="message-actions">
-                          <CopyMessage text={m.text} />
-                          <button className="save-knowledge" onClick={() => setSaveIndex(i)}>
-                            ♡ Useful · Save to knowledge
-                          </button>
-                        </div>
-                      )}
-                    </article>
-                  ),
-                )}
+                <ConversationMessages
+                  key={chatId}
+                  snapshot={snapshot}
+                  chatId={chatId}
+                  connected={connected}
+                  stopping={stoppingChat === chatId}
+                  onSave={setSaveIndex}
+                />
                 {snapshot.sqlApproval && (
                   <SqlApprovalCard
                     key={snapshot.sqlApproval.id}
@@ -772,17 +733,6 @@ function Workspace() {
                   ↓ Latest message
                 </button>
               )}
-              <div className="status-row">
-                <div className="status" aria-live="polite">
-                  {chatId && !connected
-                    ? `${snapshot.running ? (stoppingChat === chatId ? 'Stopping' : statusLabel(snapshot.status)) : 'Checking task status…'} · Live updates reconnecting`
-                    : snapshot.running
-                      ? stoppingChat === chatId
-                        ? 'Stopping'
-                        : statusLabel(snapshot.status)
-                      : ''}
-                </div>
-              </div>
               {error && (
                 <p className="error" role="alert">
                   {error}
@@ -1178,9 +1128,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         aria-labelledby="tab-plugins"
         hidden={tab !== 'plugins'}
       >
-        {tab === 'plugins' && (
-          <PluginCatalog />
-        )}
+        {tab === 'plugins' && <PluginCatalog />}
       </div>
       <div className="scope-note">
         <strong>V1 · Single administrator</strong>
