@@ -5,7 +5,7 @@ Frame can check project knowledge and learn reusable procedures, definitions, ca
 ## Configure a nightly run
 
 1. Select the projects to maintain. Nothing is selected initially.
-2. Set a daily time and an IANA timezone, for example `02:00` and `Europe/Istanbul`. The default timezone is UTC; choose your own explicitly.
+2. Set a daily time and choose an IANA timezone from the dropdown, for example `02:00` and `Europe/Istanbul`. The default timezone is UTC; choose your own explicitly.
 3. Choose whether to learn from completed conversations, or only check existing knowledge.
 4. Choose a publishing policy, save, and enable the schedule. Scheduling starts disabled. **Run maintenance now** uses the saved settings even with scheduling disabled.
 
@@ -63,7 +63,7 @@ Search weights titles, aliases, tags, and descriptions more heavily than body te
 
 ## Incognito chats
 
-Choose **New incognito chat** in the sidebar. Conversation and compaction state remain in server memory and are never written as a Pi session file. These chats do not appear in normal history, cannot be saved through the knowledge shortcut, and are excluded from maintenance, SQL recipes, and vocabulary-gap learning.
+Use the **Incognito chat** icon in the chat header's top-right corner before sending your first message. The icon indicates whether incognito is on and becomes disabled once the conversation starts; start a new conversation to choose again. Conversation and compaction state remain in server memory and are never written as a Pi session file. These chats do not appear in normal history, cannot be saved through the knowledge shortcut, and are excluded from maintenance, SQL recipes, and vocabulary-gap learning.
 
 An incognito chat ends when you select another conversation/project, press **End chat**, reload/close its tab, sign out, or lose its heartbeat for 30 minutes. Leaving for Settings does not end it; download wanted files before ending the chat. Browser exit delivery is best-effort, with heartbeat expiry and startup cleanup covering abandoned sessions.
 

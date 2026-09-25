@@ -51,6 +51,10 @@ export function MaintenanceSettingsPanel() {
   if (!status || !form) return <p>{error || 'Loading knowledge maintenance…'}</p>;
   const change = <K extends keyof MaintenanceSettings>(key: K, value: MaintenanceSettings[K]) =>
     setForm({ ...form, [key]: value });
+  // Keep saved IANA aliases selectable even when the browser lists a different canonical name.
+  const timezones = [
+    ...new Set(['UTC', form.timezone, ...Intl.supportedValuesOf('timeZone')]),
+  ].sort();
   return (
     <div className="maintenance-panel">
       <h2>Knowledge maintenance</h2>
@@ -94,13 +98,18 @@ export function MaintenanceSettingsPanel() {
           </label>
           <label>
             Timezone
-            <input
+            <select
               aria-label="Maintenance timezone"
               required
               value={form.timezone}
-              placeholder="America/Los_Angeles"
               onChange={(e) => change('timezone', e.target.value)}
-            />
+            >
+              {timezones.map((zone) => (
+                <option key={zone} value={zone}>
+                  {zone.replaceAll('_', ' ')}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Runtime budget (minutes)

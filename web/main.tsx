@@ -167,6 +167,8 @@ function Workspace() {
   currentProject.current = projectId;
   const [chatId, setChatId] = useState('');
   const [incognitoId, setIncognitoId] = useState('');
+  const [loadedChatId, setLoadedChatId] = useState('');
+  const [switchingPrivacy, setSwitchingPrivacy] = useState(false);
   const currentChat = useRef(chatId);
   currentChat.current = chatId;
   const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
@@ -220,7 +222,10 @@ function Workspace() {
   const [connected, setConnected] = useState(false);
   const [stoppingChat, setStoppingChat] = useState('');
   const applySnapshot = (id: string, value: ChatSnapshot) => {
-    if (currentChat.current === id) setSnapshot((current) => newerSnapshot(current, value));
+    if (currentChat.current === id) {
+      setSnapshot((current) => newerSnapshot(current, value));
+      setLoadedChatId(id);
+    }
   };
   const [artifacts, setArtifacts] = useState<{ name: string }[]>([]);
   const [settings, setSettings] = useState<PublicSettings>();
@@ -231,6 +236,16 @@ function Workspace() {
     documentIds: string[];
   }>();
   const project = projects.find((p) => p.id === projectId);
+  const isIncognito = !!chatId && incognitoId === chatId;
+  const canChangePrivacy =
+    !!projectId &&
+    !switchingPrivacy &&
+    !sending &&
+    !pending &&
+    !uploading &&
+    !snapshot.running &&
+    (!chatId ||
+      (loadedChatId === chatId && !snapshot.messages.length && snapshot.status === 'Ready'));
   useEffect(() => {
     pinned.current = true;
     setShowJump(false);
@@ -262,6 +277,7 @@ function Workspace() {
     setSnapshot({ messages: [], running: false, status: 'Ready' });
     setArtifacts([]);
     setConnected(false);
+    setLoadedChatId('');
     setError('');
     if (!chatId) return;
     let live = true;
@@ -370,20 +386,25 @@ function Workspace() {
       setPage('project');
       return;
     }
+    const selectedChat = currentChat.current;
     const chat = await api<Conversation>('/conversations', 'POST', {
       projectId,
       incognito: temporary,
     });
     if (!temporary) setChats((prev) => [chat, ...prev]);
+    if (currentProject.current !== projectId || currentChat.current !== selectedChat) {
+      if (temporary) await api(`/conversations/${chat.id}/end`, 'POST', {});
+      return;
+    }
     setIncognitoId(temporary ? chat.id : '');
-    if (currentProject.current !== projectId) return;
     setChatId(chat.id);
     currentChat.current = chat.id;
     setPage('chat');
     return chat.id;
   };
   const submit = async () => {
-    if ((!draft.trim() && !pending) || sending || uploading || snapshot.running) return;
+    if ((!draft.trim() && !pending) || sending || uploading || switchingPrivacy || snapshot.running)
+      return;
     setSending(true);
     setError('');
     try {
@@ -567,16 +588,6 @@ function Workspace() {
             +
           </button>
         </div>
-        <button
-          className="incognito-new"
-          aria-label="New incognito chat"
-          onClick={() => {
-            setPending(undefined);
-            void newChat(true).catch((e) => setError(e.message));
-          }}
-        >
-          New incognito chat
-        </button>
         <input
           className="chat-search"
           aria-label="Search conversations"
@@ -660,6 +671,50 @@ function Workspace() {
             <span className="slash">/</span>
             {page === 'settings' ? 'Settings' : project?.name || 'Getting started'}
           </div>
+          {page === 'chat' && (
+            <button
+              className="incognito-toggle"
+              aria-label="Incognito chat"
+              aria-pressed={isIncognito}
+              disabled={!canChangePrivacy}
+              title={
+                canChangePrivacy
+                  ? isIncognito
+                    ? 'Turn off incognito'
+                    : 'Turn on incognito'
+                  : 'Choose incognito before the first message. Start a new conversation to change it.'
+              }
+              onClick={async () => {
+                if (!canChangePrivacy) return;
+                setSwitchingPrivacy(true);
+                setError('');
+                try {
+                  await newChat(!isIncognito);
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setSwitchingPrivacy(false);
+                }
+              }}
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z"
+                  strokeDasharray="3 3"
+                />
+              </svg>
+            </button>
+          )}
         </header>
         {page === 'settings' && settings ? (
           <Settings initial={settings} onSaved={refresh} />
@@ -854,7 +909,9 @@ function Workspace() {
                     allowUpload={!incognitoId || incognitoId !== chatId}
                     documents={documents}
                     attached={attached}
-                    disabled={!projectId || snapshot.running || !!pending || sending}
+                    disabled={
+                      !projectId || snapshot.running || !!pending || sending || switchingPrivacy
+                    }
                     onBusy={setUploading}
                     onToggle={(id) =>
                       setAttached((ids) =>
@@ -885,7 +942,12 @@ function Workspace() {
                     <button
                       className="send"
                       disabled={
-                        sending || uploading || !draft.trim() || !projectId || !settings?.modelId
+                        sending ||
+                        uploading ||
+                        switchingPrivacy ||
+                        !draft.trim() ||
+                        !projectId ||
+                        !settings?.modelId
                       }
                       aria-label="Send message"
                     >

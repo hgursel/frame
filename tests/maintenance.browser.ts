@@ -93,7 +93,8 @@ try {
   await page.getByRole('tab', { name: 'Knowledge', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Knowledge maintenance' })).toBeVisible();
   await page.getByLabel('Daily start time').fill('02:00');
-  await page.getByLabel('Maintenance timezone').fill('America/Los_Angeles');
+  await page.getByLabel('Maintenance timezone').selectOption('America/Los_Angeles');
+  await expect(page.getByLabel('Maintenance timezone')).toHaveValue('America/Los_Angeles');
   await page.getByLabel('Operations', { exact: true }).check();
   await page.getByLabel('Publishing policy').selectOption('review');
   await page.getByRole('button', { name: 'Save maintenance settings' }).click();
@@ -131,7 +132,27 @@ try {
   await expect
     .poll(() => ctx.wiki.metadata(doc.id).description)
     .toBe('Use for maintenance approval and rollback planning.');
-  await page.getByRole('button', { name: 'New incognito chat', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Projects', exact: true })
+    .locator('.project-link')
+    .click();
+  const privacy = page.getByRole('button', { name: 'Incognito chat', exact: true });
+  await expect(page.locator('.sidebar').getByRole('button', { name: /incognito/i })).toHaveCount(0);
+  await expect(
+    page.locator('header').getByRole('button', { name: 'Incognito chat', exact: true }),
+  ).toBeVisible();
+  await expect(privacy).toBeEnabled();
+  await page.getByRole('textbox', { name: 'Message Frame' }).fill('Private temporary request');
+  await privacy.click();
+  await expect(privacy).toHaveAttribute('aria-pressed', 'true');
+  await expect(privacy).toBeEnabled();
+  await privacy.click();
+  await expect(privacy).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('textbox', { name: 'Message Frame' })).toHaveValue(
+    'Private temporary request',
+  );
+  await expect(privacy).toBeEnabled();
+  await privacy.click();
   await expect(page.locator('.incognito-notice')).toBeVisible();
   await page.getByRole('button', { name: 'Add attachments' }).click();
   await expect(
@@ -140,10 +161,12 @@ try {
   await page.getByRole('button', { name: 'Add attachments' }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Private temporary request');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(privacy).toBeDisabled();
   await expect(page.getByText('Temporary response.', { exact: true })).toBeVisible({
     timeout: 20000,
   });
   await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible();
+  await expect(privacy).toBeDisabled();
   const temporary = ctx.store.conversations().find((x: any) => x.incognito)!;
   assert(temporary);
   assert(!existsSync(ctx.store.sessionFile(temporary.id)));
@@ -161,6 +184,29 @@ try {
     });
   await page.getByRole('button', { name: 'End chat', exact: true }).click();
   await expect.poll(() => ctx.store.conversation(temporary.id)).toBeUndefined();
+  await expect(privacy).toBeEnabled();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Conversations', exact: true })
+    .getByRole('button', { name: 'New conversation', exact: true })
+    .last()
+    .click();
+  await expect(
+    page.getByText(
+      'Always check change approval before maintenance and record the recovery plan.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(privacy).toBeDisabled();
+  await page.reload();
+  // Reload starts at the empty composer; reopening the saved conversation still locks privacy.
+  await page
+    .getByRole('navigation', { name: 'Conversations', exact: true })
+    .getByRole('button', { name: 'New conversation', exact: true })
+    .last()
+    .click();
+  await expect(privacy).toBeDisabled();
   assert.deepEqual(errors, []);
   console.log(
     'Maintenance browser passed: Settings, review policy, run/draft publication, metadata editing, incognito history exclusion, temporary SDK chat, and mobile cleanup.',
