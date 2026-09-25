@@ -10,12 +10,24 @@ Reports is the only built-in PDF generator. The older `create_document` tool is 
 
 1. Install the optional runtime in **Settings → Documents**. Ubuntu needs Python 3 and `python3-venv`. An existing working Frame document runtime already has the required packages.
 2. Open **Settings → Plugins → Reports**, enable the plugin, and configure its design. The plugin menu separates Reports, Charts, and MSSQL while preserving unsaved drafts when switching between them.
-3. Under **Branding**, set the organization name and report label, choose primary/secondary/accent colors, and upload a PNG or JPEG logo. Logos save immediately; use **Save report settings** for the other controls.
-4. Under **Layout**, choose a default layout, Letter or A4, portrait or landscape, an optional cover page, and footer text.
+3. Under **Branding**, set the organization name, choose primary/secondary/accent colors, and upload a PNG or JPEG logo. Logos save immediately; use **Save report settings** for the other controls.
+4. Under **Layout**, choose a default layout, Letter or A4, portrait or landscape, cover/confidentiality pages, the editable confidentiality notice, and footer text.
 5. Under **Instructions**, describe required sections, titles, descriptions, and writing style in Markdown. Save, then use **Download saved-design sample** to inspect the layout. The sample contains fictional data and does not call the model or apply writing instructions.
 6. Enable **Reports** in a project's settings. **Customize report design** provides optional overrides for that project.
 
 Project fields inherit organization defaults individually until changed. **Use organization default** removes a field override so future organization changes apply again. Instructions are also one inherited field: a project override replaces, rather than appends to, the organization instructions. A project can inherit, replace, or remove the organization logo independently. Existing PDFs keep their original design.
+
+## Page design
+
+With **Cover and confidentiality pages** enabled (the default), PDFs use this order:
+
+1. A cover with the larger, centered logo and a smaller report-specific title. The generic Report label has been removed.
+2. An otherwise blank page containing only the confidentiality notice near the bottom, without headers, logos, footer rules, or page numbers.
+3. The report body, with page numbering starting at 1.
+
+The default notice is “Confidential — For internal use only.” Edit it in **Settings → Plugins → Reports → Layout**, or override it for a project. It is plain text, supports line breaks, and is limited to 1,200 characters. It cannot be empty. The existing cover preference is retained on upgrade; enabling the renamed control includes both opening pages. Disabling it keeps the compact report format without either opening page.
+
+Report titles, section headings, chart titles, and table captions use Title Case. Acronyms, mixed-case names, and inline code are preserved; narrative text, table values, and column names are not recased. Logos fit within a 260 × 110 point area while preserving aspect ratio. Long cover content shrinks together when necessary to stay on one page.
 
 ## Layouts and instructions
 

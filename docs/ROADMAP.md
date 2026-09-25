@@ -75,7 +75,8 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 ## Reports (implemented)
 
 - Default-off system setting and project enablement; organization branding/layout/instructions with per-field project overrides and independent logo inheritance.
-- Executive, analytical, and technical PDF layouts with covers, three brand colors, logos, page numbers, and repeating table headers.
+- Executive, analytical, and technical PDF layouts with larger centered logos, smaller Title Case cover titles, three brand colors, page numbers, and repeating table headers.
+- Cover → editable confidentiality page → report sequence; notice text inherits organization defaults or project overrides. Generic Report label removed with compatibility for saved settings.
 - Scoped references to conversation charts/datasets, uploaded CSV/Markdown, chat tables, and generated files; static vector charts and wide-table pagination.
 - Reports is the only built-in PDF generator; the former Markdown-to-PDF writer is removed and legacy calls fail with guidance. `create_document` remains DOCX-only.
 - Direct local PDF generation and revisions as separate downloads; bounded rendering and Stop cancellation without partial publication. No MSSQL or host tools required.

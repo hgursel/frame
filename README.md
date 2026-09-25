@@ -59,7 +59,7 @@ _Fictional sample revenue shown in an earlier interface; the current card uses o
 
 ### Reports in your organization’s style
 
-Turn findings, conversation charts, and tables into **branded PDF reports**. Upload a logo, choose three colors, and describe required sections and writing style in Markdown. Start with executive, data analysis, or technical layouts, with cover pages, repeating table headers, and page numbers.
+Turn findings, conversation charts, and tables into **branded PDF reports**. Upload a logo, choose three colors, and describe required sections and writing style in Markdown. Start with executive, data analysis, or technical layouts, with centered logos, Title Case headings, cover and confidentiality pages, repeating table headers, and page numbers.
 
 Set organization defaults and optional project overrides. Ask for a report directly in chat, then request revisions as new PDFs. Rendering runs locally through the optional document runtime and does not require trusted host tools or MSSQL.
 

@@ -93,10 +93,18 @@ try {
   await expect(page.getByRole('heading', { name: 'Reports', exact: true })).toBeVisible();
   await page.getByLabel('Enable Reports system-wide').check();
   await page.getByLabel('Organization name', { exact: true }).fill('Frame Labs');
+  await expect(page.getByLabel('Report label', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Charts plugin', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Charts', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Reports plugin', exact: true }).click();
   await expect(page.getByLabel('Organization name', { exact: true })).toHaveValue('Frame Labs');
+  await page.getByRole('button', { name: 'Layout', exact: true }).click();
+  await expect(page.getByLabel('Confidentiality notice', { exact: true })).toHaveValue(
+    'Confidential — For internal use only.',
+  );
+  await page
+    .getByLabel('Confidentiality notice', { exact: true })
+    .fill('Confidential - Frame Labs internal use.');
   await page.getByRole('button', { name: 'Instructions', exact: true }).click();
   await page
     .getByLabel('Report instructions (Markdown)')
@@ -135,10 +143,20 @@ try {
   await page.getByLabel('Enable Reports for this project').check();
   await page.getByRole('button', { name: 'Save project plugins' }).click();
   await page.getByText('Customize report design', { exact: true }).click();
-  await page.getByLabel('Report label', { exact: true }).fill('SERVICE REVIEW');
+  await page.getByRole('button', { name: 'Layout', exact: true }).click();
+  await expect(page.getByLabel('Confidentiality notice', { exact: true })).toHaveValue(
+    'Confidential - Frame Labs internal use.',
+  );
+  await page
+    .getByLabel('Confidentiality notice', { exact: true })
+    .fill('Confidential - Service Review Only.');
   await page.getByRole('button', { name: 'Save report settings', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Report settings saved' })).toBeVisible();
   assert.equal(ctx.reports.profile(project.id).organization, 'Frame Labs');
+  assert.equal(
+    ctx.reports.profile(project.id).confidentialityNotice,
+    'Confidential - Service Review Only.',
+  );
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page
     .getByPlaceholder('Ask Frame anything about your work…')

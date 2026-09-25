@@ -111,15 +111,6 @@ export function ReportsSettings({ projectId }: { projectId?: string }) {
               onChange={(e) => change('organization', e.target.value)}
             />,
           )}
-          {field(
-            'label',
-            'Report label',
-            <input
-              value={form.label}
-              maxLength={80}
-              onChange={(e) => change('label', e.target.value)}
-            />,
-          )}
           <div className="report-colors">
             {(['primary', 'secondary', 'accent'] as const).map((key) => (
               <React.Fragment key={key}>
@@ -232,13 +223,28 @@ export function ReportsSettings({ projectId }: { projectId?: string }) {
           )}
           {field(
             'cover',
-            'Separate cover page',
+            'Cover and confidentiality pages',
             <input
               type="checkbox"
               checked={form.cover}
               onChange={(e) => change('cover', e.target.checked)}
             />,
           )}
+          {field(
+            'confidentialityNotice',
+            'Confidentiality notice',
+            <textarea
+              aria-label="Confidentiality notice"
+              rows={4}
+              value={form.confidentialityNotice}
+              maxLength={1200}
+              onChange={(e) => change('confidentialityNotice', e.target.value)}
+            />,
+          )}
+          <p className="muted small">
+            Cover → confidentiality page → report. The notice appears at the bottom of an otherwise
+            blank page. Report titles and section headings use Title Case.
+          </p>
           {field(
             'footer',
             'Footer text',
