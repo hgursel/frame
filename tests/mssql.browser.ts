@@ -270,6 +270,8 @@ try {
     'The turn must read cached metadata rather than rediscover the database',
   );
   assert.equal(driver.calls.at(-1)?.login, 'read');
+  await expect(page.locator('.sql-result')).not.toBeVisible();
+  await page.locator('.activity > summary').click();
   await page
     .locator('details.tool')
     .filter({ hasText: 'Run SQL query' })
@@ -388,6 +390,7 @@ try {
   assert.equal(driver.calls.length, calls, 'Reloading charts must not re-execute SQL');
   await expect(page.locator('.artifacts a')).toHaveCount(1);
   await expect(page.locator('.artifacts a')).toContainText('requested-report.csv');
+  await page.locator('.activity > summary').first().click();
   const firstQuery = page.locator('details.tool').filter({ hasText: 'Run SQL query' }).first();
   await firstQuery.locator('summary').click();
   await expect(firstQuery.getByRole('link', { name: 'Download SQL results CSV' })).toBeVisible();

@@ -32,6 +32,7 @@ const model = createServer(async (request, response) => {
     response.writeHead(200, { 'Content-Type': 'text/event-stream' });
     if (body.messages.at(-1)?.role !== 'tool') {
       response.write(chunk({ reasoning_content: 'I will search the project.' }));
+      response.write(chunk({ content: 'I’ll check the project knowledge.' }));
       await new Promise((resolve) => setTimeout(resolve, 400));
       response.write(
         chunk({
@@ -159,16 +160,29 @@ try {
   );
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Draft for the next turn');
-  const thinking = page.locator('.thinking-active');
+  const thinking = page.locator('.activity-running');
   await thinking.waitFor();
+  await expect(thinking.getByLabel('Model thinking')).toContainText(
+    'Reading the maintenance source.',
+  );
   assert.equal(await thinking.getAttribute('open'), null, 'Thinking starts collapsed');
   assert.equal(
-    await thinking.locator('.thinking-orbit').evaluate((el) => getComputedStyle(el).animationName),
-    'thinking-turn',
+    await thinking.locator('.activity-orbit').evaluate((el) => getComputedStyle(el).animationName),
+    'activity-turn',
   );
-  await thinking.locator('summary').click();
+  await thinking.locator(':scope > summary').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await thinking.getAttribute('open'), '', 'Activity opens with the keyboard');
+  await expect(thinking.locator('.activity-body')).toHaveCSS('max-height', '360px');
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
+  await expect(page.getByLabel('Model thinking')).toBeVisible();
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
+  await expect(page.getByLabel('Model thinking')).toBeVisible();
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-expanded.png'),
+      fullPage: true,
+    });
   await expect(page.getByRole('textbox', { name: 'Message Frame' })).toHaveValue(
     'Draft for the next turn',
   );
@@ -296,20 +310,35 @@ try {
   await page.getByRole('button', { name: 'Review our migration plan.', exact: true }).click();
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
   assert.equal(
-    await page.locator('.thinking-active').count(),
+    await page.locator('.activity-running').count(),
     0,
     'Completed history must not animate',
   );
-  await page.locator('.thinking summary').click();
+  await page.locator('.activity > summary').click();
   await expect(page.getByLabel('Model thinking')).toContainText('Comparing the migration steps.');
+  await expect(page.getByLabel('Model thinking')).toBeVisible();
   // A resumed conversation must advance through reasoning, tool arguments, and response.
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Follow-up tool check');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
-  await expect(page.locator('.status')).toHaveText('Preparing tool call', { timeout: 15000 });
-  await expect(page.locator('.status')).toHaveText('Waiting for model');
-  await expect(page.locator('.status')).toHaveText('Responding');
+  await expect(page.locator('.activity-running .activity-status')).toHaveText(
+    'Preparing tool call',
+    { timeout: 15000 },
+  );
+  await expect(page.locator('.activity-running .activity-status')).toHaveText('Waiting for model');
+  await expect(page.locator('.activity-running .activity-status')).toHaveText('Responding');
   await expect(page.getByText('Follow-up result arrived.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible();
+  await expect(page.getByText('I’ll check the project knowledge.', { exact: true })).toBeVisible();
+  await expect(page.locator('.response-turn')).toHaveCount(2);
+  await expect(page.locator('.response-turn').last().locator('.activity')).toHaveCount(1);
+  await expect(page.locator('.response-turn').last().locator('.message-author')).toHaveCount(1);
+  await expect(page.locator('.response-turn').last().locator('.tool')).not.toBeVisible();
+  await expect(page.locator('.composer-area .status-row')).toHaveCount(0);
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-activity.png'),
+      fullPage: true,
+    });
   assert.equal(followupRequests, 2, 'One follow-up plus one continuation after the tool');
   // Simulate an unavailable live stream. HTTP reconciliation must still update and stop.
   await page.route('**/api/conversations/*/events', (route) => route.abort());
@@ -318,10 +347,14 @@ try {
   await expect(page.getByText('Follow-up result arrived.', { exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Hold until stopped');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
-  await expect(page.locator('.status')).toContainText('reconnecting');
+  await expect(page.locator('.activity-running .activity-status')).toContainText('reconnecting');
   const stop = page.getByRole('button', { name: 'Stop generation', exact: true });
   await expect(stop).toBeVisible({ timeout: 15000 });
-  await expect.poll(() => page.locator('.thinking-active').count(), { timeout: 15000 }).toBe(1);
+  await expect.poll(() => page.locator('.activity-running').count(), { timeout: 15000 }).toBe(1);
+  await expect(page.locator('.activity-running').getByLabel('Model thinking')).toContainText(
+    'Waiting for cancellation.',
+    { timeout: 15000 },
+  );
   const checkStopGeometry = async () => {
     const box = await stop.boundingBox();
     const icon = await stop.locator('svg').boundingBox();
@@ -340,7 +373,7 @@ try {
     timeout: 15000,
   });
   await expect.poll(() => heldConnectionsClosed).toBe(1);
-  await expect(page.locator('.thinking-active')).toHaveCount(0);
+  await expect(page.locator('.activity-running')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   // Desktop navigation may remain open when the viewport is resized; close its drawer.
   const closeNavigation = page.getByRole('button', { name: 'Close navigation', exact: true });
@@ -375,21 +408,23 @@ try {
   const menus = page.getByRole('button', { name: /^Conversation menu:/ });
   const beforeDelete = await menus.count();
   await menus.first().click();
-  page.once('dialog', dialog => void dialog.accept());
+  page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Delete conversation', exact: true }).click();
   await expect(menus).toHaveCount(beforeDelete - 1);
   // The portal menu closes mobile navigation after selecting an action.
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.getByLabel('Project menu: Infrastructure').click();
-  page.once('dialog', dialog => void dialog.dismiss());
+  page.once('dialog', (dialog) => void dialog.dismiss());
   await page.getByRole('button', { name: 'Delete project', exact: true }).click();
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await expect(page.getByLabel('Project menu: Infrastructure')).toBeVisible();
   await page.getByLabel('Project menu: Infrastructure').click();
-  page.once('dialog', dialog => void dialog.accept());
+  page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Delete project', exact: true }).click();
   await expect(page.getByLabel('Project menu: Infrastructure')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Create your first project', exact: false })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Create your first project', exact: false }),
+  ).toBeVisible();
   assert.deepEqual(errors, []);
   assert.deepEqual(
     externalRequests,

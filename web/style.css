@@ -669,63 +669,6 @@ code {
     font-size: 28px;
   }
 }
-/* Reasoning stays quiet when complete and visibly active even while collapsed. */
-.thinking {
-  margin: 0 0 18px;
-  border-left: 2px solid #d5ded8;
-  padding-left: 14px;
-  color: #617068;
-}
-.thinking summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  list-style: none;
-}
-.thinking summary::-webkit-details-marker {
-  display: none;
-}
-.thinking-orbit {
-  width: 15px;
-  height: 15px;
-  border: 2px solid #cad6ce;
-  border-top-color: #426b55;
-  border-radius: 50%;
-}
-.thinking-active .thinking-orbit {
-  animation: thinking-turn 1s linear infinite;
-}
-.thinking-active summary {
-  color: #315d45;
-}
-.thinking-chevron {
-  transition: transform 0.2s;
-}
-.thinking[open] .thinking-chevron {
-  transform: rotate(180deg);
-}
-.thinking pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.7;
-  max-height: 360px;
-  overflow: auto;
-}
-@keyframes thinking-turn {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .thinking-active .thinking-orbit {
-    animation: none;
-    border-style: dotted;
-  }
-}
 .active-tab {
   background: #e9efe9;
   color: #315d45;

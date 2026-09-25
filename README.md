@@ -69,7 +69,7 @@ Set organization defaults and optional project overrides. Ask for a report direc
 
 | Capability           | What you can do                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Streaming chat       | Follow responses and expandable model-provided reasoning as they arrive.                                          |
+| Streaming chat       | Follow one live activity row per request; expand reasoning, tools, and SQL results while replies and charts stay visible.                                          |
 | Rich answers         | Read Markdown tables, code blocks, and locally rendered Mermaid diagrams.                                         |
 | Context visibility   | See context usage and observed tokens/second; use automatic compaction or create a manual checkpoint.             |
 | Document generation  | Generate all PDFs with Reports; Word/DOCX generation remains available through trusted document tools. |

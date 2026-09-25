@@ -1,0 +1,112 @@
+.response-turn .message-author {
+  margin-bottom: 10px;
+}
+.response-text + .response-text {
+  margin-top: 22px;
+}
+.activity {
+  margin: 0 0 16px;
+  color: var(--subtle);
+  font-size: 13px;
+}
+.activity > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  list-style: none;
+  cursor: pointer;
+  min-height: 32px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 6px;
+}
+.activity > summary::-webkit-details-marker {
+  display: none;
+}
+.activity > summary:hover {
+  color: var(--ink);
+}
+.activity > summary:focus-visible,
+.activity-body:focus-visible {
+  outline: 2px solid var(--accent, #597962);
+  outline-offset: 4px;
+}
+.activity-status {
+  overflow-wrap: anywhere;
+}
+.activity-orbit {
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.5;
+  box-sizing: border-box;
+}
+.activity-running:not(.activity-paused) .activity-orbit {
+  opacity: 0.9;
+  border-right-color: transparent;
+  animation: activity-turn 1s linear infinite;
+}
+.activity-paused.activity-running .activity-orbit {
+  border-style: dotted;
+}
+.activity-chevron {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+.activity[open] > summary .activity-chevron {
+  transform: rotate(90deg);
+}
+.activity-warning {
+  color: var(--ink);
+  font-size: 11px;
+}
+.activity-body {
+  max-height: min(360px, 45vh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  margin-top: 10px;
+  padding: 4px 12px 8px 16px;
+  border-left: 2px solid var(--line, #dce1d8);
+  scrollbar-width: thin;
+  overflow-wrap: anywhere;
+}
+.activity-body .tool {
+  margin: 8px 0;
+}
+.activity-body .tool pre,
+.activity-reasoning pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.65;
+}
+.activity-reasoning {
+  margin: 8px 0 16px;
+}
+.activity-step-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+.activity-reasoning pre {
+  margin: 6px 0;
+}
+.activity-empty {
+  margin: 8px 0;
+}
+@keyframes activity-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-running:not(.activity-paused) .activity-orbit {
+    animation: none;
+    border-style: dotted;
+  }
+  .activity-chevron {
+    transition: none;
+  }
+}
