@@ -17,9 +17,9 @@ npm run dev
 
 Tests use local temporary directories and a mock OpenAI-compatible HTTP server, including a real Pi SDK worker. They do not require a GPU or spend API credits. **A test pass is not verification against your real llama.cpp/model configuration.**
 
-For Python integration coverage, run `npm run python:setup`, then run tests with `FRAME_PYTHON` set to the absolute path of `data/python/venv/bin/python`. CI installs that runtime and runs the PDF/DOCX and complete SDK tool workflow tests. Without `FRAME_PYTHON`, those two tests are explicitly skipped.
+For Python integration coverage, run `npm run python:setup`, then run tests with `FRAME_PYTHON` set to the absolute path of `data/python/venv/bin/python`. CI installs that runtime and runs PDF/DOCX, branded Reports, and complete SDK tool workflow tests. Python-dependent tests are explicitly skipped without `FRAME_PYTHON`; cancellation coverage still runs.
 
-For the optional browser smoke test, run `npx playwright install chromium --only-shell`, then `npm run build && npm run test:ui`. The browser binary is a development dependency, not needed to run Frame.
+For the optional browser smoke test, run `npx playwright install chromium --only-shell`, then `npm run build && npm run test:ui`. The browser binary is a development dependency, not needed to run Frame. The suites cover chat, MSSQL/Charts, and Reports settings and generation. Set `FRAME_PYTHON` for the document/report workflows. Set `FRAME_REPORT_QA` to a temporary directory when running `tests/reports.test.ts` to retain sample PDFs for visual inspection.
 
 ## References
 

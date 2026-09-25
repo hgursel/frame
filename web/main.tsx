@@ -1,6 +1,7 @@
-import { ChartCard, ChartsSettings } from './Charts.js';
+import { PluginCatalog } from './PluginCatalog.js';
+import { ChartCard } from './Charts.js';
 import './charts.css';
-import { PluginSettings, ProjectPlugins, SqlApprovalCard, SqlResultTable } from './Plugins.js';
+import { ProjectPlugins, SqlApprovalCard, SqlResultTable } from './Plugins.js';
 import './plugins.css';
 import { SidebarMenu } from './SidebarMenu.js';
 import { toolLabel, statusLabel } from './tool-labels.js';
@@ -1178,10 +1179,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         hidden={tab !== 'plugins'}
       >
         {tab === 'plugins' && (
-          <>
-            <ChartsSettings />
-            <PluginSettings />
-          </>
+          <PluginCatalog />
         )}
       </div>
       <div className="scope-note">

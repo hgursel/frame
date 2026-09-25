@@ -50,3 +50,9 @@ Each task receives a project-scoped snapshot for bounded search/read tools. It d
 Knowledge changes and uploads take the project lock and are rejected while that project runs. Exported OKF files are generated projections; edit through the web UI, not those generated files. Host tools can bypass application ownership conventions, so this is not an authorization boundary against a hostile trusted agent.
 
 Python installs only after an explicit UI/CLI action into an app-owned venv. Pinned extraction/generation packages run without model/network calls. Installer-only proxy/index environment variables support organization package mirrors. Parsing has input, output, CPU, memory and time bounds. PDF/DOCX publication links a completed temporary file into its final name without overwriting an existing artifact. General shell scripts remain subject to host permissions and may have their own network behavior.
+
+## Reports plugin
+
+Reports follows the existing built-in plugin boundary: system configuration plus project enablement, explicit SDK tools, parent-owned validation and artifact publication. Organization design settings live in SQLite metadata; project overrides live in `report_settings` and inherit individual fields. Normalized logo bytes are stored with that configuration. Reports settings are independent of MSSQL and trusted host tools.
+
+The worker sends structured report blocks and source IDs to the parent. Existing chart/source readers enforce conversation/project scope; the parent resolves complete saved data and parses Markdown into a small set of rendering blocks. The bounded Python renderer uses ReportLab and Pillow already present in the document runtime. It receives JSON and returns PDF bytes, with no model code, remote image fetching, or raw HTML rendering. Stop and worker completion abort pending report work. Only a completed PDF is linked into the conversation artifact directory, and each revision gets a new filename.

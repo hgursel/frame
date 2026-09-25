@@ -57,6 +57,14 @@ _Fictional sample revenue shown in an earlier interface; the current card uses o
 
 [Set up Charts →](docs/CHARTS.md)
 
+### Reports in your organization’s style
+
+Turn findings, conversation charts, and tables into **branded PDF reports**. Upload a logo, choose three colors, and describe required sections and writing style in Markdown. Start with executive, data analysis, or technical layouts, with cover pages, repeating table headers, and page numbers.
+
+Set organization defaults and optional project overrides. Ask for a report directly in chat, then request revisions as new PDFs. Rendering runs locally through the optional document runtime and does not require trusted host tools or MSSQL.
+
+[Set up Reports →](docs/REPORTS.md)
+
 ### A familiar workspace for local models
 
 | Capability           | What you can do                                                                                                   |
@@ -64,7 +72,7 @@ _Fictional sample revenue shown in an earlier interface; the current card uses o
 | Streaming chat       | Follow responses and expandable model-provided reasoning as they arrive.                                          |
 | Rich answers         | Read Markdown tables, code blocks, and locally rendered Mermaid diagrams.                                         |
 | Context visibility   | See context usage and observed tokens/second; use automatic compaction or create a manual checkpoint.             |
-| Document generation  | Install the optional Python document runtime and generate downloadable PDF/DOCX files with trusted tools enabled. |
+| Document generation  | Generate branded PDFs with Reports; basic DOCX/PDF generation remains available through trusted document tools. |
 | Conversation control | Resume saved chats, stop active tasks, and remove conversations or entire projects with confirmation.             |
 | Everyday interface   | Use light/dark appearance, conversation search, attachments, and mobile navigation.                               |
 
@@ -75,6 +83,7 @@ _Fictional sample revenue shown in an earlier interface; the current card uses o
 | Project documents     | “Review our migration plan and identify the remaining checks. Cite the source files.” |
 | SQL Server            | “Which products had the highest revenue last quarter? Show the query results.”        |
 | Saved SQL results     | “Turn those results into a bar chart.”                                                |
+| Findings and charts   | “Create a branded PDF report with these findings, the chart, and recommendations.”     |
 | A useful conversation | “Draft a knowledge page explaining what we learned so I can review and save it.”      |
 
 SQL examples require the MSSQL plugin and an appropriate schema. Model-driven tools require a compatible model and chat template.
@@ -95,7 +104,7 @@ npm start
 2. Go to **Settings → Model**. Enter your llama.cpp endpoint, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
 3. In **Settings → Context**, match the context window to your llama.cpp slot and reserve room for output.
 4. Create a project, add documents under **Knowledge**, and start a conversation.
-5. For SQL and charts, configure **Settings → Plugins**, enable the plugins in **Project settings**, and initialize database knowledge.
+5. Configure Reports, Charts, or MSSQL in **Settings → Plugins**, then enable them in **Project settings**. For MSSQL, initialize database knowledge.
 
 The endpoint is reached from the Frame server. V1 accepts loopback and private IPv4 addresses; internal DNS names are not supported yet. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
 
@@ -117,6 +126,7 @@ For access from another computer, follow the [HTTPS reverse-proxy or SSH-tunnel 
 | -------------------------------------- | ------------------------------------------------------------------------------- |
 | [Knowledge](docs/KNOWLEDGE.md)         | Uploads, reviewed updates, Markdown pages, OKF export, and Python documents     |
 | [MSSQL](docs/MSSQL.md)                 | Connection setup, SQL permissions, approvals, and schema knowledge              |
+| [Reports](docs/REPORTS.md)             | Branded PDF layouts, project overrides, chart/table sources, and local rendering |
 | [Charts](docs/CHARTS.md)               | Chart types, dataset limits, exports, and saved snapshots                       |
 | [Context management](docs/CONTEXT.md)  | Token budgets, compaction, checkpoints, and measurement limits                  |
 | [Deployment](docs/DEPLOYMENT.md)       | Ubuntu service setup, private access, updates, and backups                      |

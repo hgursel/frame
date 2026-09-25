@@ -1,4 +1,6 @@
 const labels: Record<string, string> = {
+  reports_sources: 'Find report content',
+  reports_create: 'Create PDF report',
   charts_create: 'Create chart',
   charts_datasets: 'Find chart datasets',
   charts_sources: 'Find chart sources',

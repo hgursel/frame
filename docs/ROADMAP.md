@@ -72,6 +72,14 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Bounded datasets and chart points, visible partial-source notices, NULL gaps, and validation without arbitrary model code or cloud dependencies.
 - API and real-SDK/mock-model browser coverage; local-model acceptance remains separate. See [Charts](CHARTS.md).
 
+## Reports (implemented)
+
+- Default-off system setting and project enablement; organization branding/layout/instructions with per-field project overrides and independent logo inheritance.
+- Executive, analytical, and technical PDF layouts with covers, three brand colors, logos, page numbers, and repeating table headers.
+- Scoped references to conversation charts/datasets, uploaded CSV/Markdown, chat tables, and generated files; static vector charts and wide-table pagination.
+- Direct local PDF generation and revisions as separate downloads; bounded rendering and Stop cancellation without partial publication. No MSSQL or host tools required.
+- Plugin settings navigation with retained drafts and a saved-design sample download. API, PDF, and browser coverage through the real SDK with a local mock model. See [Reports](REPORTS.md).
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
