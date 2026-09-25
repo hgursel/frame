@@ -77,7 +77,9 @@ export async function createApp(options: {
   const store = new Store(path.resolve(options.dataDir));
   recoverDeletions(store);
   const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
-  const charts = new ChartsPlugin(store);
+  const python = new PythonRuntime(store.root);
+  const knowledge = new Knowledge(store, python);
+  const charts = new ChartsPlugin(store, knowledge);
   mssql.captureChartData = (conversation, operation, database, result) => {
     const project = store.conversation(conversation)?.projectId;
     return project && charts.enabled() && charts.projectEnabled(project)
@@ -87,8 +89,6 @@ export async function createApp(options: {
   const runner = new Runner(store, mssql, charts);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
-  const python = new PythonRuntime(store.root);
-  const knowledge = new Knowledge(store, python);
   const wiki = new Wiki(knowledge);
   const streams = new Set<ServerResponse>();
   const app = Fastify({ bodyLimit: 128 * 1024, logger: false, trustProxy: false });

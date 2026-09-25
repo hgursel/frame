@@ -20,7 +20,54 @@ const model = createServer(async (req, res) => {
   const prompt = JSON.stringify(body.messages[lastUser]?.content);
   const turnTools = body.messages.slice(lastUser + 1).filter((m: any) => m.role === 'tool').length;
   let tool: { name: string; args: object } | undefined;
-  if (prompt.includes('Read database'))
+  if (prompt.includes('Visualize ')) {
+    if ((body.tools || []).some((t: any) => t.function?.name?.startsWith('mssql_')))
+      modelError = 'MSSQL tools present in non-SQL chart test';
+    const mode = prompt.includes('Visualize CSV')
+      ? 'CSV'
+      : prompt.includes('Visualize page')
+        ? 'page'
+        : 'chat';
+    const results = body.messages
+      .slice(lastUser + 1)
+      .filter((m: any) => m.role === 'tool')
+      .map((m: any) =>
+        JSON.parse(
+          typeof m.content === 'string' ? m.content : m.content.map((p: any) => p.text).join(''),
+        ),
+      );
+    if (!turnTools)
+      tool = { name: 'charts_sources', args: { kind: mode === 'chat' ? 'message' : 'document' } };
+    else if (turnTools === 1) {
+      const source =
+        mode === 'chat'
+          ? results[0].sources[0]
+          : results[0].sources.find(
+              (s: any) => s.name === (mode === 'CSV' ? 'chart-input.csv' : 'chart-input.md'),
+            );
+      tool = { name: 'charts_import', args: { kind: source.kind, id: source.id } };
+    } else if (turnTools === 2)
+      tool = {
+        name: 'charts_transform',
+        args: {
+          datasetId: results[1].datasetId,
+          groupBy: ['Region'],
+          measures: [{ column: 'Amount', operation: 'sum', as: 'Total' }],
+          sort: [{ column: 'Total', direction: 'desc', numeric: true }],
+        },
+      };
+    else if (turnTools === 3)
+      tool = {
+        name: 'charts_create',
+        args: {
+          datasetId: results[2].datasetId,
+          kind: 'bar',
+          title: `${mode} totals`,
+          x: 'Region',
+          y: ['Total'],
+        },
+      };
+  } else if (prompt.includes('Read database'))
     tool = [
       { name: 'mssql_schema_search', args: { query: 'Table1105' } },
       { name: 'mssql_schema_read', args: { id: schemaId } },
@@ -99,13 +146,15 @@ const model = createServer(async (req, res) => {
     res.end(
       chunk({
         role: 'assistant',
-        content: prompt.includes('Chart ')
-          ? 'Chart ready.'
-          : prompt.includes('Read database')
-            ? 'Database read finished.'
-            : prompt.includes('Approve')
-              ? 'Approved operation finished.'
-              : 'Denied operation finished.',
+        content: prompt.includes('Visualize ')
+          ? 'Local chart ready.'
+          : prompt.includes('Chart ')
+            ? 'Chart ready.'
+            : prompt.includes('Read database')
+              ? 'Database read finished.'
+              : prompt.includes('Approve')
+                ? 'Approved operation finished.'
+                : 'Denied operation finished.',
       }) +
         chunk({}, 'stop') +
         'data: [DONE]\n\n',
@@ -258,8 +307,13 @@ try {
     await expect(page.getByText('Chart ready.', { exact: true })).toHaveCount(i + 1, {
       timeout: 30000,
     });
+    await expect(card.locator('figcaption strong')).toHaveText(`SQL ${kind}`);
+    await expect(card.locator('svg text').filter({ hasText: `SQL ${kind}` })).toHaveCount(0);
+    await expect(card).not.toContainText('SQL snapshot');
+    await expect(card).not.toContainText('Hover or focus a point');
+    await expect(card.getByRole('button', { name: 'Download PNG' })).toHaveCount(0);
     await card.locator('svg [tabindex="0"]').first().hover();
-    await expect(card.locator('.chart-hover')).not.toContainText('Hover or focus');
+    await expect(card.locator('.chart-hover')).not.toHaveText('');
     const toggle = card.getByRole('button', {
       name: kind === 'pie' ? 'Toggle hello' : 'Toggle id',
       exact: true,
@@ -272,8 +326,12 @@ try {
     await page.getByRole('button', { name: 'Close chart' }).click();
     await card.getByText('View chart data', { exact: true }).click();
     await expect(card.locator('tbody tr')).toHaveCount(2);
+    await card.getByRole('button', { name: 'Expand chart' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Expanded chart' });
+    await dialog.locator('.chart-plot svg').click({ position: { x: 15, y: 15 } });
+    await expect(dialog).toBeVisible();
     const download = page.waitForEvent('download');
-    await card.getByRole('button', { name: 'Download PNG' }).click();
+    await dialog.getByRole('button', { name: 'Download PNG' }).click();
     const file = await download;
     const imageDir = path.dirname(
       process.env.FRAME_SCREENSHOT || path.join(tmpdir(), 'frame-ui.png'),
@@ -283,9 +341,16 @@ try {
     const png = await readFile(path.join(imageDir, `frame-ui-chart-${kind}.png`));
     assert.equal(png.subarray(1, 4).toString(), 'PNG');
     const csvDownload = page.waitForEvent('download');
-    await card.getByRole('link', { name: 'Download chart CSV' }).click();
+    await dialog.getByRole('link', { name: 'Download chart CSV' }).click();
     const csv = await csvDownload;
     assert.match(csv.suggestedFilename(), /chart-.*\.csv$/);
+    // Backdrop closes; clicks inside the plot do not. Escape and the icon also work.
+    await page.mouse.click(2, 2);
+    await expect(dialog).toHaveCount(0);
+    await expect(card.getByRole('button', { name: 'Expand chart' })).toBeFocused();
+    await card.getByRole('button', { name: 'Expand chart' }).click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
     if (kind === 'bar') {
       await card.screenshot({ path: path.join(imageDir, 'frame-ui-chart-desktop.png') });
       if (
@@ -324,6 +389,30 @@ try {
   const firstQuery = page.locator('details.tool').filter({ hasText: 'Run SQL query' }).first();
   await firstQuery.locator('summary').click();
   await expect(firstQuery.getByRole('link', { name: 'Download SQL results CSV' })).toBeVisible();
+
+  ctx.mssql.setProject(conversation.projectId, false);
+  const md = '| Region | Amount |\n|---|---|\n|North|2|\n|North|3|\n|South|4|';
+  await ctx.knowledge.add(
+    conversation.projectId,
+    'chart-input.csv',
+    Buffer.from('Region,Amount\nNorth,2\nNorth,3\nSouth,4'),
+  );
+  await ctx.knowledge.add(conversation.projectId, 'chart-input.md', Buffer.from(md));
+  for (const mode of ['CSV', 'page', 'chat']) {
+    await send(`Visualize ${mode} totals${mode === 'chat' ? '\n\n' + md : ''}`);
+    const card = page.getByRole('figure', { name: `${mode} totals`, exact: true });
+    await expect(card.locator('.chart-plot > svg')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('button', { name: 'Stop generation', exact: true })).toHaveCount(
+      0,
+      { timeout: 30000 },
+    );
+    await card.getByText('View chart data', { exact: true }).click();
+    await expect(card.locator('tbody tr')).toHaveText(['North5', 'South4']);
+  }
+  assert.equal(driver.calls.length, calls, 'File/chat calculations must not execute SQL');
+  await page.reload();
+  await page.getByRole('button', { name: 'Read database', exact: true }).click();
+  await expect(page.locator('.chart-card')).toHaveCount(8, { timeout: 15000 });
 
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);

@@ -85,7 +85,7 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
     .reverse();
 }
 
-export function readHistory(file: string): DisplayMessage[] {
+export function readSessionBranch(file: string): any[] {
   if (!existsSync(file)) return [];
   const lines = readFileSync(file, 'utf8').split('\n');
   const entries: any[] = [];
@@ -108,9 +108,12 @@ export function readHistory(file: string): DisplayMessage[] {
     branch.push(current);
     current = indexed.get(current.parentId);
   }
+  return branch.reverse();
+}
+
+export function readHistory(file: string): DisplayMessage[] {
   return displayMessages(
-    branch
-      .reverse()
+    readSessionBranch(file)
       .filter((e) => e.type === 'message' || e.type === 'custom_message')
       .map((e) => (e.type === 'message' ? e.message : { ...e, role: 'custom' })),
   );

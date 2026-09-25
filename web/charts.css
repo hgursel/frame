@@ -93,3 +93,29 @@
 .chart-plot svg [role='button'] {
   cursor: pointer;
 }
+
+.chart-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+.chart-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.chart-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.chart-dialog > .chart-actions {
+  justify-content: flex-end;
+  margin-top: 12px;
+}

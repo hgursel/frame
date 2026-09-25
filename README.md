@@ -47,13 +47,13 @@ Configure the shared connection in system settings, then enable MSSQL for indivi
 
 ### Charts, right in the conversation
 
-Ask for a **bar, line, pie/donut, or scatter chart** from SQL results. Hover for values, toggle legend entries, expand the view, inspect the data, or download PNG and CSV files.
+Ask for a **bar, line, pie/donut, or scatter chart** from SQL results, CSV files, or Markdown tables in chat and knowledge. Frame can filter, group, total, average, and sort the data locally. Hover for values, toggle legend entries, and expand the chart for PNG/CSV downloads.
 
-Charts use saved SQL datasets instead of asking the model to copy every value into its context. They remain available when you reopen the conversation, without rerunning the query. Source timestamps and result-limit notices keep snapshots identifiable.
+Charts use saved datasets instead of asking the model to copy every value into its context. They remain available when you reopen the conversation, without rerunning queries. Partial-result warnings remain visible. File and chat charts work without enabling MSSQL.
 
 ![Frame displaying an interactive monthly revenue bar chart from SQL results, with expansion and PNG and CSV download controls](docs/images/sql-chart.png)
 
-_Fictional sample revenue shown in the running application. Charts is enabled per project; the model is instructed to create charts only when you explicitly ask._
+_Fictional sample revenue shown in an earlier interface; the current card uses one expand icon and places downloads in the expanded view. Charts is enabled per project; the model is instructed to create charts only when you explicitly ask._
 
 [Set up Charts →](docs/CHARTS.md)
 
