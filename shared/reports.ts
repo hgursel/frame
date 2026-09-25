@@ -1,6 +1,5 @@
 export interface ReportProfile {
   organization: string;
-  label: string;
   primary: string;
   secondary: string;
   accent: string;
@@ -8,6 +7,7 @@ export interface ReportProfile {
   paper: 'letter' | 'a4';
   landscape: boolean;
   cover: boolean;
+  confidentialityNotice: string;
   footer: string;
   instructions: string;
 }

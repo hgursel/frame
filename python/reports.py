@@ -4,6 +4,7 @@ import html
 import io
 import json
 import math
+import re
 import resource
 import sys
 import textwrap
@@ -12,6 +13,27 @@ from pathlib import Path
 
 resource.setrlimit(resource.RLIMIT_CPU, (45, 45))
 resource.setrlimit(resource.RLIMIT_AS, (1024 * 1024 * 1024, 1024 * 1024 * 1024))
+
+
+def title_case(value, markup=False):
+    """Capitalize major words without changing acronyms, mixed-case names, or code."""
+    parts = re.split(r'(<font\b[^>]*>.*?</font>|<[^>]+>|&(?:\w+|#\d+|#x[0-9a-fA-F]+);)', value, flags=re.S) if markup else [value]
+    protected = lambda text: markup and text.startswith(('<', '&'))
+    words = re.compile(r"[^\W_]+(?:['’][^\W_]+)*", re.UNICODE)
+    count = sum(len(words.findall(part)) for part in parts if not protected(part))
+    minor = {'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'nor', 'of', 'on', 'or', 'per', 'the', 'to', 'via', 'vs'}
+    index = 0
+    def replace(match):
+        nonlocal index
+        word = match.group()
+        first_or_last = index in (0, count - 1)
+        index += 1
+        if (len(word) > 1 and word.isupper()) or any(c.isupper() for c in word[1:]):
+            return word
+        if not first_or_last and word.lower() in minor:
+            return word.lower()
+        return word[:1].upper() + word[1:]
+    return ''.join(part if protected(part) else words.sub(replace, part) for part in parts)
 
 
 def logo(data):
@@ -38,7 +60,7 @@ def render(data):
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, PageBreak, LongTable, TableStyle, KeepTogether, Image, HRFlowable
+    from reportlab.platypus import BaseDocTemplate, PageTemplate, NextPageTemplate, Frame, Paragraph, Spacer, PageBreak, LongTable, TableStyle, KeepTogether, KeepInFrame, Image, HRFlowable
     from reportlab.graphics.shapes import Drawing, Rect, Line, String, Circle, Polygon
     import reportlab
     fonts = Path(reportlab.__file__).parent / 'fonts'
@@ -61,7 +83,7 @@ def render(data):
     body = style('body')
     heading = ParagraphStyle('heading', parent=body, fontName='FrameBold', fontSize=17 if template == 'executive' else 14, leading=22, textColor=primary, spaceBefore=18, spaceAfter=10, keepWithNext=True)
     subheading = ParagraphStyle('subheading', parent=heading, fontSize=11.5, leading=16, textColor=secondary, spaceBefore=12)
-    title_style = ParagraphStyle('title', parent=body, fontName='FrameBold', fontSize=32 if template == 'executive' else 27, leading=39 if template == 'executive' else 34, textColor=primary, spaceAfter=20)
+    title_style = ParagraphStyle('title', parent=body, fontName='FrameBold', fontSize=26 if template == 'executive' else 23, leading=33 if template == 'executive' else 29, textColor=primary, spaceAfter=20)
     small = ParagraphStyle('small', parent=body, fontSize=8, leading=12, textColor=muted, spaceAfter=8)
     cell_style = ParagraphStyle('cell', parent=body, fontSize=8, leading=11, spaceAfter=0, splitLongWords=True)
     header_ink = colors.white if sum(c * w for c, w in zip(primary.rgb(), [.2126, .7152, .0722])) < .55 else ink
@@ -69,9 +91,9 @@ def render(data):
     logo_bytes = base64.b64decode(data['logo']) if data.get('logo') else None
     logo_img = Image(io.BytesIO(logo_bytes)) if logo_bytes else None
     if logo_img:
-        ratio = min(135 / logo_img.imageWidth, 55 / logo_img.imageHeight)
+        ratio = min(min(260, width) / logo_img.imageWidth, 110 / logo_img.imageHeight)
         logo_img.drawWidth, logo_img.drawHeight = logo_img.imageWidth * ratio, logo_img.imageHeight * ratio
-        logo_img.hAlign = 'LEFT'
+        logo_img.hAlign = 'CENTER'
     output = io.BytesIO()
     class ReportDoc(BaseDocTemplate):
         pages = 0
@@ -79,7 +101,7 @@ def render(data):
             self.pages += 1
             if self.pages > 100:
                 raise ValueError('Report exceeds 100 pages. Summarize or split it.')
-    doc = ReportDoc(output, pagesize=page, title=data['title'], author=profile['organization'] or 'Frame', leftMargin=margin, rightMargin=margin, topMargin=65, bottomMargin=52)
+    doc = ReportDoc(output, pagesize=page, title=title_case(data['title']), author=profile['organization'] or 'Frame', leftMargin=margin, rightMargin=margin, topMargin=65, bottomMargin=52)
     def shorten(value, limit):
         value = str(value)
         return value if len(value) <= limit else value[:limit-3] + '...'
@@ -98,34 +120,52 @@ def render(data):
         canvas.rect(margin, ph - 37, 23, 3, fill=1, stroke=0)
         canvas.setFont('FrameBold', 8)
         canvas.setFillColor(primary)
-        canvas.drawString(margin + 33, ph - 38, fit_text(profile['organization'] or profile['label'], 'FrameBold', 8, width - 33))
+        canvas.drawString(margin + 33, ph - 38, fit_text(profile['organization'], 'FrameBold', 8, width - 33))
         canvas.setStrokeColor(line)
         canvas.line(margin, 37, pw - margin, 37)
         canvas.setFillColor(muted)
         canvas.setFont('FrameText', 7)
         canvas.drawString(margin, 24, fit_text(profile['footer'] or profile['organization'], 'FrameText', 7, width - 35))
-        canvas.drawRightString(pw-margin, 24, str(document.page))
+        number = document.page - (2 if profile['cover'] else 0)
+        if number > 0:
+            canvas.drawRightString(pw-margin, 24, str(number))
         canvas.restoreState()
-    doc.addPageTemplates(PageTemplate(id='report', frames=[Frame(margin, 52, width, ph-117, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)], onPage=chrome))
+    def confidentiality(canvas, document):
+        # This page deliberately has no report chrome, footer, logo, or page number.
+        notice_style = ParagraphStyle('notice', parent=small, fontSize=9, leading=14, alignment=1)
+        notice = Paragraph(html.escape(profile['confidentialityNotice']).replace('\n', '<br/>'), notice_style)
+        _, height = notice.wrap(width, ph - 104)
+        if height > ph - 104:
+            raise ValueError('Confidentiality notice is too tall. Shorten it or remove extra line breaks.')
+        canvas.saveState()
+        notice.drawOn(canvas, margin, 52)
+        canvas.restoreState()
+    def frame():
+        return Frame(margin, 52, width, ph-117, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+    doc.addPageTemplates([
+        PageTemplate(id='report', frames=[frame()], onPage=chrome),
+        PageTemplate(id='confidential', frames=[frame()], onPage=confidentiality),
+    ])
     story = []
     if logo_img:
         story += [logo_img, Spacer(1, 22)]
     if profile['cover']:
         story.append(Spacer(1, 60 if ph > 700 else 20))
-    story.append(Paragraph(html.escape(profile['label'] or template.upper()), ParagraphStyle('label', parent=small, textColor=secondary, fontName='FrameBold', spaceAfter=16)))
-    story.append(Paragraph(html.escape(data['title']), title_style))
+    story.append(Paragraph(html.escape(title_case(data['title'])), title_style))
     if data.get('subtitle'):
         story.append(Paragraph(html.escape(data['subtitle']), ParagraphStyle('subtitle', parent=body, fontSize=12, leading=18, textColor=muted)))
     story += [Spacer(1, 12), HRFlowable(width='22%', thickness=3, color=accent, hAlign='LEFT'), Spacer(1, 14), Paragraph(date.today().isoformat(), small)]
     if profile['cover']:
-        story.append(PageBreak())
+        # Keep long titles/subtitles on a single cover, even in landscape orientation.
+        story = [KeepInFrame(width, ph-117, story, mode='shrink'), NextPageTemplate('confidential'), PageBreak(),
+                 Spacer(1, 1), NextPageTemplate('report'), PageBreak()]
     else:
         story.append(Spacer(1, 12))
     palette = [primary, secondary, accent, colors.HexColor('#6486a4'), colors.HexColor('#926f9f')]
     def chart_plot(chart):
         d = Drawing(width, 310)
         rows, kind = chart['rows'], chart['kind']
-        title = Paragraph(html.escape(chart['title']), subheading)
+        title = Paragraph(html.escape(title_case(chart['title'])), subheading)
         if kind == 'pie':
             total = sum(float(r[1]) for r in rows)
             cx, cy, radius = width * .30, 155, min(106, width * .23)
@@ -221,7 +261,7 @@ def render(data):
             if template == 'technical' and level <= 2:
                 section += 1
                 prefix = f'{section}. '
-            story.append(Paragraph(prefix + block['text'], heading if level <= 2 else subheading))
+            story.append(Paragraph(prefix + title_case(block['text'], markup=True), heading if level <= 2 else subheading))
         elif kind == 'paragraph':
             story.append(Paragraph(block['text'], body))
         elif kind == 'callout':
@@ -239,7 +279,7 @@ def render(data):
             story.append(PageBreak())
         elif kind == 'table':
             if block.get('caption'):
-                story.append(Paragraph(html.escape(block['caption']), subheading))
+                story.append(Paragraph(html.escape(title_case(block['caption'])), subheading))
             table(block)
         elif kind == 'chart':
             story.append(KeepTogether(chart_plot(block['chart'])))

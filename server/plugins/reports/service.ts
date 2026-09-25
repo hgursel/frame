@@ -13,7 +13,6 @@ const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export const profileSchema = z
   .object({
     organization: z.string().max(120).default(''),
-    label: z.string().max(80).default('REPORT'),
     primary: color.default('#173e48'),
     secondary: color.default('#3a716f'),
     accent: color.default('#bc8849'),
@@ -21,6 +20,12 @@ export const profileSchema = z
     paper: z.enum(['letter', 'a4']).default('letter'),
     landscape: z.boolean().default(false),
     cover: z.boolean().default(true),
+    confidentialityNotice: z
+      .string()
+      .trim()
+      .min(1)
+      .max(1200)
+      .default('Confidential — For internal use only.'),
     footer: z.string().max(160).default(''),
     instructions: z.string().max(12000).default(''),
   })
@@ -98,7 +103,11 @@ export class ReportsPlugin {
             .get(projectId) as { data: string } | undefined
         )?.data
       : this.store.meta('reports:settings');
-    return row ? JSON.parse(row) : {};
+    const value = row ? JSON.parse(row) : {};
+    // Older settings contain the removed generic label. Ignore it without disturbing
+    // branding, logo inheritance, or project overrides when upgrading.
+    if (value.profile) delete value.profile.label;
+    return value as Stored;
   }
   private save(value: Stored, projectId?: string) {
     if (projectId)

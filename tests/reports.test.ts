@@ -53,7 +53,7 @@ const info = (python: string, file: string) =>
       python,
       [
         '-c',
-        'import json,sys; from pypdf import PdfReader; r=PdfReader(sys.argv[1]); print(json.dumps({"pages":len(r.pages),"text":"\\n".join(p.extract_text() for p in r.pages)}))',
+        'import json,sys; from pypdf import PdfReader; r=PdfReader(sys.argv[1]); print(json.dumps({"pages":len(r.pages),"pageTexts":[p.extract_text() for p in r.pages],"text":"\\n".join(p.extract_text() for p in r.pages)}))',
         file,
       ],
       { encoding: 'utf8' },
@@ -181,10 +181,10 @@ test(
       const file = path.join(f.store.artifacts(c), pdfs[0]);
       const pdf = info(f.python.executable, file);
       assert.match(pdf.text, /REPORT BRAND/);
-      assert.match(pdf.text, /Regional results/);
+      assert.match(pdf.text, /Regional Results/);
       // PDF ingestion still works after removing the legacy PDF writer.
       const uploaded = await f.knowledge.add(project.id, 'report.pdf', await readFile(file));
-      assert.match((await f.knowledge.read(project.id, uploaded.id)).text, /Regional results/);
+      assert.match((await f.knowledge.read(project.id, uploaded.id)).text, /Regional Results/);
     } finally {
       await f.cleanup();
       model.closeAllConnections();
@@ -202,6 +202,20 @@ test(
       assert.equal((await f.req('/plugins/reports')).statusCode, 401);
       assert.equal((await f.req('/plugins/reports/sample', 'POST', {})).statusCode, 401);
       const base = f.reports.profile();
+      // Upgrade existing organization and project profiles without losing their design.
+      f.store.setMeta(
+        'reports:settings',
+        JSON.stringify({ profile: { ...base, label: 'OLD LABEL' } }),
+      );
+      f.store.db
+        .prepare('INSERT OR REPLACE INTO report_settings VALUES (?,?)')
+        .run(
+          f.project.id,
+          JSON.stringify({ profile: { label: 'OLD PROJECT LABEL', secondary: '#112233' } }),
+        );
+      assert(!('label' in (await f.reports.settings()).profile));
+      assert(!('label' in (await f.reports.settings(f.project.id)).overrides));
+      assert.equal(f.reports.profile(f.project.id).secondary, '#112233');
       assert.equal(f.reports.enabled(), false);
       assert.equal(
         (
@@ -226,6 +240,30 @@ test(
       assert.equal(f.reports.profile(f.project.id).organization, 'Updated Labs');
       await f.auth(url, 'PUT', { overrides: {} });
       assert.equal(f.reports.profile(f.project.id).accent, base.accent);
+      assert.equal(
+        f.reports.profile(f.project.id).confidentialityNotice,
+        'Confidential — For internal use only.',
+      );
+      await f.auth(url, 'PUT', {
+        overrides: { confidentialityNotice: 'Project confidential notice.' },
+      });
+      f.reports.update({
+        enabled: true,
+        profile: { ...f.reports.profile(), confidentialityNotice: 'Updated organization notice.' },
+      });
+      assert.equal(
+        f.reports.profile(f.project.id).confidentialityNotice,
+        'Project confidential notice.',
+      );
+      await f.auth(url, 'PUT', { overrides: {} });
+      assert.equal(
+        f.reports.profile(f.project.id).confidentialityNotice,
+        'Updated organization notice.',
+      );
+      assert.equal(
+        (await f.auth(url, 'PUT', { overrides: { confidentialityNotice: '   ' } })).statusCode,
+        400,
+      );
       assert.equal(
         (await f.auth(url, 'PUT', { overrides: { primary: 'red', script: 'run' } })).statusCode,
         400,
@@ -274,10 +312,14 @@ test(
         const file = path.join(qa || f.root, `${template}.pdf`);
         await writeFile(file, Buffer.from(result.pdf, 'base64'));
         const pdf = info(f.python.executable, file);
-        assert(pdf.pages >= 2 && pdf.pages <= 5);
+        assert(pdf.pages >= 3 && pdf.pages <= 6);
+        assert.equal(pdf.pageTexts[1].trim(), 'Confidential — For internal use only.');
+        assert.match(pdf.pageTexts[0], /Quarterly Operations Review/);
+        assert.match(pdf.pageTexts[2], /Executive Summary/);
+        assert(!pdf.pageTexts[0].includes('REPORT'));
         assert.match(pdf.text, /FRAME LABS/);
         assert.match(pdf.text, /Recommendations/);
-        assert.match(pdf.text, /Completed requests/);
+        assert.match(pdf.text, /Completed Requests/);
         assert.match(pdf.text, /210/);
         assert(!pdf.text.includes('**'));
         assert(!pdf.text.includes('<b>'));
@@ -293,7 +335,12 @@ test(
       await f.reports.uploadLogo(logo);
       f.reports.update({
         enabled: true,
-        profile: { ...f.reports.profile(), paper: 'a4', landscape: true },
+        profile: {
+          ...f.reports.profile(),
+          paper: 'a4',
+          landscape: true,
+          confidentialityNotice: 'Confidential - Project Review Only',
+        },
       });
       const landscape = await f.reports.sample();
       const landscapePath = path.join(qa || f.root, 'landscape-logo.pdf');
@@ -311,6 +358,58 @@ test(
       );
       assert(dimensions[0] > dimensions[1]);
       assert.equal(dimensions[2], 1);
+      assert.equal(
+        info(f.python.executable, landscapePath).pageTexts[1].trim(),
+        'Confidential - Project Review Only',
+      );
+      const geometry = JSON.parse(
+        execFileSync(
+          f.python.executable,
+          [
+            '-c',
+            'import json,sys; from pypdf import PdfReader; p=PdfReader(sys.argv[1]).pages[0]; images=[]; p.extract_text(visitor_operand_before=lambda op,args,cm,tm: images.append(cm) if op==b"Do" else None); print(json.dumps({"width":float(p.mediabox.width),"images":images}))',
+            landscapePath,
+          ],
+          { encoding: 'utf8' },
+        ),
+      );
+      const image = geometry.images[0];
+      assert(Math.abs(image[4] + image[0] / 2 - geometry.width / 2) < 1, 'Logo must be centered');
+      assert(image[0] >= 250, 'Logo must be visibly larger than the old 135-point width');
+      const headingReport = await reportCommand(f.python.executable, {
+        command: 'render',
+        title: 'analysis of SQL and iPhone',
+        profile: f.reports.profile(),
+        blocks: [
+          ...reportMarkdown(
+            '## analysis of **SQL** and iPhone\n\n### working with `dbo.orders` and CSV\n\nOrdinary lowercase prose stays unchanged.',
+          ),
+          { type: 'table', columns: ['original_column'], rows: [['untouched value']] },
+        ],
+      });
+      const headingPath = path.join(qa || f.root, 'title-case.pdf');
+      await writeFile(headingPath, Buffer.from(headingReport.pdf, 'base64'));
+      const headings = info(f.python.executable, headingPath);
+      assert.match(headings.pageTexts[0], /Analysis of SQL and iPhone/);
+      assert.match(headings.pageTexts[2], /Analysis of SQL and iPhone/);
+      assert.match(headings.text, /Working With dbo.orders and CSV/);
+      assert.match(headings.text, /Ordinary lowercase prose stays unchanged/);
+      assert.match(headings.text, /original_column/);
+      assert.match(headings.text, /untouched value/);
+      const longCover = await reportCommand(f.python.executable, {
+        command: 'render',
+        title: 'A very long report title '.repeat(8),
+        subtitle: 'A detailed subtitle for a landscape report. '.repeat(11),
+        profile: f.reports.profile(),
+        logo: f.reports.logo(),
+        blocks: reportMarkdown('## findings\n\nThe body starts after the notice.'),
+      });
+      const longPath = path.join(qa || f.root, 'long-cover.pdf');
+      await writeFile(longPath, Buffer.from(longCover.pdf, 'base64'));
+      const longPdf = info(f.python.executable, longPath);
+      assert.equal(longPdf.pages, 3, 'Long cover must not spill into the confidentiality page');
+      assert.equal(longPdf.pageTexts[1].trim(), 'Confidential - Project Review Only');
+      assert.match(longPdf.pageTexts[2], /The body starts after the notice/);
       const escaped = reportMarkdown(
         '**Bold** and <img src="http://127.0.0.1/private">\n\n```text\n<unsafe>\n```',
       );
@@ -423,7 +522,7 @@ test(
         path.join(f.store.artifacts(f.conversation), charts.name),
       );
       assert.match(chartPdf.text, /Partial|partial|limit/);
-      assert.match(chartPdf.text, /scatter results/);
+      assert.match(chartPdf.text, /Scatter Results/);
       const other = f.store.createConversation(f.project.id);
       await assert.rejects(
         f.reports.create(other.id, {
