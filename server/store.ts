@@ -18,6 +18,7 @@ export const defaults: StoredSettings = {
 
 export class Store {
   readonly db: DatabaseSync;
+  ephemeralBranch?: (id: string) => any[];
   constructor(readonly root: string) {
     mkdirSync(root, { recursive: true, mode: 0o700 });
     chmodSync(root, 0o700);
@@ -36,6 +37,12 @@ export class Store {
       CREATE TABLE IF NOT EXISTS documents(id TEXT PRIMARY KEY, projectId TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, kind TEXT NOT NULL, extension TEXT NOT NULL, bytes INTEGER NOT NULL, revision TEXT NOT NULL, truncated INTEGER NOT NULL, updatedAt TEXT NOT NULL);
       PRAGMA user_version=2;
     `);
+    if (
+      !(this.db.prepare('PRAGMA table_info(conversations)').all() as any[]).some(
+        (c) => c.name === 'incognito',
+      )
+    )
+      this.db.exec('ALTER TABLE conversations ADD COLUMN incognito INTEGER NOT NULL DEFAULT 0');
     chmodSync(path.join(root, 'frame.db'), 0o600);
     this.db
       .prepare(
@@ -97,16 +104,25 @@ export class Store {
     return this.db.prepare('SELECT * FROM conversations WHERE id=?').get(id) as unknown as
       Conversation | undefined;
   }
-  createConversation(projectId: string) {
+  createConversation(projectId: string, incognito = false) {
     const conversation: Conversation = {
       id: randomUUID(),
       projectId,
-      title: 'New conversation',
+      title: incognito ? 'Incognito chat' : 'New conversation',
+      incognito,
       createdAt: new Date().toISOString(),
     };
     this.db
-      .prepare('INSERT INTO conversations VALUES (?, ?, ?, ?)')
-      .run(conversation.id, projectId, conversation.title, conversation.createdAt);
+      .prepare(
+        'INSERT INTO conversations(id,projectId,title,createdAt,incognito) VALUES (?, ?, ?, ?, ?)',
+      )
+      .run(
+        conversation.id,
+        projectId,
+        conversation.title,
+        conversation.createdAt,
+        Number(incognito),
+      );
     return conversation;
   }
   sessionFile(id: string) {

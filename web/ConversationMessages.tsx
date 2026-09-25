@@ -108,7 +108,9 @@ export function ConversationMessages({
   connected,
   stopping,
   onSave,
+  canSave = true,
 }: {
+  canSave?: boolean;
   snapshot: ChatSnapshot;
   chatId: string;
   connected: boolean;
@@ -139,7 +141,7 @@ export function ConversationMessages({
       running={current && snapshot.running}
       paused={paused}
       chatId={chatId}
-      canSave={!snapshot.running}
+      canSave={canSave && !snapshot.running}
       onSave={onSave}
     />
   );
@@ -176,9 +178,13 @@ export function ConversationMessages({
                     {!snapshot.running && (
                       <div className="message-actions">
                         <CopyMessage text={m.text} />
-                        <button className="save-knowledge" onClick={() => onSave(index)}>
-                          ♡ Useful · Save to knowledge
-                        </button>
+                        <>
+                          {canSave && (
+                            <button className="save-knowledge" onClick={() => onSave(index)}>
+                              ♡ Useful · Save to knowledge
+                            </button>
+                          )}
+                        </>
                       </div>
                     )}
                   </div>

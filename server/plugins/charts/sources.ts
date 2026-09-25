@@ -40,9 +40,11 @@ export class ChartSources {
     readonly knowledge: Knowledge,
   ) {}
   messages(conversationId: string) {
-    return readSessionBranch(this.store.sessionFile(conversationId)).filter(
-      (e) => e.type === 'message' && ['user', 'assistant'].includes(e.message?.role),
-    );
+    return (
+      this.store.conversation(conversationId)?.incognito
+        ? this.store.ephemeralBranch?.(conversationId) || []
+        : readSessionBranch(this.store.sessionFile(conversationId))
+    ).filter((e) => e.type === 'message' && ['user', 'assistant'].includes(e.message?.role));
   }
   async list(conversationId: string, args: unknown) {
     const spec = sourceQuery.parse(args);

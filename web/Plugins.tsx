@@ -203,19 +203,9 @@ export function PluginSettings() {
             />
             Allow selected stored procedures with approval
           </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.allowValueSampling}
-              onChange={(e) => change('allowValueSampling', e.target.checked)}
-            />
-            Allow enrichment to read rows from small lookup tables
-          </label>
           <p className="muted small">
-            Off by default. When on, generating database knowledge reads up to 50 rows from
-            referenced tables of 500 rows or fewer, through the read login, so status and type codes
-            can be decoded. Those values are stored in generated knowledge pages and appear in
-            exports.
+            Knowledge uses schema structure and parameterized query templates. SQL result values are
+            never used for learning.
           </p>
           <label>
             Allowed stored procedures
@@ -361,9 +351,26 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project plugins</h2>
-      <label className="checkbox"><input type="checkbox" aria-label="Enable Reports for this project" disabled={!loaded || busy} checked={reports} onChange={(e) => setReports(e.target.checked)} />Reports</label>
-      <p className="muted small">Branded PDF reports with conversation charts and tables. {reportsSystem ? 'Reports is enabled system-wide.' : 'Enable Reports in Settings → Plugins first.'}</p>
-      <details><summary>Customize report design</summary><ReportsSettings projectId={projectId} /></details>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          aria-label="Enable Reports for this project"
+          disabled={!loaded || busy}
+          checked={reports}
+          onChange={(e) => setReports(e.target.checked)}
+        />
+        Reports
+      </label>
+      <p className="muted small">
+        Branded PDF reports with conversation charts and tables.{' '}
+        {reportsSystem
+          ? 'Reports is enabled system-wide.'
+          : 'Enable Reports in Settings → Plugins first.'}
+      </p>
+      <details>
+        <summary>Customize report design</summary>
+        <ReportsSettings projectId={projectId} />
+      </details>
       <label className="checkbox">
         <input
           type="checkbox"

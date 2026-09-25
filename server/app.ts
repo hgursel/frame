@@ -1,3 +1,6 @@
+import { Incognito } from './incognito.js';
+import { Maintenance } from './maintenance/service.js';
+import { maintenanceApi } from './maintenance/api.js';
 import { ReportsPlugin } from './plugins/reports/service.js';
 import { reportsApi } from './plugins/reports/api.js';
 import { projectPluginsApi } from './plugins/api.js';
@@ -94,6 +97,9 @@ export async function createApp(options: {
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
+  const maintenance = new Maintenance(store, wiki, runner, options.generator);
+  const incognito = new Incognito(store, runner, knowledge);
+  maintenance.startTimer();
   const streams = new Set<ServerResponse>();
   const app = Fastify({ bodyLimit: 128 * 1024, logger: false, trustProxy: false });
   await app.register(cookie);
@@ -260,18 +266,36 @@ export async function createApp(options: {
     z.object({ confirm: z.literal(true) }).parse(request.body);
     return deleteWorkspaceData(store, runner, knowledge, conversation.projectId, id);
   });
-  app.get('/api/conversations', async () => store.conversations());
+  app.get('/api/conversations', async () => store.conversations().filter((c) => !c.incognito));
   app.post('/api/conversations', async (request, reply) => {
-    const { projectId } = z.object({ projectId: uuid }).parse(request.body);
+    const { projectId, incognito: temporary } = z
+      .object({ projectId: uuid, incognito: z.boolean().default(false) })
+      .parse(request.body);
     if (!store.project(projectId)) return reply.code(404).send({ error: 'Project not found' });
-    return store.createConversation(projectId);
+    if (temporary && store.conversations().filter((c) => c.incognito).length >= 8)
+      return reply.code(409).send({ error: 'End an existing incognito chat first.' });
+    const chat = store.createConversation(projectId, temporary);
+    if (temporary) incognito.touch(chat.id);
+    return chat;
   });
   const conversationId = (id: string) => {
     uuid.parse(id);
-    if (!store.conversation(id))
+    if (!store.conversation(id) || incognito.ending.has(id))
       throw Object.assign(new Error('Conversation not found'), { statusCode: 404 });
     return id;
   };
+  app.post<{ Params: { id: string } }>('/api/conversations/:id/heartbeat', (request) => {
+    const id = conversationId(request.params.id);
+    incognito.touch(id);
+    return { ok: true };
+  });
+  app.post<{ Params: { id: string } }>('/api/conversations/:id/end', (request) => {
+    const id = conversationId(request.params.id);
+    if (!store.conversation(id)?.incognito)
+      throw Object.assign(new Error('Only incognito chats use this action.'), { statusCode: 400 });
+    incognito.end(id);
+    return { ok: true };
+  });
   app.get<{ Params: { id: string } }>('/api/conversations/:id', async (request) =>
     runner.snapshot(conversationId(request.params.id)),
   );
@@ -402,6 +426,7 @@ export async function createApp(options: {
       }
     },
   );
+  maintenanceApi(app, maintenance);
   knowledgeApi(app, knowledge, wiki, runner);
   mssqlApi(app, mssql, runner);
   projectPluginsApi(app, runner, mssql, charts, reports);
@@ -421,13 +446,27 @@ export async function createApp(options: {
   }
   app.addHook('preClose', async () => {
     for (const stream of streams) stream.end();
+    await maintenance.close();
     await runner.close();
     await reports.close();
     await python.close();
     await mssql.close();
+    incognito.close();
   });
   app.addHook('onClose', async () => {
     store.close();
   });
-  return { app, store, runner, knowledge, wiki, python, mssql, charts, reports };
+  return {
+    app,
+    store,
+    runner,
+    knowledge,
+    wiki,
+    python,
+    mssql,
+    charts,
+    reports,
+    maintenance,
+    incognito,
+  };
 }

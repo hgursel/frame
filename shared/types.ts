@@ -27,6 +27,7 @@ export interface Conversation {
   projectId: string;
   title: string;
   createdAt: string;
+  incognito?: boolean;
 }
 export interface DisplayMessage {
   role: 'user' | 'assistant' | 'tool';
@@ -78,13 +79,23 @@ export interface WorkerInput {
   cwd: string;
   agentDir: string;
   sessionFile: string;
+  ephemeralEntries?: unknown[];
   artifactDir: string;
   settings: StoredSettings;
   project: Project;
   prompt: string;
   documents?: { id: string; name: string; text: string }[];
   pythonPath?: string;
-  knowledge?: { id: string; name: string; revision: string; text: string; description?: string }[];
+  knowledge?: {
+    id: string;
+    name: string;
+    revision: string;
+    text: string;
+    description?: string;
+    tags?: string[];
+    aliases?: string[];
+    verified?: boolean;
+  }[];
 }
 export interface KnowledgeDocument {
   id: string;
@@ -104,5 +115,6 @@ export interface DocumentRuntimeStatus {
 export type WorkerOutput =
   | { type: 'plugin_call'; id: string; action: string; args: unknown }
   | { type: 'snapshot'; messages: DisplayMessage[]; status: string; metrics: ChatMetrics }
+  | { type: 'ephemeral_session'; entries: unknown[] }
   | { type: 'done'; error?: string }
   | { type: 'error'; error: string };

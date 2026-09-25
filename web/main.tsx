@@ -1,3 +1,5 @@
+import { MaintenanceSettingsPanel } from './Maintenance.js';
+import './maintenance.css';
 import { PluginCatalog } from './PluginCatalog.js';
 import './charts.css';
 import { ProjectPlugins, SqlApprovalCard } from './Plugins.js';
@@ -164,6 +166,7 @@ function Workspace() {
   const currentProject = useRef(projectId);
   currentProject.current = projectId;
   const [chatId, setChatId] = useState('');
+  const [incognitoId, setIncognitoId] = useState('');
   const currentChat = useRef(chatId);
   currentChat.current = chatId;
   const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
@@ -197,6 +200,10 @@ function Workspace() {
       live = false;
     };
   }, [projectId]);
+  useEffect(() => {
+    if (page === 'knowledge' || page === 'chat')
+      void refreshDocuments().catch((e) => setError(e.message));
+  }, [page]);
   const [snapshot, setSnapshot] = useState<ChatSnapshot>({
     messages: [],
     running: false,
@@ -329,13 +336,46 @@ function Workspace() {
       live = false;
     };
   }, [chatId, snapshot.running]);
-  const newChat = async () => {
+  useEffect(() => {
+    if (!incognitoId) return;
+    const end = () => {
+      void fetch(`/api/conversations/${incognitoId}/end`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+        keepalive: true,
+      }).catch(() => {});
+    };
+    const heartbeat = setInterval(() => {
+      void api(`/conversations/${incognitoId}/heartbeat`, 'POST', {}).catch(() => {});
+    }, 30000);
+    window.addEventListener('pagehide', end);
+    return () => {
+      clearInterval(heartbeat);
+      window.removeEventListener('pagehide', end);
+      end();
+    };
+  }, [incognitoId]);
+  useEffect(() => {
+    if (incognitoId && chatId !== incognitoId) {
+      setIncognitoId('');
+      setDraft('');
+      setAttached([]);
+      setLastSubmitted(undefined);
+      setPending(undefined);
+    }
+  }, [chatId, incognitoId]);
+  const newChat = async (temporary = false) => {
     if (!projectId) {
       setPage('project');
       return;
     }
-    const chat = await api<Conversation>('/conversations', 'POST', { projectId });
-    setChats((prev) => [chat, ...prev]);
+    const chat = await api<Conversation>('/conversations', 'POST', {
+      projectId,
+      incognito: temporary,
+    });
+    if (!temporary) setChats((prev) => [chat, ...prev]);
+    setIncognitoId(temporary ? chat.id : '');
     if (currentProject.current !== projectId) return;
     setChatId(chat.id);
     currentChat.current = chat.id;
@@ -527,6 +567,16 @@ function Workspace() {
             +
           </button>
         </div>
+        <button
+          className="incognito-new"
+          aria-label="New incognito chat"
+          onClick={() => {
+            setPending(undefined);
+            void newChat(true).catch((e) => setError(e.message));
+          }}
+        >
+          New incognito chat
+        </button>
         <input
           className="chat-search"
           aria-label="Search conversations"
@@ -650,6 +700,24 @@ function Workspace() {
               }}
             >
               <div className="conversation-inner">
+                {incognitoId === chatId && !!chatId && (
+                  <div className="incognito-notice">
+                    <strong>Incognito</strong>
+                    <span>
+                      Not saved to history or learned. Temporary tool files are removed when you
+                      leave, end this chat, or after 30 minutes without a heartbeat. Host tools are
+                      disabled.
+                    </span>
+                    <button
+                      onClick={() => {
+                        setChatId('');
+                        setIncognitoId('');
+                      }}
+                    >
+                      End chat
+                    </button>
+                  </div>
+                )}
                 {!snapshot.messages.length && !snapshot.running && (
                   <div className="welcome">
                     <h1>
@@ -676,6 +744,7 @@ function Workspace() {
                   connected={connected}
                   stopping={stoppingChat === chatId}
                   onSave={setSaveIndex}
+                  canSave={!incognitoId || incognitoId !== chatId}
                 />
                 {snapshot.sqlApproval && (
                   <SqlApprovalCard
@@ -782,6 +851,7 @@ function Workspace() {
                   <AttachmentPicker
                     key={projectId}
                     projectId={projectId}
+                    allowUpload={!incognitoId || incognitoId !== chatId}
                     documents={documents}
                     attached={attached}
                     disabled={!projectId || snapshot.running || !!pending || sending}
@@ -866,7 +936,7 @@ function Workspace() {
 
 function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () => Promise<void> }) {
   const [form, setForm] = useState(initial);
-  const tabs = ['model', 'context', 'instructions', 'documents', 'plugins'] as const;
+  const tabs = ['model', 'context', 'instructions', 'documents', 'plugins', 'knowledge'] as const;
   const [tab, setTab] = useState<(typeof tabs)[number]>('model');
   const [key, setKey] = useState('');
   const [clear, setClear] = useState(false);
@@ -911,7 +981,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         ))}
       </div>
       <form
-        hidden={tab === 'documents' || tab === 'plugins'}
+        hidden={tab === 'documents' || tab === 'plugins' || tab === 'knowledge'}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -1129,6 +1199,14 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         hidden={tab !== 'plugins'}
       >
         {tab === 'plugins' && <PluginCatalog />}
+      </div>
+      <div
+        id="settings-knowledge"
+        role="tabpanel"
+        aria-labelledby="tab-knowledge"
+        hidden={tab !== 'knowledge'}
+      >
+        {tab === 'knowledge' && <MaintenanceSettingsPanel />}
       </div>
       <div className="scope-note">
         <strong>V1 · Single administrator</strong>

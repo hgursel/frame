@@ -90,6 +90,7 @@ export class MssqlPlugin extends EventEmitter {
     return {
       ...structuredClone(defaults),
       ...(existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}),
+      allowValueSampling: false,
     };
   }
   publicSettings(): PublicMssqlSettings {
@@ -188,7 +189,8 @@ export class MssqlPlugin extends EventEmitter {
         .parse(args);
       const found = this.schema.search(projectId, settings.databases, v.query, v.offset);
       // A search that found nothing names vocabulary the notes are missing; enrichment reads these.
-      if (!v.offset) this.notes.recordGap(projectId, v.query, found.total);
+      if (!v.offset && !this.store.conversation(conversation)?.incognito)
+        this.notes.recordGap(projectId, v.query, found.total);
       return found;
     }
     if (action === 'schema_read') {

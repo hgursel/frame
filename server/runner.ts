@@ -20,6 +20,7 @@ type ActiveRun = {
 };
 export class Runner extends EventEmitter {
   private revision = Date.now() * 1000;
+  readonly ephemeral = new Map<string, { entries: unknown[]; snapshot?: ChatSnapshot }>();
   readonly active = new Map<string, ActiveRun>();
   constructor(
     readonly store: Store,
@@ -29,6 +30,7 @@ export class Runner extends EventEmitter {
   ) {
     super();
     this.setMaxListeners(100);
+    store.ephemeralBranch = (id) => (this.ephemeral.get(id)?.entries || []) as any[];
     mssql?.on('change', (id: string) => this.emit(id));
   }
   snapshot(id: string): ChatSnapshot {
@@ -43,6 +45,11 @@ export class Runner extends EventEmitter {
         revision: ++this.revision,
       };
     }
+    if (this.store.conversation(id)?.incognito)
+      return {
+        ...(this.ephemeral.get(id)?.snapshot || { messages: [], running: false, status: 'Ready' }),
+        revision: ++this.revision,
+      };
     const settings = this.store.settings();
     const project = this.store.project(this.store.conversation(id)!.projectId)!;
     const saved = this.store.meta(`metrics:${id}`);
@@ -83,7 +90,10 @@ export class Runner extends EventEmitter {
       return { id: runId, status: existing.status, duplicate: true };
     }
     const conversation = this.store.conversation(id)!;
-    const project = this.store.project(conversation.projectId)!;
+    const originalProject = this.store.project(conversation.projectId)!;
+    const project = conversation.incognito
+      ? { ...originalProject, toolsEnabled: false }
+      : originalProject;
     if (this.reports?.busy(project.id))
       throw Object.assign(new Error('Wait for report operations to finish.'), { statusCode: 409 });
     if (this.mssql?.schema.jobs.has(project.id))
@@ -103,7 +113,11 @@ export class Runner extends EventEmitter {
       throw Object.assign(new Error('Configure your local model in Settings first.'), {
         statusCode: 400,
       });
-    const history = readHistory(this.store.sessionFile(id));
+    this.emit('foreground');
+    if (conversation.incognito && !this.ephemeral.has(id)) this.ephemeral.set(id, { entries: [] });
+    const history = conversation.incognito
+      ? this.snapshot(id).messages
+      : readHistory(this.store.sessionFile(id));
     this.store.db
       .prepare('INSERT INTO runs VALUES (?, ?, ?, NULL, ?)')
       .run(runId, id, 'running', Date.now());
@@ -165,7 +179,13 @@ export class Runner extends EventEmitter {
       this.stop(id);
     }, 30 * 60_000);
     child.on('message', (event: WorkerOutput) => {
-      if (this.active.get(id) !== active || active.stopRequested) return;
+      if (this.active.get(id) !== active) return;
+      if (event.type === 'ephemeral_session') {
+        if (conversation.incognito)
+          this.ephemeral.set(id, { ...this.ephemeral.get(id), entries: event.entries });
+        return;
+      }
+      if (active.stopRequested) return;
       if (event.type === 'plugin_call') {
         void Promise.resolve()
           .then<unknown>(() => {
@@ -236,7 +256,12 @@ export class Runner extends EventEmitter {
       this.store.db
         .prepare('UPDATE runs SET status=?, error=? WHERE id=?')
         .run(status, error || null, runId);
-      if (active.snapshot.metrics)
+      if (conversation.incognito)
+        this.ephemeral.set(id, {
+          entries: this.ephemeral.get(id)?.entries || [],
+          snapshot: { ...active.snapshot, running: false, status, error },
+        });
+      if (active.snapshot.metrics && !conversation.incognito)
         this.store.setMeta(
           `metrics:${id}`,
           JSON.stringify({ key: metricsKey(settings, project), metrics: active.snapshot.metrics }),
@@ -254,6 +279,9 @@ export class Runner extends EventEmitter {
         cwd: this.store.projectPath(project.id),
         agentDir: path.join(this.store.root, 'agent', id),
         sessionFile: this.store.sessionFile(id),
+        ephemeralEntries: conversation.incognito
+          ? this.ephemeral.get(id)?.entries || []
+          : undefined,
         artifactDir: this.store.artifacts(conversation),
         settings,
         project,

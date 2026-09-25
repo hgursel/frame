@@ -1,3 +1,4 @@
+import { KnowledgeMetadata } from './Maintenance.js';
 import { SqlKnowledge } from './Plugins.js';
 import React, { useEffect, useState, useRef } from 'react';
 import { RichMarkdown } from './RichMarkdown.js';
@@ -359,6 +360,12 @@ export function KnowledgePanel({
               <div className="knowledge-body">
                 <KnowledgeMarkdown text={selected.text} onOpen={(id) => void open(id)} />
               </div>
+              <KnowledgeMetadata
+                key={selected.id + selected.revision + JSON.stringify(selected.metadata)}
+                projectId={projectId}
+                page={selected}
+                onSaved={() => open(selected.id)}
+              />
               {selected.metadata?.sources && (
                 <details>
                   <summary>Sources and provenance</summary>
@@ -444,6 +451,7 @@ export function KnowledgePanel({
 }
 
 type Draft = {
+  structuralOnly?: boolean;
   sourceRevision: string;
   text: string;
   title: string;
@@ -515,7 +523,9 @@ export function SaveKnowledge({
         </button>
       </div>
       <p className="muted">
-        Keep the useful parts, add evidence, and note uncertainty. Saving does not verify a claim.
+        {draft?.structuralOnly
+          ? 'Only the parameterized query template is saved. Results, sample values, and parameter values are excluded. Saving does not verify its business meaning.'
+          : 'Keep the useful parts, add evidence, and note uncertainty. Saving does not verify a claim.'}
       </p>
       {error && (
         <p className="error" role="alert">
@@ -560,7 +570,9 @@ export function SaveKnowledge({
                       ...draft,
                       targetId,
                       revision: page.revision,
-                      text: `${page.text}\n\n## Conversation insight\n\n${sourceText}`,
+                      text: draft.structuralOnly
+                        ? sourceText
+                        : `${page.text}\n\n## Conversation insight\n\n${sourceText}`,
                     });
                   } else {
                     setOriginal('');
@@ -615,6 +627,7 @@ export function SaveKnowledge({
               required
               maxLength={120000}
               value={draft.text}
+              readOnly={draft.structuralOnly}
               onChange={(e) => setDraft({ ...draft, text: e.target.value })}
             />
           </label>
