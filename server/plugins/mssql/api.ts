@@ -1,16 +1,10 @@
-import type { ChartsPlugin } from '../charts/service.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { zipSync, strToU8 } from 'fflate';
 import type { Runner } from '../../runner.js';
 import { fail, identifier } from './policy.js';
 import type { MssqlPlugin } from './service.js';
-export function mssqlApi(
-  app: FastifyInstance,
-  plugin: MssqlPlugin,
-  runner: Runner,
-  charts: ChartsPlugin,
-) {
+export function mssqlApi(app: FastifyInstance, plugin: MssqlPlugin, runner: Runner) {
   const project = (id: string) => {
     z.string().uuid().parse(id);
     if (!plugin.store.project(id)) throw fail('Project not found', 404);
@@ -38,23 +32,6 @@ export function mssqlApi(
   app.post('/api/plugins/mssql/test', async (r) => {
     const v = z.object({ database: identifier, login: z.enum(['read', 'write']) }).parse(r.body);
     return plugin.test(v.database, v.login);
-  });
-  app.get<{ Params: { id: string } }>('/api/projects/:id/plugins', (r) => ({
-    mssql: plugin.projectEnabled(project(r.params.id)),
-    systemEnabled: plugin.settings().enabled,
-    charts: charts.projectEnabled(r.params.id),
-    chartsSystemEnabled: charts.enabled(),
-  }));
-  app.put<{ Params: { id: string } }>('/api/projects/:id/plugins', async (r) => {
-    const id = project(r.params.id);
-    idle(id);
-    const value = z
-      .object({ mssql: z.boolean().optional(), charts: z.boolean().optional() })
-      .strict()
-      .parse(r.body);
-    if (value.mssql !== undefined) plugin.setProject(id, value.mssql);
-    if (value.charts !== undefined) charts.setProject(id, value.charts);
-    return { mssql: plugin.projectEnabled(id), charts: charts.projectEnabled(id) };
   });
   app.get<{ Params: { id: string } }>('/api/projects/:id/mssql/schema/status', (r) =>
     plugin.schema.status(project(r.params.id)),

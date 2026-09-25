@@ -193,9 +193,11 @@ try {
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.locator('.sidebar-bottom').getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
+  await page.getByRole('button', { name: 'Charts plugin', exact: true }).click();
   await page.getByLabel('Enable Charts system-wide').check();
   await page.getByRole('button', { name: 'Save Charts settings' }).click();
   await expect(page.getByText('Charts settings saved.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'MSSQL plugin', exact: true }).click();
   await page.getByLabel('SQL Server host').fill('127.0.0.1');
   await page.getByLabel('Allowed databases', { exact: true }).fill('Dev');
   await page.getByLabel('read SQL username').fill('reader');

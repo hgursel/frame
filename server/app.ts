@@ -1,3 +1,6 @@
+import { ReportsPlugin } from './plugins/reports/service.js';
+import { reportsApi } from './plugins/reports/api.js';
+import { projectPluginsApi } from './plugins/api.js';
 import { ChartsPlugin } from './plugins/charts/service.js';
 import { chartsApi } from './plugins/charts/api.js';
 import { MssqlPlugin } from './plugins/mssql/service.js';
@@ -86,7 +89,8 @@ export async function createApp(options: {
       ? charts.capture(conversation, operation, database, result)
       : undefined;
   };
-  const runner = new Runner(store, mssql, charts);
+  const reports = new ReportsPlugin(store, python, charts);
+  const runner = new Runner(store, mssql, charts, reports);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
@@ -399,7 +403,9 @@ export async function createApp(options: {
     },
   );
   knowledgeApi(app, knowledge, wiki, runner);
-  mssqlApi(app, mssql, runner, charts);
+  mssqlApi(app, mssql, runner);
+  projectPluginsApi(app, runner, mssql, charts, reports);
+  reportsApi(app, reports, runner);
   chartsApi(app, charts, runner);
   wiki.schemaFiles = (id) => {
     try {
@@ -416,11 +422,12 @@ export async function createApp(options: {
   app.addHook('preClose', async () => {
     for (const stream of streams) stream.end();
     await runner.close();
+    await reports.close();
     await python.close();
     await mssql.close();
   });
   app.addHook('onClose', async () => {
     store.close();
   });
-  return { app, store, runner, knowledge, wiki, python, mssql, charts };
+  return { app, store, runner, knowledge, wiki, python, mssql, charts, reports };
 }

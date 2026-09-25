@@ -1,3 +1,4 @@
+import { ReportsSettings } from './Reports.js';
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from './api.js';
 import { RichMarkdown } from './RichMarkdown.js';
@@ -318,6 +319,8 @@ export function PluginSettings() {
   );
 }
 export function ProjectPlugins({ projectId }: { projectId: string }) {
+  const [reports, setReports] = useState(false);
+  const [reportsSystem, setReportsSystem] = useState(false);
   const [charts, setCharts] = useState(false);
   const [chartsSystem, setChartsSystem] = useState(false);
   const [savedVersion, setSavedVersion] = useState(0);
@@ -334,12 +337,16 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
       systemEnabled: boolean;
       charts: boolean;
       chartsSystemEnabled: boolean;
+      reports: boolean;
+      reportsSystemEnabled: boolean;
     }>(`/projects/${projectId}/plugins`)
       .then((v) => {
         if (live) {
           setEnabled(v.mssql);
           setSystem(v.systemEnabled);
           setCharts(v.charts);
+          setReports(v.reports);
+          setReportsSystem(v.reportsSystemEnabled);
           setChartsSystem(v.chartsSystemEnabled);
           setLoaded(true);
         }
@@ -354,6 +361,9 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project plugins</h2>
+      <label className="checkbox"><input type="checkbox" aria-label="Enable Reports for this project" disabled={!loaded || busy} checked={reports} onChange={(e) => setReports(e.target.checked)} />Reports</label>
+      <p className="muted small">Branded PDF reports with conversation charts and tables. {reportsSystem ? 'Reports is enabled system-wide.' : 'Enable Reports in Settings → Plugins first.'}</p>
+      <details><summary>Customize report design</summary><ReportsSettings projectId={projectId} /></details>
       <label className="checkbox">
         <input
           type="checkbox"
@@ -392,7 +402,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
           setBusy(true);
           setError('');
           try {
-            await api(`/projects/${projectId}/plugins`, 'PUT', { mssql: enabled, charts });
+            await api(`/projects/${projectId}/plugins`, 'PUT', { mssql: enabled, charts, reports });
             setNotice('Project plugins saved.');
             setSavedVersion((v) => v + 1);
           } catch (e) {

@@ -1,0 +1,121 @@
+.plugin-catalog {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+  align-items: start;
+}
+.plugin-catalog > nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plugin-catalog > nav button {
+  text-align: left;
+  padding: 14px;
+  border-radius: 12px;
+}
+.plugin-catalog > nav button span {
+  display: block;
+  font-size: 11px;
+  color: var(--subtle);
+  margin-top: 5px;
+}
+.plugin-catalog > nav button[aria-pressed='true'],
+.report-topics button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+.plugin-detail {
+  min-width: 0;
+}
+.plugin-detail > [hidden],
+.report-settings [hidden] {
+  display: none;
+}
+.plugin-detail .plugin-card {
+  margin-top: 0;
+}
+.report-topics {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+.report-settings fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.report-field {
+  margin-bottom: 18px;
+}
+.report-field > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.report-field input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+.report-field small {
+  display: block;
+  color: var(--subtle);
+  margin-top: 5px;
+}
+.report-field small button {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+.report-colors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.report-colors input {
+  min-height: 42px;
+  width: 100%;
+  padding: 3px;
+}
+.report-logo-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.report-logo-box img {
+  display: block;
+  max-width: 180px;
+  max-height: 80px;
+  object-fit: contain;
+  background: white;
+  padding: 8px;
+  margin-bottom: 16px;
+}
+.report-logo-box small {
+  display: block;
+  margin: 8px 0 12px;
+}
+.report-settings .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 760px) {
+  .plugin-catalog {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plugin-catalog > nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .plugin-catalog > nav button {
+    flex: 1;
+    padding: 10px;
+  }
+  .plugin-catalog > nav button span {
+    display: none;
+  }
+}

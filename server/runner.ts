@@ -1,3 +1,4 @@
+import type { ReportsPlugin } from './plugins/reports/service.js';
 import type { ChartsPlugin } from './plugins/charts/service.js';
 import type { MssqlPlugin } from './plugins/mssql/service.js';
 import { fork, type ChildProcess } from 'node:child_process';
@@ -15,6 +16,7 @@ type ActiveRun = {
   runId: string;
   snapshot: ChatSnapshot;
   stopRequested: boolean;
+  pluginAbort: AbortController;
 };
 export class Runner extends EventEmitter {
   private revision = Date.now() * 1000;
@@ -23,6 +25,7 @@ export class Runner extends EventEmitter {
     readonly store: Store,
     readonly mssql?: MssqlPlugin,
     readonly charts?: ChartsPlugin,
+    readonly reports?: ReportsPlugin,
   ) {
     super();
     this.setMaxListeners(100);
@@ -81,6 +84,8 @@ export class Runner extends EventEmitter {
     }
     const conversation = this.store.conversation(id)!;
     const project = this.store.project(conversation.projectId)!;
+    if (this.reports?.busy(project.id))
+      throw Object.assign(new Error('Wait for report operations to finish.'), { statusCode: 409 });
     if (this.mssql?.schema.jobs.has(project.id))
       throw Object.assign(new Error('Wait for schema initialization to finish.'), {
         statusCode: 409,
@@ -150,6 +155,7 @@ export class Runner extends EventEmitter {
         status: operation === 'compact' ? 'Compacting context' : 'Preparing conversation',
       },
       stopRequested: false,
+      pluginAbort: new AbortController(),
     };
     this.active.set(id, active);
     let completed = false;
@@ -163,6 +169,11 @@ export class Runner extends EventEmitter {
       if (event.type === 'plugin_call') {
         void Promise.resolve()
           .then<unknown>(() => {
+            if (active.stopRequested) throw new Error('Task stopped.');
+            if (event.action === 'reports_sources' && this.reports)
+              return this.reports.sources(id, event.args);
+            if (event.action === 'reports_create' && this.reports)
+              return this.reports.create(id, event.args, active.pluginAbort.signal);
             if (event.action === 'charts_sources' && this.charts)
               return this.charts.listSources(id, event.args);
             if (event.action === 'charts_import' && this.charts)
@@ -210,6 +221,7 @@ export class Runner extends EventEmitter {
       if (finished) return;
       finished = true;
       clearTimeout(deadline);
+      active.pluginAbort.abort();
       this.mssql?.cancelRun(runId);
       this.killGroup(child);
       const status = error
@@ -250,6 +262,10 @@ export class Runner extends EventEmitter {
         pythonPath,
         knowledge,
         operation,
+        reports:
+          this.reports?.enabled() && this.reports.projectEnabled(project.id)
+            ? this.reports.context(project.id)
+            : undefined,
         charts: !!this.charts?.enabled() && this.charts.projectEnabled(project.id),
         mssql:
           this.mssql?.projectEnabled(project.id) && this.mssql.settings().enabled
@@ -279,6 +295,7 @@ export class Runner extends EventEmitter {
       );
     if (run.stopRequested) return;
     run.stopRequested = true;
+    run.pluginAbort.abort();
     this.mssql?.cancelRun(run.runId);
     run.snapshot.status = 'Stopping';
     this.emit(id);

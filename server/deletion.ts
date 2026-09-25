@@ -60,6 +60,7 @@ export function deleteWorkspaceData(
   const sql = runner.mssql!;
   if (
     runner.projectBusy(projectId) ||
+    runner.reports?.busy(projectId) ||
     knowledge.locks.has(projectId) ||
     sql.schema.jobs.has(projectId) ||
     sql.notes.jobs.has(projectId) ||
@@ -116,6 +117,7 @@ export function deleteWorkspaceData(
           'knowledge_revisions',
           'documents',
           'project_plugins',
+          'report_settings',
           'mssql_schema',
           'mssql_schema_state',
           'mssql_notes',

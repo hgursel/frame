@@ -72,6 +72,7 @@ export interface ChatMetrics {
 }
 export interface WorkerInput {
   operation?: 'prompt' | 'compact';
+  reports?: { organization: string; template: string; instructions: string };
   charts?: boolean;
   mssql?: { databases: string[]; map?: string };
   cwd: string;

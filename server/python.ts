@@ -16,6 +16,7 @@ function command(
   input = '',
   signal?: AbortSignal,
   timeout = 45000,
+  outputLimit = 1_000_000,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const installerEnv = args.includes('pip')
@@ -53,7 +54,7 @@ function command(
     const timer = setTimeout(() => process.kill('SIGKILL'), timeout);
     process.stdout.on('data', (part) => {
       output += part;
-      if (output.length > 1_000_000) {
+      if (output.length > outputLimit) {
         tooLarge = true;
         process.kill('SIGKILL');
       }
@@ -162,4 +163,17 @@ export class PythonRuntime {
   async close() {
     await this.installing?.catch(() => {});
   }
+}
+
+export async function reportCommand(pythonPath: string, input: object, signal?: AbortSignal) {
+  return JSON.parse(
+    await command(
+      pythonPath,
+      ['-I', path.join(appRoot, 'python', 'reports.py')],
+      JSON.stringify(input),
+      signal,
+      60000,
+      12_000_000,
+    ),
+  );
 }
