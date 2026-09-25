@@ -65,3 +65,27 @@
   margin-bottom: 16px;
   color: var(--subtle);
 }
+.incognito-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--ink);
+  background: transparent;
+}
+.incognito-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--hover);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.incognito-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.maintenance-grid > label {
+  min-width: 0;
+}
