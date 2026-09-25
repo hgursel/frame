@@ -1,6 +1,9 @@
 const labels: Record<string, string> = {
   charts_create: 'Create chart',
-  charts_datasets: 'Find SQL chart data',
+  charts_datasets: 'Find chart datasets',
+  charts_sources: 'Find chart sources',
+  charts_import: 'Import chart data',
+  charts_transform: 'Calculate chart data',
   mssql_schema_read: 'Read table structure',
   mssql_schema_search: 'Search database schema',
   mssql_knowledge_search: 'Search database knowledge',

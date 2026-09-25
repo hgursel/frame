@@ -365,7 +365,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
         Charts
       </label>
       <p className="muted small">
-        Charts from saved SQL results, only when you ask.{' '}
+        Charts from SQL results, CSV files, and Markdown tables, only when you ask.{' '}
         {chartsSystem
           ? 'Charts is enabled system-wide.'
           : 'Enable Charts in Settings → Plugins first.'}

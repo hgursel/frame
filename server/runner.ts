@@ -163,6 +163,12 @@ export class Runner extends EventEmitter {
       if (event.type === 'plugin_call') {
         void Promise.resolve()
           .then<unknown>(() => {
+            if (event.action === 'charts_sources' && this.charts)
+              return this.charts.listSources(id, event.args);
+            if (event.action === 'charts_import' && this.charts)
+              return this.charts.importSource(id, event.args);
+            if (event.action === 'charts_transform' && this.charts)
+              return this.charts.transform(id, event.args);
             if (event.action === 'charts_create' && this.charts)
               return this.charts.create(id, event.args);
             if (event.action === 'charts_datasets' && this.charts) return this.charts.list(id);

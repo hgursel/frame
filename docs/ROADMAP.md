@@ -63,12 +63,13 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Fixed 30-minute task deadline; completed SQL knowledge jobs show completion instead of their last processing phase.
 - Deferred: adjustable per-project task limits and llama.cpp prompt-processing percentages.
 
-## SQL charts (implemented)
+## Charts (implemented)
 
 - Default-off system setting and per-project enablement; model instructed to chart only on explicit user request.
-- Bar, line, pie/donut, and scatter charts rendered inline from saved typed SQL datasets, independent of the shortened chat preview.
-- Hover/focus values, legend toggles, expanded views, data tables, PNG/CSV downloads, persistent snapshots, and scoped deletion.
-- Bounded datasets and chart points, visible SQL-limit notices, NULL gaps, and validation without arbitrary model code or cloud dependencies.
+- Bar, line, pie/donut, and scatter charts rendered inline from saved typed SQL results, CSV files, and Markdown tables in project knowledge, chat, or generated files, independent of shortened previews.
+- Local filtering, grouping, sums/averages/minima/maxima/counts, and sorting; source references avoid copying tables through model tool arguments.
+- Single-title chart cards, hover/focus values, legend toggles, data tables, and an expand icon; expanded views close on backdrop click, Escape, or × and contain PNG/CSV downloads. Persistent snapshots and scoped deletion.
+- Bounded datasets and chart points, visible partial-source notices, NULL gaps, and validation without arbitrary model code or cloud dependencies.
 - API and real-SDK/mock-model browser coverage; local-model acceptance remains separate. See [Charts](CHARTS.md).
 
 ## Next — Complete V1

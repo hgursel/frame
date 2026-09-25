@@ -25,7 +25,7 @@ export function ChartsSettings() {
   return (
     <section className="plugin-card">
       <h2>Charts</h2>
-      <p className="muted">Built-in plugin · Saved SQL results · Local rendering</p>
+      <p className="muted">Built-in plugin · SQL, CSV, and Markdown · Local rendering</p>
       <label className="checkbox">
         <input
           aria-label="Enable Charts system-wide"
@@ -143,7 +143,7 @@ const Plot = React.memo(function Plot({
   const total = pieRows.reduce((sum, { row }) => sum + Number(row[1]), 0);
   const legend = chart.kind === 'pie' ? chart.rows.map((row) => String(row[0])) : chart.y;
   const footer = 390 + Math.ceil(legend.length / 4) * 22;
-  const height = footer + 48;
+  const height = footer + (chart.truncated ? 32 : 8);
   let angle = -Math.PI / 2;
   return (
     <div className="chart-plot">
@@ -158,9 +158,6 @@ const Plot = React.memo(function Plot({
       >
         <title>{chart.title}</title>
         <rect width="740" height={height} fill={background} />
-        <text x="24" y="25" fill={ink} fontSize="15" fontWeight="600">
-          {short(chart.title, 70)}
-        </text>
         {chart.kind === 'pie' ? (
           <>
             {total <= 0 && (
@@ -337,20 +334,14 @@ const Plot = React.memo(function Plot({
             </text>
           </g>
         ))}
-        <text x="24" y={footer + 22} fill={ink} fontSize="11">
-          {short(
-            `SQL snapshot · ${chart.database} · ${new Date(chart.sourceAt).toLocaleString()} · ${chart.rows.length} rows · Not live`,
-            110,
-          )}
-        </text>
         {chart.truncated && (
-          <text x="24" y={footer + 40} fill={ink} fontSize="11">
-            Limited SQL result: returned rows only, not the complete query result.
+          <text x="24" y={footer + 22} fill={ink} fontSize="11">
+            Partial source: returned rows only, not the complete result.
           </text>
         )}
       </svg>
       <p className="chart-hover" aria-live="polite">
-        {hover || 'Hover or focus a point to see its values.'}
+        {hover}
       </p>
     </div>
   );
@@ -365,6 +356,21 @@ export const ChartCard = React.memo(
     const [dark, setDark] = useState(document.documentElement.dataset.theme === 'dark');
     const svg = useRef<SVGSVGElement>(null),
       dialog = useRef<HTMLDialogElement>(null);
+    const backdropPress = useRef(false);
+    const close = () => {
+      dialog.current?.close();
+      setExpanded(false);
+    };
+    const outside = (event: React.PointerEvent<HTMLDialogElement>) => {
+      const box = event.currentTarget.getBoundingClientRect();
+      return (
+        event.target === event.currentTarget &&
+        (event.clientX < box.left ||
+          event.clientX > box.right ||
+          event.clientY < box.top ||
+          event.clientY > box.bottom)
+      );
+    };
     useEffect(() => {
       let live = true;
       setChart(undefined);
@@ -393,7 +399,16 @@ export const ChartCard = React.memo(
     const downloadPng = async () => {
       try {
         if (!svg.current) return;
-        const source = new XMLSerializer().serializeToString(svg.current);
+        const exported = svg.current.cloneNode(true) as SVGSVGElement;
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title.setAttribute('x', '24');
+        title.setAttribute('y', '25');
+        title.setAttribute('fill', dark ? '#eceeea' : '#252724');
+        title.setAttribute('font-size', '15');
+        title.setAttribute('font-weight', '600');
+        title.textContent = short(reference.title, 70);
+        exported.append(title);
+        const source = new XMLSerializer().serializeToString(exported);
         const image = new Image();
         image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
         await image.decode();
@@ -426,13 +441,24 @@ export const ChartCard = React.memo(
         <figcaption>
           <strong>{reference.title}</strong>
           {chart && (
-            <div className="chart-actions">
-              <button onClick={() => setExpanded(true)}>Expand chart</button>
-              <button onClick={() => void downloadPng()}>Download PNG</button>
-              <a href={`/api/conversations/${chatId}/charts/${reference.id}?format=csv`}>
-                Download chart CSV
-              </a>
-            </div>
+            <button
+              className="chart-icon"
+              aria-label="Expand chart"
+              title="Expand chart"
+              onClick={() => setExpanded(true)}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                aria-hidden="true"
+              >
+                <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6" />
+              </svg>
+            </button>
           )}
         </figcaption>
         {error && (
@@ -444,10 +470,6 @@ export const ChartCard = React.memo(
         {chart && (
           <>
             <Plot chart={chart} hidden={hidden} dark={dark} svgRef={svg} onToggle={toggle} />
-            <p className="muted small">
-              SQL snapshot · {chart.database} · {new Date(chart.sourceAt).toLocaleString()} ·{' '}
-              {chart.rows.length} rows · Not live
-            </p>
             {chart.notices.map((notice) => (
               <p className="chart-notice" key={notice}>
                 {notice}
@@ -483,14 +505,53 @@ export const ChartCard = React.memo(
                 aria-label="Expanded chart"
                 onCancel={(e) => {
                   e.preventDefault();
-                  setExpanded(false);
+                  close();
+                }}
+                onPointerDown={(event) => {
+                  backdropPress.current = outside(event);
+                }}
+                onPointerUp={(event) => {
+                  if (backdropPress.current && outside(event)) close();
+                  backdropPress.current = false;
                 }}
               >
-                <button onClick={() => setExpanded(false)}>Close chart</button>
+                <header className="chart-dialog-header">
+                  <h2>{reference.title}</h2>
+                  <button
+                    className="chart-icon"
+                    aria-label="Close chart"
+                    title="Close chart"
+                    onClick={close}
+                    autoFocus
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      aria-hidden="true"
+                    >
+                      <path d="m6 6 12 12M6 18 18 6" />
+                    </svg>
+                  </button>
+                </header>
                 <Plot chart={chart} hidden={hidden} dark={dark} onToggle={toggle} />
                 {chart.notices.map((notice) => (
                   <p key={notice}>{notice}</p>
                 ))}
+                {error && (
+                  <p role="alert" className="error">
+                    {error}
+                  </p>
+                )}
+                <footer className="chart-actions">
+                  <button onClick={() => void downloadPng()}>Download PNG</button>
+                  <a href={`/api/conversations/${chatId}/charts/${reference.id}?format=csv`}>
+                    Download chart CSV
+                  </a>
+                </footer>
               </dialog>
             )}
           </>
