@@ -52,6 +52,23 @@ const model = createServer(async (request, response) => {
           chunk({}, 'tool_calls') +
           'data: [DONE]\n\n',
       );
+    } else if (body.messages.filter((m: any) => m.role === 'tool').length === 1) {
+      response.write(chunk({ content: 'I found the source. I’ll check related guidance.' }));
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      response.end(
+        chunk({
+          tool_calls: [
+            {
+              index: 0,
+              id: 'followup-related',
+              type: 'function',
+              function: { name: 'search_knowledge', arguments: '{"query":"migration"}' },
+            },
+          ],
+        }) +
+          chunk({}, 'tool_calls') +
+          'data: [DONE]\n\n',
+      );
     } else {
       await new Promise((resolve) => setTimeout(resolve, 1200));
       response.write(chunk({ content: 'Follow-up result arrived.' }));
@@ -324,27 +341,68 @@ try {
     'Preparing tool call',
     { timeout: 15000 },
   );
+  await expect(page.locator('.activity-running')).toHaveCount(1);
+  const followup = page.locator('.response-turn').last();
+  await expect(followup.locator('.activity')).toHaveCount(2);
+  await expect(followup.locator('.activity').first().locator('.activity-status')).toHaveText(
+    'View activity · 1 step',
+  );
+  assert.deepEqual(
+    await followup.evaluate((el) =>
+      Array.from(el.children).map((c) =>
+        c.classList.contains('activity-running')
+          ? 'live activity'
+          : c.classList.contains('activity')
+            ? 'activity'
+            : c.className,
+      ),
+    ),
+    ['message-author', 'activity', 'response-text', 'live activity'],
+  );
   await expect(page.locator('.activity-running .activity-status')).toHaveText('Waiting for model');
   await expect(page.locator('.activity-running .activity-status')).toHaveText('Responding');
   await expect(page.getByText('Follow-up result arrived.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible();
   await expect(page.getByText('I’ll check the project knowledge.', { exact: true })).toBeVisible();
   await expect(page.locator('.response-turn')).toHaveCount(2);
-  await expect(page.locator('.response-turn').last().locator('.activity')).toHaveCount(1);
+  await expect(page.locator('.response-turn').last().locator('.activity')).toHaveCount(3);
   await expect(page.locator('.response-turn').last().locator('.message-author')).toHaveCount(1);
-  await expect(page.locator('.response-turn').last().locator('.tool')).not.toBeVisible();
+  for (const tool of await followup.locator('.tool').all()) await expect(tool).not.toBeVisible();
+  assert.deepEqual(
+    await followup.evaluate((el) =>
+      Array.from(el.children)
+        .filter((c) => c.classList.contains('activity') || c.classList.contains('response-text'))
+        .map((c) =>
+          c.classList.contains('activity') ? 'activity' : c.textContent?.split('Copy')[0],
+        ),
+    ),
+    [
+      'activity',
+      'I’ll check the project knowledge.',
+      'activity',
+      'I found the source. I’ll check related guidance.',
+      'activity',
+      'Follow-up result arrived.',
+    ],
+  );
+  await followup.locator('.activity').nth(1).locator(':scope > summary').click();
+  await expect(followup.locator('.activity').nth(1).locator('.tool > summary')).toContainText(
+    'Search project knowledge',
+  );
   await expect(page.locator('.composer-area .status-row')).toHaveCount(0);
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-activity.png'),
       fullPage: true,
     });
-  assert.equal(followupRequests, 2, 'One follow-up plus one continuation after the tool');
+  assert.equal(followupRequests, 3, 'One follow-up plus two continuations after tools');
   // Simulate an unavailable live stream. HTTP reconciliation must still update and stop.
   await page.route('**/api/conversations/*/events', (route) => route.abort());
   await page.reload();
   await page.getByRole('button', { name: 'Review our migration plan.', exact: true }).click();
   await expect(page.getByText('Follow-up result arrived.', { exact: true })).toBeVisible();
+  await expect(page.locator('.response-turn').last().locator('.activity')).toHaveCount(3);
+  await expect(page.locator('.activity-running')).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Hold until stopped');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(page.locator('.activity-running .activity-status')).toContainText('reconnecting');

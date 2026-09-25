@@ -1,6 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import type { ChatSnapshot } from '../shared/types.js';
-import { activitySteps, responseTurns, type IndexedMessage } from './activity.js';
+import {
+  activitySteps,
+  responseTurns,
+  responseBlocks,
+  currentActivityKey,
+  type IndexedMessage,
+} from './activity.js';
 import { ChartCard } from './Charts.js';
 import { CopyMessage } from './ContextPanel.js';
 import { SqlResultTable } from './Plugins.js';
@@ -147,53 +153,69 @@ export function ConversationMessages({
   );
   return (
     <>
-      {turns.map((turn, position) => (
-        <React.Fragment key={turn.key}>
-          {turn.user && (
-            <article className="message user">
-              {!!turn.user.message.attachments?.length && (
-                <div className="attachment-chips">
-                  {turn.user.message.attachments.map((a) => (
-                    <span key={a.id}>▤ {a.name}</span>
-                  ))}
-                </div>
-              )}
-              <RichMarkdown text={turn.user.message.text} />
-            </article>
-          )}
-          {(!!turn.messages.length ||
-            (!standalone && position === turns.length - 1 && currentStatus)) && (
-            <section className="response-turn message assistant" aria-label="Frame response">
-              <div className="message-author">FRAME</div>
-              {activity(turn.messages, !standalone && position === turns.length - 1)}
-              {turn.messages.map(({ message: m, index }) =>
-                m.chart ? (
-                  <ChartCard key={index} reference={m.chart} chatId={chatId} />
-                ) : m.role === 'assistant' && !!m.text ? (
-                  <div className="response-text" key={index}>
-                    <RichMarkdown
-                      text={m.text}
-                      streaming={snapshot.running && index === snapshot.messages.length - 1}
-                    />
-                    {!snapshot.running && (
-                      <div className="message-actions">
-                        <CopyMessage text={m.text} />
-                        <>
-                          {canSave && (
-                            <button className="save-knowledge" onClick={() => onSave(index)}>
-                              ♡ Useful · Save to knowledge
-                            </button>
-                          )}
-                        </>
-                      </div>
-                    )}
+      {turns.map((turn, position) => {
+        const blocks = responseBlocks(turn.messages);
+        const liveKey = currentActivityKey(
+          turn.messages,
+          blocks,
+          snapshot.running,
+          snapshot.status,
+        );
+        const current = !standalone && position === turns.length - 1;
+        return (
+          <React.Fragment key={turn.key}>
+            {turn.user && (
+              <article className="message user">
+                {!!turn.user.message.attachments?.length && (
+                  <div className="attachment-chips">
+                    {turn.user.message.attachments.map((a) => (
+                      <span key={a.id}>▤ {a.name}</span>
+                    ))}
                   </div>
-                ) : null,
-              )}
-            </section>
-          )}
-        </React.Fragment>
-      ))}
+                )}
+                <RichMarkdown text={turn.user.message.text} />
+              </article>
+            )}
+            {(!!turn.messages.length ||
+              (!standalone && position === turns.length - 1 && currentStatus)) && (
+              <section className="response-turn message assistant" aria-label="Frame response">
+                <div className="message-author">FRAME</div>
+                {blocks.map((block) => {
+                  if (block.kind === 'activity')
+                    return (
+                      <React.Fragment key={block.key}>
+                        {activity(block.messages, current && block.key === liveKey)}
+                      </React.Fragment>
+                    );
+                  const { message: m, index } = block.item;
+                  return m.chart ? (
+                    <ChartCard key={block.key} reference={m.chart} chatId={chatId} />
+                  ) : (
+                    <div className="response-text" key={block.key}>
+                      <RichMarkdown
+                        text={m.text}
+                        streaming={snapshot.running && index === snapshot.messages.length - 1}
+                      />
+                      {!snapshot.running && (
+                        <div className="message-actions">
+                          <CopyMessage text={m.text} />
+                          <>
+                            {canSave && (
+                              <button className="save-knowledge" onClick={() => onSave(index)}>
+                                ♡ Useful · Save to knowledge
+                              </button>
+                            )}
+                          </>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+          </React.Fragment>
+        );
+      })}
       {standalone && currentStatus && (
         <section className="response-turn message assistant" aria-label="Frame response">
           <div className="message-author">FRAME</div>
