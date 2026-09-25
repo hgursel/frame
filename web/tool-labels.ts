@@ -21,7 +21,7 @@ const labels: Record<string, string> = {
   search_knowledge: 'Search project knowledge',
   read_knowledge: 'Read project knowledge',
   propose_knowledge: 'Draft knowledge update',
-  create_document: 'Create document',
+  create_document: 'Create Word document',
 };
 export const toolLabel = (name?: string) =>
   name ? labels[name] || name.replaceAll('_', ' ') : 'Tool result';

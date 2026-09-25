@@ -77,6 +77,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Default-off system setting and project enablement; organization branding/layout/instructions with per-field project overrides and independent logo inheritance.
 - Executive, analytical, and technical PDF layouts with covers, three brand colors, logos, page numbers, and repeating table headers.
 - Scoped references to conversation charts/datasets, uploaded CSV/Markdown, chat tables, and generated files; static vector charts and wide-table pagination.
+- Reports is the only built-in PDF generator; the former Markdown-to-PDF writer is removed and legacy calls fail with guidance. `create_document` remains DOCX-only.
 - Direct local PDF generation and revisions as separate downloads; bounded rendering and Stop cancellation without partial publication. No MSSQL or host tools required.
 - Plugin settings navigation with retained drafts and a saved-design sample download. API, PDF, and browser coverage through the real SDK with a local mock model. See [Reports](REPORTS.md).
 

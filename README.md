@@ -72,7 +72,7 @@ Set organization defaults and optional project overrides. Ask for a report direc
 | Streaming chat       | Follow responses and expandable model-provided reasoning as they arrive.                                          |
 | Rich answers         | Read Markdown tables, code blocks, and locally rendered Mermaid diagrams.                                         |
 | Context visibility   | See context usage and observed tokens/second; use automatic compaction or create a manual checkpoint.             |
-| Document generation  | Generate branded PDFs with Reports; basic DOCX/PDF generation remains available through trusted document tools. |
+| Document generation  | Generate all PDFs with Reports; Word/DOCX generation remains available through trusted document tools. |
 | Conversation control | Resume saved chats, stop active tasks, and remove conversations or entire projects with confirmation.             |
 | Everyday interface   | Use light/dark appearance, conversation search, attachments, and mobile navigation.                               |
 

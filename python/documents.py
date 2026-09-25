@@ -1,5 +1,4 @@
 """Bounded offline extraction and document generation. JSON in, JSON out."""
-import html
 import json
 import os
 import re
@@ -73,6 +72,8 @@ def blocks(markdown):
 
 
 def generate(data):
+    if data.get("format") != "docx":
+        raise ValueError("PDF generation is available only through the Reports plugin. Use reports_create; enable Reports in system and project settings if needed.")
     title = str(data["title"])[:200]
     markdown = str(data["markdown"])
     if len(markdown) > MAX_TEXT:
@@ -80,53 +81,24 @@ def generate(data):
     directory = Path(data["directory"]).resolve(strict=True)
     name = str(data["filename"])
     fmt = data["format"]
-    if fmt not in ("pdf", "docx") or Path(name).name != name or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,100}", name):
+    if Path(name).name != name or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,100}", name):
         raise ValueError("Invalid output filename")
     output = directory / (name if name.endswith("." + fmt) else name + "." + fmt)
     descriptor, temporary = tempfile.mkstemp(prefix=".building-", dir=directory)
     os.close(descriptor)
     try:
-        if fmt == "pdf":
-            from reportlab.lib import colors
-            from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.lib.enums import TA_LEFT
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-            from reportlab.pdfbase import pdfmetrics
-            from reportlab.pdfbase.ttfonts import TTFont
-            # Bundle fonts from ReportLab so the output does not depend on Ubuntu fonts.
-            import reportlab
-            fonts = Path(reportlab.__file__).parent / "fonts"
-            pdfmetrics.registerFont(TTFont("FrameText", str(fonts / "Vera.ttf")))
-            pdfmetrics.registerFont(TTFont("FrameBold", str(fonts / "VeraBd.ttf")))
-            styles = getSampleStyleSheet()
-            for style in styles.byName.values():
-                if not hasattr(style, "fontSize"):
-                    continue
-                style.fontName = "FrameText"
-                style.alignment = TA_LEFT
-                style.textColor = colors.HexColor("#20302e")
-                style.leading = max(style.fontSize * 1.5, 15)
-            for key in ("Title", "Heading1", "Heading2", "Heading3"):
-                styles[key].fontName = "FrameBold"
-            story = [Paragraph(html.escape(title), styles["Title"]), Spacer(1, 18)]
-            for kind, text in blocks(markdown):
-                style = styles[{"h1": "Heading1", "h2": "Heading2", "h3": "Heading3"}.get(kind, "BodyText")]
-                story.append(Paragraph(html.escape(("• " if kind == "bullet" else "") + text), style))
-                story.append(Spacer(1, 6))
-            SimpleDocTemplate(temporary, title=title, author="Frame", leftMargin=54, rightMargin=54, topMargin=54, bottomMargin=54).build(story)
-        else:
-            from docx import Document
-            from docx.shared import Pt
-            doc = Document()
-            doc.styles["Normal"].font.name = "Calibri"
-            doc.styles["Normal"].font.size = Pt(11)
-            doc.add_heading(title, 0)
-            for kind, text in blocks(markdown):
-                if kind.startswith("h"):
-                    doc.add_heading(text, int(kind[1]))
-                else:
-                    doc.add_paragraph(text, style="List Bullet" if kind == "bullet" else None)
-            doc.save(temporary)
+        from docx import Document
+        from docx.shared import Pt
+        doc = Document()
+        doc.styles["Normal"].font.name = "Calibri"
+        doc.styles["Normal"].font.size = Pt(11)
+        doc.add_heading(title, 0)
+        for kind, text in blocks(markdown):
+            if kind.startswith("h"):
+                doc.add_heading(text, int(kind[1]))
+            else:
+                doc.add_paragraph(text, style="List Bullet" if kind == "bullet" else None)
+        doc.save(temporary)
         # A complete file becomes visible atomically, without overwriting existing artifacts.
         os.link(temporary, output)
         os.unlink(temporary)

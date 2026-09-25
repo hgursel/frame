@@ -5,6 +5,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
 import { createApp } from '../server/app.js';
 import { reportMarkdown } from '../server/plugins/reports/markdown.js';
 import { reportCommand } from '../server/python.js';
@@ -58,6 +59,139 @@ const info = (python: string, file: string) =>
       { encoding: 'utf8' },
     ),
   );
+
+test(
+  'SDK with host tools rejects legacy PDF calls and uses Reports with a saved chart',
+  { skip: !process.env.FRAME_PYTHON, timeout: 45000 },
+  async () => {
+    const f = await fixture();
+    const requests: any[] = [];
+    let chartId = '';
+    const model = createServer(async (req, res) => {
+      let raw = '';
+      for await (const part of req) raw += part;
+      requests.push(JSON.parse(raw));
+      const call =
+        requests.length === 1
+          ? {
+              name: 'create_document',
+              args: {
+                title: 'Legacy',
+                markdown: 'Wrong renderer',
+                format: 'pdf',
+                filename: 'legacy',
+              },
+            }
+          : requests.length === 2
+            ? {
+                name: 'reports_create',
+                args: { title: 'Branded analysis', blocks: [{ type: 'chart', chartId }] },
+              }
+            : null;
+      const chunk = (delta: object, finish: string | null) =>
+        `data: ${JSON.stringify({ id: 'reports-regression', object: 'chat.completion.chunk', created: 1, model: 'test', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.end(
+        chunk(
+          call
+            ? {
+                role: 'assistant',
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: randomUUID(),
+                    type: 'function',
+                    function: { name: call.name, arguments: JSON.stringify(call.args) },
+                  },
+                ],
+              }
+            : { role: 'assistant', content: 'Your branded PDF is ready.' },
+          null,
+        ) +
+          chunk({}, call ? 'tool_calls' : 'stop') +
+          'data: [DONE]\n\n',
+      );
+    });
+    await new Promise<void>((resolve) => model.listen(0, '127.0.0.1', resolve));
+    try {
+      const project = f.store.createProject({
+        name: 'Trusted reports',
+        instructions: '',
+        toolsEnabled: true,
+      });
+      const c = f.store.createConversation(project.id);
+      f.reports.update({
+        enabled: true,
+        profile: { ...f.reports.profile(), organization: 'REPORT BRAND' },
+      });
+      f.reports.setProject(project.id, true);
+      f.store.setMeta('charts:enabled', 'true');
+      f.charts.setProject(project.id, true);
+      const datasetId = f.charts.capture(c.id, randomUUID(), 'Dev', {
+        columns: ['Region', 'Total'],
+        rows: [
+          ['North', 12],
+          ['South', 8],
+        ],
+        truncated: false,
+        affected: 0,
+      })!;
+      chartId = f.charts.create(c.id, {
+        datasetId,
+        kind: 'bar',
+        title: 'Regional results',
+        x: 'Region',
+        y: ['Total'],
+      }).id;
+      f.store.saveSettings({
+        ...f.store.settings(),
+        modelId: 'test',
+        baseUrl: `http://127.0.0.1:${(model.address() as any).port}/v1`,
+      });
+      const started = await f.auth(`/conversations/${c.id}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: 'Generate a PDF with the saved regional chart.',
+      });
+      assert.equal(started.statusCode, 202, started.body);
+      const deadline = Date.now() + 30000;
+      while (f.runner.active.has(c.id) && Date.now() < deadline)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      assert(!f.runner.active.has(c.id), 'Report task did not finish');
+      const snapshot = f.runner.snapshot(c.id);
+      assert.equal(snapshot.error, undefined);
+      assert.equal(requests.length, 3);
+      const available = requests[0].tools.map((t: any) => t.function);
+      assert(
+        available.some((t: any) => t.name === 'bash'),
+        'Reproduce trusted host-tool setup',
+      );
+      assert(available.some((t: any) => t.name === 'reports_create'));
+      assert.equal(
+        available.find((t: any) => t.name === 'create_document').parameters.properties.format.const,
+        'docx',
+      );
+      assert(JSON.stringify(requests[0].messages).includes('For EVERY PDF request'));
+      const outputs = snapshot.messages.filter((m) => m.role === 'tool');
+      assert.equal(outputs[0].failed, true, 'The legacy PDF call must fail');
+      assert.equal(outputs[1].failed, false, 'The Reports call must succeed');
+      const files = await readdir(f.store.artifacts(c));
+      assert(!files.some((name) => name.startsWith('legacy')));
+      const pdfs = files.filter((name) => name.endsWith('.pdf'));
+      assert.equal(pdfs.length, 1);
+      const file = path.join(f.store.artifacts(c), pdfs[0]);
+      const pdf = info(f.python.executable, file);
+      assert.match(pdf.text, /REPORT BRAND/);
+      assert.match(pdf.text, /Regional results/);
+      // PDF ingestion still works after removing the legacy PDF writer.
+      const uploaded = await f.knowledge.add(project.id, 'report.pdf', await readFile(file));
+      assert.match((await f.knowledge.read(project.id, uploaded.id)).text, /Regional results/);
+    } finally {
+      await f.cleanup();
+      model.closeAllConnections();
+      await new Promise<void>((resolve) => model.close(() => resolve()));
+    }
+  },
+);
 
 test(
   'Reports settings are authenticated, inherit per field, preserve plugin switches, and normalize logos',
