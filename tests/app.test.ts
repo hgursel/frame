@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, mkdir, readFile, symlink } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, readFile, readdir, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer, get } from 'node:http';
@@ -889,7 +889,7 @@ test('uploads, OKF export, reviewed conversation updates, revisions, and project
 });
 
 test(
-  'managed Python generates complete PDF/DOCX artifacts and extracts uploads offline',
+  'managed Python generates DOCX, rejects legacy PDFs, and extracts uploads offline',
   { skip: !process.env.FRAME_PYTHON },
   async () => {
     const f = await fixture();
@@ -899,7 +899,7 @@ test(
       const chat = f.store.createConversation(p.id);
       const directory = f.store.artifacts(chat);
       await mkdir(directory, { recursive: true });
-      for (const format of ['pdf', 'docx']) {
+      for (const format of ['docx']) {
         const value = await documentCommand(f.python.executable, {
           command: 'generate',
           directory,
@@ -934,6 +934,18 @@ test(
           command: 'generate',
           directory,
           format: 'pdf',
+          filename: 'legacy-report',
+          title: 'Old PDF',
+          markdown: 'Must never publish.',
+        }),
+        /PDF generation is available only through the Reports plugin/,
+      );
+      assert(!(await readdir(directory)).some((name) => name.endsWith('.pdf')));
+      await assert.rejects(
+        documentCommand(f.python.executable, {
+          command: 'generate',
+          directory,
+          format: 'docx',
           filename: '../escape',
           title: 'No',
           markdown: 'No',
@@ -978,7 +990,7 @@ test(
             filename: 'maintenance',
             title: 'Maintenance report',
             markdown: '# Schedule\nMaintenance starts at 02:00 UTC.',
-            format: 'pdf',
+            format: 'docx',
           },
         },
       ];
@@ -1028,12 +1040,15 @@ test(
       });
       const started = await f.auth(`/conversations/${c.id}/messages`, 'POST', {
         requestId: randomUUID(),
-        text: 'Read maintenance, draft a wiki note, and generate a PDF.',
+        text: 'Read maintenance, draft a wiki note, and generate a Word document.',
         documentIds: [source.id],
       });
       assert.equal(started.statusCode, 202, started.body);
       await waitUntil(() => !f.runner.active.has(c.id));
       assert.equal(calls, 5);
+      const docTool = observed[0].tools.find((t: any) => t.function.name === 'create_document');
+      assert.equal(docTool.function.parameters.properties.format.const, 'docx');
+      assert(JSON.stringify(observed[0].messages).includes('which is disabled for this project'));
       const snapshot = f.runner.snapshot(c.id);
       assert.equal(snapshot.error, undefined, JSON.stringify(snapshot));
       const toolMessages = snapshot.messages.filter((m) => m.role === 'tool');
@@ -1060,7 +1075,7 @@ test(
       assert.equal(save.statusCode, 200, save.body);
       assert.equal(f.knowledge.list(p.id).length, 2);
       assert.equal(
-        (await f.auth(`/conversations/${c.id}/artifacts/maintenance.pdf`)).statusCode,
+        (await f.auth(`/conversations/${c.id}/artifacts/maintenance.docx`)).statusCode,
         200,
       );
       assert.equal(readHistory(f.store.sessionFile(c.id))[0]?.attachments?.[0]?.id, source.id);

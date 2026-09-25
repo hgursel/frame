@@ -4,6 +4,8 @@
 
 Reports creates branded PDFs locally from conversation findings, saved charts, and tables. It uses the existing managed Python runtime; no separate Pi installation, cloud service, browser renderer, MSSQL connection, or trusted host-tool permission is required.
 
+Reports is the only built-in PDF generator. The older `create_document` tool is DOCX-only, and its Python backend rejects PDF requests. If Reports is disabled, the model is instructed to ask you to enable it rather than fall back to a shell script or another generator. Trusted host tools remain general-purpose execution capabilities, not a sandbox or a file-format enforcement boundary.
+
 ## Set up
 
 1. Install the optional runtime in **Settings → Documents**. Ubuntu needs Python 3 and `python3-venv`. An existing working Frame document runtime already has the required packages.
