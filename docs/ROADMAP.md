@@ -45,12 +45,12 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Paged schema initialization, searchable per-object Markdown knowledge, refresh/cancel, atomic cache publication, obsolete markers, and OKF export outside the normal document quota.
 - Bounded result tables and CSV artifacts. Browser coverage runs through the real Pi SDK with a controlled SQL driver; live SQL Server and local-model acceptance remain to be completed. See [MSSQL](MSSQL.md).
 - Ranked schema search: FTS5 with BM25 over object names, split identifier parts, column names, and descriptions, adjusted by a mechanical importance score, with accent folding and an unranked fallback for caches built before the index.
-- Generated database knowledge: a local model writes per-object notes, subject areas, a glossary, recipes from queries that already ran, and aliases closing recorded search gaps. Output is validated against real column names, stored apart from catalog facts, and labelled with its model and review state. Reading rows from small lookup tables is a separate, default-off setting. Note quality against a real schema and model is unverified.
+- Generated database knowledge: a local model writes per-object notes, subject areas, a glossary, recipes from queries that already ran, and aliases closing recorded search gaps. Output is validated against real column names, stored apart from catalog facts, and labelled with its model and review state. Row sampling was removed by the structural-only knowledge update below. Note quality against a real schema and model is unverified.
 
 ## 0.5.1 — SQL knowledge improvements (implemented)
 
 - Compact catalog pages, incoming references, ranked SQLite FTS search, identifier splitting and Turkish accent folding.
-- Optional local-model object notes, subject areas, glossary, completed-query recipes and default-off lookup sampling.
+- Optional local-model object notes, subject areas, glossary, completed-query recipes (now parameterized, without lookup sampling).
 - Sequential per-object generation with immediate checkpoints, one-term glossary requests, compact subject-area summaries, JSON/non-thinking requests, and bounded context/output recovery.
 - Generation cancellation and bounded requests; review decisions with version checks, rejected alias removal, connection-aware invalidation, and atomic schema publication.
 - Regression tests cover refresh failure, unavailable FTS, multi-database grouping, generation transport limits, and browser review/reject behavior. Live-model interpretation quality still needs acceptance testing.
@@ -82,11 +82,21 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Direct local PDF generation and revisions as separate downloads; bounded rendering and Stop cancellation without partial publication. No MSSQL or host tools required.
 - Plugin settings navigation with retained drafts and a saved-design sample download. API, PDF, and browser coverage through the real SDK with a local mock model. See [Reports](REPORTS.md).
 
+## Knowledge maintenance and incognito (implemented)
+
+- Built-in Settings → Knowledge scheduling with timezone, project selection, active-processing budget, manual run/stop, persisted checkpoints, and chat preemption.
+- Review inbox with selectable publication policy; drafts stay out of retrieval, human verification is explicit, and verified or manually rewritten pages are protected from automatic content updates.
+- Health findings for duplicate content, missing metadata, broken page links, removed/changed evidence, and changed SQL schema generations. No claim of semantic contradiction detection.
+- Sequential bounded conversation learning and metadata enrichment; SQL conversations contribute only parameterized SELECT templates. No result rows, sampled lookup values, chart/CSV data, parameter values, or SQL-derived assistant prose enters automatic learning.
+- Editable OKF discovery metadata, weighted title/tag/alias/description retrieval, and a small relevant-page shortlist for each chat prompt.
+- Incognito transcript/compaction state stays in memory, is excluded from history and learning, and ends on leave/reload/end or heartbeat expiry. Temporary plugin files and records are cleaned up; host tools and permanent uploads are disabled in incognito.
+- Tests cover scheduling, interruption/restart, publishing policies, SQL value exclusion, retrieval, memory-only SDK follow-ups, and browser settings/review/incognito workflows. Real-model knowledge quality remains an acceptance step.
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
 2. **MCP and skills:** choose one maintained MCP integration or narrow adapter; support selected transports, secret references, connectivity tests, explicit trust, project scoping, and cleanup. Install trusted skills only after displaying what code/dependencies will run. Bridge extension dialogs and cancel unsupported interactions. Do not silently auto-approve.
-3. **Knowledge refinements:** full OKF bundle import/round-trip editing, richer source metadata controls, wiki linting for contradictions/broken links, and optional ingestion automation. V1 already supports user-requested synthesis with reviewed proposals; no unattended wiki rewrite engine.
+3. **Knowledge refinements:** full OKF bundle import/round-trip editing, semantic contradiction review, richer dependency tracking, and larger knowledge quotas. Scheduled structural health checks and controlled conversation learning are implemented; no autonomous factual verification.
 4. **Packaging and diagnostics:** repeatable Ubuntu installer/uninstaller, dependency checks, sanitized diagnostics, admin password/token rotation, backup/restore commands, and signed versioned releases. Avoid unattended self-updates.
 
 ## V2 — Multi-user organizational deployment

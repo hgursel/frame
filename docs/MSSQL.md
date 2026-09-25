@@ -71,9 +71,7 @@ The run makes several passes, most prominent objects first, so it is useful befo
 - **Subject areas.** The foreign-key graph is split into connected components and each is named and
   summarized, so a thousand peer tables become a few dozen navigable areas.
 - **Glossary.** Name fragments the schema repeats at least three times are defined once.
-- **Recipes.** Read statements that already completed against this database are recorded with the
-  question the model thinks they answer. Successful execution is evidence of valid syntax and permissions, not proof of business correctness.
-- **Lookup values.** Optional and off by default; see below.
+- **Recipes.** Supported completed SELECT statements become parameterized templates with structural labels. Literal values, original aliases, comments, parameter values, and results are excluded; no model request is used to summarize raw SQL. Unsupported syntax is skipped. Successful execution is not proof of business correctness.
 - **Vocabulary gaps.** Searches that returned nothing are recorded. A later run asks which known
   object each missing word names and, when the answer is a real object, adds it as an alias so the
   next search finds it.
@@ -104,19 +102,11 @@ running in any project. An in-flight request finishes or times out before the pa
 
 Generation requests use llama.cpp's [JSON output and non-thinking options](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#post-v1chatcompletions-openai-compatible-chat-completions-api); normal chat reasoning is unchanged. Each item has a two-minute total timeout, a 1 MB response limit, and an input excerpt capped at 8 KiB and further reduced to fit the configured context window. A truncated answer can retry with the configured output allowance; a context rejection retries with a smaller excerpt and output reservation. There are at most three attempts per item. These retries only regenerate a note; they do not replay SQL or agent tasks. If a context error persists, set Frame's context window to the actual llama.cpp per-slot capacity. Output exhaustion is reported separately and names the effective token limit. Model errors stop the job visibly and retain completed notes.
 
-### Reading rows from lookup tables
+### Structural knowledge only
 
-**Allow enrichment to read rows from small lookup tables** is off by default and controls only the enrichment sampling pass. Ordinary SQL queries can read business data independently through the read login; this switch does not disable them.
+Knowledge generation never samples business rows. The former lookup sampling option is removed and old enabled settings are ignored. Existing generated lookup pages and legacy query recipes are retired from retrieval and exports on upgrade; historical database records, previous exports, and manually written wiki pages are not erased. Regenerate database knowledge to create sanitized recipes.
 
-When enabled, the lookup-value pass reads up to 50 rows, through the read login, from tables that
-are referenced by at least one other table and have 500 rows or fewer, and asks the model what the
-coded values mean. This exists because models reliably guess `WHERE Status = 'Active'` against a
-`tinyint` code column; decoding the codes fixes a whole class of wrong queries.
-
-The sampled values are stored in generated knowledge pages, appear in the OKF export, and are shown
-to the model in later conversations. Do not enable it against tables holding personal or otherwise
-sensitive data. Frame does not classify or mask what it reads, and the row limits are a bound on
-volume, not a judgment about content.
+Incognito queries are excluded from recipes and vocabulary-gap learning. Regular query execution and CSV downloads still work: this restriction applies to learned knowledge, not to asking questions about current data. Nightly [Knowledge maintenance](KNOWLEDGE_MAINTENANCE.md) also learns sanitized query templates without reading results, CSVs, charts, or assistant summaries from SQL conversations.
 
 Small models receive five focused tools: `mssql_schema_search`, `mssql_schema_read`, `mssql_knowledge_search`, `mssql_query`, and `mssql_procedure`. Search returns at most 20 ranked objects, each with a one-line summary so the model can triage without a read; reads return up to 8,000 characters with a continuation offset. Metadata discovery is not repeated for every question, and the full schema is never inserted into the prompt. Ask the model to search for relevant tables and read their columns/relationships before composing a query. Put domain explanations in reviewed Markdown business notes. Treat database descriptions and result values as reference data, not instructions.
 
@@ -130,7 +120,7 @@ Stop cancels the driver request and connection. A read hitting its row/byte limi
 
 ## Validation and remaining acceptance
 
-Automated tests cover policy rejection, secret redaction, project gating, approval identity and single use, denial/cancellation, uncertain write outcomes, 1,105-object metadata initialization, failed refresh preservation, OKF export, ranked search ordering, identifier splitting, FTS operator neutrality, index/row consistency across refreshes, the unranked fallback for an unindexed cache, enrichment output validation against real column names, note survival across a schema refresh, idempotent re-runs, enrichment authentication and project scoping, the default-off value-sampling gate, vocabulary-gap alias creation, model-failure handling, chat preemption, and cancellation. A browser test uses the real compiled Frame server and Pi SDK worker with a controlled local model and SQL driver to exercise settings, cached schema tools, result rendering, approval, denial, and Stop.
+Automated tests cover policy rejection, secret redaction, project gating, approval identity and single use, denial/cancellation, uncertain write outcomes, 1,105-object metadata initialization, failed refresh preservation, OKF export, ranked search ordering, identifier splitting, FTS operator neutrality, index/row consistency across refreshes, the unranked fallback for an unindexed cache, enrichment output validation against real column names, note survival across a schema refresh, idempotent re-runs, enrichment authentication and project scoping, the prohibition on value sampling, vocabulary-gap alias creation, model-failure handling, chat preemption, and cancellation. A browser test uses the real compiled Frame server and Pi SDK worker with a controlled local model and SQL driver to exercise settings, cached schema tools, result rendering, approval, denial, and Stop.
 
 These are not live SQL Server or llama.cpp acceptance tests. Enrichment is tested with a controlled generator, not a real llama.cpp model: the quality of generated notes on your schema is unverified and must be judged by reading them. Before use, verify your SQL Server version, TLS chain, both logins' permissions, actual catalog visibility, supported queries, selected procedure signatures, and cancellation behavior against disposable development data. Verify tool calling with your local model/template.
 

@@ -26,6 +26,8 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 
 - **Bring your documents.** Upload Markdown, TXT, CSV, PDF, and DOCX files. Attach sources to a conversation or ask Frame to search the project's knowledge.
 - **Keep useful answers.** Use **Useful → Save to knowledge** on answers and tool results. Review a new Markdown page or an update before saving it.
+- **Maintain knowledge on your schedule.** Run nightly health checks and learn reusable procedures, calculation rules, and parameterized SQL templates from completed chats. Choose review-first or automatic publishing; SQL results never become learned knowledge.
+- **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
 - **Keep the history.** Knowledge pages include revisions and provenance. Export a portable **Open Knowledge Format 0.2** bundle with an index and change log.
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
@@ -73,7 +75,7 @@ Set organization defaults and optional project overrides. Ask for a report direc
 | Rich answers         | Read Markdown tables, code blocks, and locally rendered Mermaid diagrams.                                         |
 | Context visibility   | See context usage and observed tokens/second; use automatic compaction or create a manual checkpoint.             |
 | Document generation  | Generate all PDFs with Reports; Word/DOCX generation remains available through trusted document tools. |
-| Conversation control | Resume saved chats, stop active tasks, and remove conversations or entire projects with confirmation.             |
+| Conversation control | Resume saved chats, use incognito chats excluded from history and learning, stop active tasks, and remove conversations or entire projects with confirmation.             |
 | Everyday interface   | Use light/dark appearance, conversation search, attachments, and mobile navigation.                               |
 
 ## Try asking Frame
@@ -125,6 +127,7 @@ For access from another computer, follow the [HTTPS reverse-proxy or SSH-tunnel 
 | Guide                                  | Covers                                                                          |
 | -------------------------------------- | ------------------------------------------------------------------------------- |
 | [Knowledge](docs/KNOWLEDGE.md)         | Uploads, reviewed updates, Markdown pages, OKF export, and Python documents     |
+| [Knowledge maintenance](docs/KNOWLEDGE_MAINTENANCE.md) | Scheduling, publishing policies, health checks, SQL privacy, and incognito chats |
 | [MSSQL](docs/MSSQL.md)                 | Connection setup, SQL permissions, approvals, and schema knowledge              |
 | [Reports](docs/REPORTS.md)             | Branded PDF layouts, project overrides, chart/table sources, and local rendering |
 | [Charts](docs/CHARTS.md)               | Chart types, dataset limits, exports, and saved snapshots                       |

@@ -104,6 +104,11 @@ export function deleteWorkspaceData(
         store.db.prepare('DELETE FROM mssql_operations WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM runs WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM meta WHERE key=?').run(`metrics:${c.id}`);
+        store.db
+          .prepare("DELETE FROM maintenance_candidates WHERE json_extract(payload,'$.sourceId')=?")
+          .run(c.id);
+        store.db.prepare('DELETE FROM maintenance_processed WHERE sourceId=?').run(c.id);
+        runner.ephemeral.delete(c.id);
         store.db.prepare('DELETE FROM conversations WHERE id=?').run(c.id);
       }
       if (!conversationId) {
@@ -114,6 +119,9 @@ export function deleteWorkspaceData(
             )
             .run(projectId);
         for (const table of [
+          'maintenance_candidates',
+          'maintenance_processed',
+          'maintenance_findings',
           'knowledge_revisions',
           'documents',
           'project_plugins',
@@ -128,6 +136,12 @@ export function deleteWorkspaceData(
         ])
           store.db.prepare(`DELETE FROM ${table} WHERE projectId=?`).run(projectId);
         store.db.prepare('DELETE FROM projects WHERE id=?').run(projectId);
+        const settings = store.meta('maintenance-settings');
+        if (settings) {
+          const value = JSON.parse(settings);
+          value.projectIds = value.projectIds.filter((id: string) => id !== projectId);
+          store.setMeta('maintenance-settings', JSON.stringify(value));
+        }
       }
       store.setMeta(key, JSON.stringify({ ...journal, committed: true }));
       store.db.exec('COMMIT');

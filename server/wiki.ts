@@ -1,3 +1,4 @@
+import type { DiscoveryMetadata } from '../shared/maintenance.js';
 import { randomUUID } from 'node:crypto';
 import { writeFile, readdir, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -30,6 +31,14 @@ export class Wiki {
       verified?: boolean;
       evidence?: object;
       sourceIds?: string[];
+      discovery?: DiscoveryMetadata;
+      maintenance?: {
+        fingerprint: string;
+        sourceConversation?: string;
+        sourceRevision?: string;
+        schemaRevision?: string;
+        contentRevision?: string;
+      };
     } = {},
   ) {
     const doc = await this.knowledge.read(projectId, id);
@@ -39,8 +48,17 @@ export class Wiki {
       ...previous,
       type: previous.type || (doc.kind === 'wiki' ? 'Knowledge Note' : 'Reference'),
       title: doc.name.replace(/\.md$/i, ''),
-      description: doc.text.replace(/\s+/g, ' ').slice(0, 160),
-      frame: { kind: doc.kind, extraction_truncated: doc.truncated },
+      description:
+        options.discovery?.description ||
+        previous.description ||
+        doc.text.replace(/\s+/g, ' ').slice(0, 160),
+      frame: {
+        ...previous.frame,
+        kind: doc.kind,
+        extraction_truncated: doc.truncated,
+        ...(options.discovery ? { ...options.discovery, description: undefined } : {}),
+        ...(options.maintenance ? { maintenance: options.maintenance } : {}),
+      },
       generated: {
         by:
           options.generatedBy ||
@@ -56,7 +74,11 @@ export class Wiki {
     for (const sourceId of options.sourceIds || []) {
       this.knowledge.get(projectId, sourceId);
       if (sourceId !== id && !metadata.sources.some((s: any) => s.resource === `/${sourceId}.md`))
-        metadata.sources.push({ id: `document-${sourceId}`, resource: `/${sourceId}.md` });
+        metadata.sources.push({
+          id: `document-${sourceId}`,
+          resource: `/${sourceId}.md`,
+          revision: this.knowledge.get(projectId, sourceId).revision,
+        });
     }
     if (options.evidence) {
       const name = `evidence-${randomUUID()}.json`;
@@ -189,7 +211,10 @@ export class Wiki {
         name: doc.name,
         revision: (await this.knowledge.read(projectId, doc.id)).revision,
         text: await this.concept(projectId, doc.id),
-        description: String(this.metadata(doc.id).description || '').slice(0, 160),
+        description: String(this.metadata(doc.id).description || '').slice(0, 600),
+        tags: this.metadata(doc.id).frame?.tags || [],
+        aliases: this.metadata(doc.id).frame?.aliases || [],
+        verified: !!this.metadata(doc.id).verified?.length,
       });
     return entries;
   }

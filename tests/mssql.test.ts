@@ -513,7 +513,7 @@ test('Schema enrichment validates model output, survives refresh, and never over
   }
 });
 
-test('Value sampling is off by default, and vocabulary gaps become searchable aliases', async () => {
+test('Knowledge never samples result values, and vocabulary gaps become searchable aliases', async () => {
   const f = await fixture();
   try {
     f.mssql.save(config);
@@ -539,12 +539,9 @@ test('Value sampling is off by default, and vocabulary gaps become searchable al
     f.mssql.notes.start(f.project.id, sampling);
     await f.mssql.notes.jobs.get(f.project.id)!.done;
     const samples = f.driver.calls.filter((c) => /SELECT TOP \(50\)/.test(c.command.sql || ''));
-    assert(samples.length > 0);
-    assert(samples.every((c) => c.login === 'read'));
-    assert.match(
-      String(f.mssql.notes.search(f.project.id, '', 'codes').pages[0]?.body),
-      /1 = open/,
-    );
+    assert.equal(samples.length, 0);
+    assert.equal(f.mssql.settings().allowValueSampling, false);
+    assert.equal(f.mssql.notes.search(f.project.id, '', 'codes').pages.length, 0);
 
     // An unanswered search becomes an alias on the object the model identifies.
     await f.mssql.invoke(f.conversation.id, randomUUID(), 'schema_search', { query: 'fatura' });

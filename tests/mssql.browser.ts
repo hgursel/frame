@@ -316,6 +316,8 @@ try {
     await expect(card).not.toContainText('SQL snapshot');
     await expect(card).not.toContainText('Hover or focus a point');
     await expect(card.getByRole('button', { name: 'Download PNG' })).toHaveCount(0);
+    // Let the final chat snapshot settle before hovering a point that can move during streaming.
+    await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible();
     await card.locator('svg [tabindex="0"]').first().hover();
     await expect(card.locator('.chart-hover')).not.toHaveText('');
     const toggle = card.getByRole('button', {

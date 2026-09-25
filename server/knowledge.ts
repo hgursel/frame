@@ -82,7 +82,13 @@ export class Knowledge {
       await file.close();
     }
   }
-  async add(projectId: string, name: string, content: Buffer, kind: 'upload' | 'wiki' = 'upload') {
+  async add(
+    projectId: string,
+    name: string,
+    content: Buffer,
+    kind: 'upload' | 'wiki' = 'upload',
+    reservedId?: string,
+  ) {
     if (
       !name ||
       name.length > 180 ||
@@ -100,6 +106,11 @@ export class Knowledge {
       throw fail('Files must contain data and be no larger than 10 MiB.', 413);
     const existing = this.list(projectId);
     if (
+      reservedId &&
+      (!/^[a-f0-9-]{36}$/.test(reservedId) || existing.some((d) => d.id === reservedId))
+    )
+      throw fail('Invalid reserved document identity.');
+    if (
       existing.length >= 100 ||
       existing.reduce((sum, d) => sum + d.bytes, 0) + content.length > 100 * 1024 * 1024
     )
@@ -109,7 +120,7 @@ export class Knowledge {
     if (extension === '.docx' && content.subarray(0, 2).toString() !== 'PK')
       throw fail('This file is not a DOCX.');
     const doc: KnowledgeDocument = {
-      id: randomUUID(),
+      id: reservedId || randomUUID(),
       projectId,
       name,
       kind,

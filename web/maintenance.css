@@ -1,0 +1,67 @@
+.maintenance-panel {
+  max-width: 850px;
+}
+.maintenance-panel form,
+.knowledge-metadata form {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0;
+}
+.maintenance-panel label,
+.knowledge-metadata label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.maintenance-panel .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.maintenance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.maintenance-panel select,
+.knowledge-metadata select {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--canvas);
+  width: 100%;
+}
+.maintenance-panel h3 {
+  margin-top: 28px;
+}
+.maintenance-run,
+.maintenance-draft,
+.knowledge-metadata {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.maintenance-draft summary,
+.knowledge-metadata summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.maintenance-draft .rich-markdown {
+  max-height: 400px;
+  overflow: auto;
+}
+.incognito-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  color: var(--subtle);
+}
