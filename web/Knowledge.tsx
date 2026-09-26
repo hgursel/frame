@@ -1,3 +1,4 @@
+import { KnowledgeLibraryPanel } from './Library.js';
 import { KnowledgeMetadata } from './Maintenance.js';
 import { SqlKnowledge } from './Plugins.js';
 import React, { useEffect, useState, useRef } from 'react';
@@ -139,6 +140,7 @@ export function KnowledgePanel({
           ↓ Export OKF bundle
         </a>
       </div>
+      <KnowledgeLibraryPanel projectId={projectId} readOnly />
       <SqlKnowledge projectId={projectId} />
       <div className="knowledge-actions">
         <label className="upload-button">

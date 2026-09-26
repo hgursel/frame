@@ -1,3 +1,4 @@
+import { KnowledgeLibrary, libraryApi } from './library/service.js';
 import { recall, validSqlMethod } from './maintenance/recall.js';
 import { Incognito } from './incognito.js';
 import { Maintenance } from './maintenance/service.js';
@@ -86,6 +87,7 @@ export async function createApp(options: {
   const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
   const python = new PythonRuntime(store.root);
   const knowledge = new Knowledge(store, python);
+  const library = new KnowledgeLibrary(store);
   const charts = new ChartsPlugin(store, knowledge);
   mssql.captureChartData = (conversation, operation, database, result) => {
     const project = store.conversation(conversation)?.projectId;
@@ -338,7 +340,7 @@ export async function createApp(options: {
           store.settings().contextWindow,
         );
         const runtime = project.toolsEnabled ? await python.status() : undefined;
-        const catalog = await wiki.catalog(project.id);
+        const catalog = [...(await wiki.catalog(project.id)), ...library.catalog(project.id)];
         const recent =
           runner
             .snapshot(id)
@@ -460,6 +462,7 @@ export async function createApp(options: {
   );
   maintenanceApi(app, maintenance);
   knowledgeApi(app, knowledge, wiki, runner);
+  libraryApi(app, library, runner, knowledge);
   mssqlApi(app, mssql, runner);
   projectPluginsApi(app, runner, mssql, charts, reports);
   reportsApi(app, reports, runner);
@@ -493,6 +496,7 @@ export async function createApp(options: {
     store,
     runner,
     knowledge,
+    library,
     wiki,
     python,
     mssql,

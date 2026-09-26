@@ -42,7 +42,7 @@ function Activity({
   const failures = steps.filter(({ message }) => message.failed).length;
   const label =
     status ||
-    (!steps.length && memory?.length ? 'View activity · Project memory' : undefined) ||
+    (!steps.length && memory?.length ? 'View activity · References' : undefined) ||
     `View activity · ${steps.length} ${steps.length === 1 ? 'step' : 'steps'}`;
   return (
     <details
@@ -78,7 +78,25 @@ function Activity({
       >
         {!!memory?.length && (
           <div className="memory-reference">
-            Project memory supplied: {memory.map((m) => m.title).join(' · ')}
+            References supplied:{' '}
+            {memory.map((m, i) => (
+              <React.Fragment key={m.id}>
+                {i > 0 && ' · '}
+                {m.url ? (
+                  <button
+                    type="button"
+                    className="text-link"
+                    onClick={() =>
+                      window.dispatchEvent(new CustomEvent('frame-library-page', { detail: m.url }))
+                    }
+                  >
+                    {m.title}
+                  </button>
+                ) : (
+                  m.title
+                )}
+              </React.Fragment>
+            ))}
             <br />
             Manage methods in Settings → Knowledge.
           </div>

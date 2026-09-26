@@ -1,3 +1,4 @@
+import type { LibraryReference } from '../shared/library.js';
 import { z } from 'zod';
 import type { WorkerInput } from '../shared/types.js';
 export const discoverySchema = z.object({
@@ -80,6 +81,7 @@ export function knowledgeContext(
     verified: boolean;
     truncated: boolean;
     method: boolean;
+    library?: LibraryReference;
   }[] = [];
   const budget = Math.min(12000, Math.floor(contextWindow / 2));
   for (const { doc, score } of rankKnowledge(documents, query)) {
@@ -92,6 +94,7 @@ export function knowledgeContext(
       verified: !!doc.verified,
       truncated: doc.text.length > 4500,
       method: !!doc.method,
+      ...(doc.library ? { library: doc.library } : {}),
     };
     if (Buffer.byteLength(JSON.stringify([...pages, page])) > budget) continue;
     pages.push(page);

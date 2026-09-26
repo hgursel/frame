@@ -53,3 +53,7 @@ Organization proxies and pip index/certificate settings are passed to the instal
 PDF/DOCX extraction works with host tools disabled. All PDF generation uses the [Reports plugin](REPORTS.md), enabled globally and for the project. For Word documents, enable the project's trusted host tools and ask the model to call `create_document`. That tool accepts DOCX only, with a title, filename, and a small Markdown subset: headings, paragraphs, and bullets. Other syntax is treated literally; it does not execute HTML or code. The former plain Markdown-to-PDF generator has been removed; legacy PDF calls are rejected with instructions to use Reports.
 
 Both generators publish only complete files and refuse to overwrite an existing filename. The completed PDF or DOCX appears in the conversation's download list. Other Python scripts can use the `FRAME_PYTHON` interpreter and `PI_ARTIFACT_DIR`, but arbitrary scripts do not inherit the managed generator's publication or resource guarantees.
+
+## Shared legal and HR references
+
+Install versioned starter packs in **Settings → Knowledge Library**, then attach them in **Project settings → Library references**. These read-only briefs and workflows participate in chat retrieval but stay separate from uploaded documents, authored OKF pages, and learned memory. See [Knowledge Library](KNOWLEDGE_LIBRARY.md) for contents, citations, updates, and limitations.

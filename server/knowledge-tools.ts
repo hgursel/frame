@@ -29,11 +29,12 @@ export function knowledgeTools(
                 total: matches.length,
                 pages: matches
                   .slice(offset, offset + 10)
-                  .map(({ id, name, revision, description }) => ({
+                  .map(({ id, name, revision, description, library }) => ({
                     id,
                     name,
                     revision,
                     description,
+                    library,
                   })),
                 nextOffset: offset + 10 < matches.length ? offset + 10 : null,
               }),
@@ -66,6 +67,7 @@ export function knowledgeTools(
                 id: doc.id,
                 name: doc.name,
                 revision: doc.revision,
+                library: doc.library,
                 text: doc.text.slice(offset, end),
                 nextOffset: end < doc.text.length ? end : null,
               }),
@@ -90,7 +92,8 @@ export function knowledgeTools(
         if (
           args.targetId &&
           !documents.some(
-            (d) => d.id === args.targetId && d.revision === args.revision && !d.method,
+            (d) =>
+              d.id === args.targetId && d.revision === args.revision && !d.method && !d.library,
           )
         )
           throw new Error('Read the current target page before proposing an update.');

@@ -81,6 +81,7 @@ export const RichMarkdown = React.memo(function RichMarkdown({ text, streaming =
   return <div className="rich-markdown"><Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
     img: () => <span className="muted">[External image omitted]</span>,
     a: ({ href, children }) => {
+      if (href && /^\/api\/library\/packs\/[a-z0-9-]+\/\d+\.\d+\.\d+\/pages\/[a-z0-9-]+$/.test(href)) return <button type="button" className="text-link" onClick={() => window.dispatchEvent(new CustomEvent('frame-library-page', {detail:href}))}>{children}</button>;
       const id = href?.match(/^(?:\/|\.\/)?([a-f0-9-]{36})\.md(?:#.*)?$/)?.[1];
       return id && onOpen
         ? <button type="button" className="text-link" onClick={() => onOpen(id)}>{children}</button>

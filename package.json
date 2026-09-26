@@ -12,7 +12,7 @@
     "build": "tsc --noEmit && vite build && tsc -p tsconfig.server.json",
     "start": "node --env-file-if-exists=.env dist/server/index.js",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:ui": "node --import tsx tests/browser.smoke.ts && node --import tsx tests/mssql.browser.ts && node --import tsx tests/reports.browser.ts && node --import tsx tests/maintenance.browser.ts",
+    "test:ui": "node --import tsx tests/browser.smoke.ts && node --import tsx tests/mssql.browser.ts && node --import tsx tests/reports.browser.ts && node --import tsx tests/maintenance.browser.ts && node --import tsx tests/library.browser.ts",
     "check": "tsc --noEmit",
     "python:setup": "node --env-file-if-exists=.env --import tsx server/setup-python.ts"
   },
