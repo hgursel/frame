@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, readFile, readdir } from 'node:fs/promises';
+import { rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
+import { appFixture } from './helpers.js';
 import { learningUnits, queryTemplate } from '../server/maintenance/extraction.js';
 import { localSchedule } from '../server/maintenance/service.js';
 import { rankKnowledge } from '../server/knowledge-discovery.js';
@@ -21,13 +21,7 @@ const note = {
   },
 };
 async function fixture(generator: any = { complete: async () => JSON.stringify(note) }) {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-maintenance-'));
-  const ctx = await createApp({
-    dataDir: root,
-    origin: 'http://127.0.0.1:3000',
-    setupToken: 'maintenance-test',
-    generator,
-  });
+  const ctx = await appFixture('maintenance', { generator });
   const project = ctx.store.createProject({ name: 'Test', instructions: '', toolsEnabled: false });
   ctx.maintenance.save({ ...ctx.maintenance.settings(), projectIds: [project.id] });
   const conversation = ctx.store.createConversation(project.id);
@@ -59,18 +53,7 @@ async function fixture(generator: any = { complete: async () => JSON.stringify(n
         break;
     }
   };
-  return {
-    ...ctx,
-    root,
-    project,
-    conversation,
-    history,
-    run,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { recursive: true, force: true });
-    },
-  };
+  return { ...ctx, project, conversation, history, run };
 }
 test('SQL templates remove strings, numeric values, aliases and parameter names; unsupported SQL fails closed', () => {
   const result = queryTemplate(
@@ -491,25 +474,14 @@ test('restart recovers a paused job and deletes abandoned incognito tool files a
     await rm(f.root, { recursive: true, force: true });
   }
 });
-test('maintenance APIs enforce authentication and incognito is excluded from listing and knowledge saves', async () => {
+test('incognito is excluded from listing and knowledge saves', async () => {
   const f = await fixture();
-  const headers = { host: '127.0.0.1:3000', origin: 'http://127.0.0.1:3000' };
   try {
-    assert.equal((await f.app.inject({ url: '/api/maintenance', headers })).statusCode, 401);
-    await f.app.inject({
-      url: '/api/auth/setup',
-      method: 'POST',
-      headers,
-      payload: { token: 'maintenance-test', password: 'maintenance-password' },
-    });
-    const login = await f.app.inject({
-      url: '/api/auth/login',
-      method: 'POST',
-      headers,
-      payload: { password: 'maintenance-password' },
-    });
-    const cookie = String(login.headers['set-cookie']).split(';')[0]!;
-    const auth = { ...headers, cookie };
+    const auth = {
+      host: '127.0.0.1:3000',
+      origin: 'http://127.0.0.1:3000',
+      cookie: await f.signIn(),
+    };
     const operation = randomUUID();
     f.store.db
       .prepare('INSERT INTO mssql_operations(id,conversationId,kind,sql,status) VALUES (?,?,?,?,?)')

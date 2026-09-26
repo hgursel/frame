@@ -1,51 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, readFile, mkdir, readdir, chmod } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, readdir, chmod } from 'node:fs/promises';
 import path from 'node:path';
-import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { createApp } from '../server/app.js';
+import { appFixture } from './helpers.js';
 import { reportMarkdown } from '../server/plugins/reports/markdown.js';
 import { reportCommand } from '../server/python.js';
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-reports-'));
-  const ctx = await createApp({
-    dataDir: root,
-    origin: 'http://127.0.0.1:3000',
-    setupToken: 'test',
-  });
-  const req = (url: string, method = 'GET', payload?: unknown, cookie = '') =>
-    ctx.app.inject({
-      url: '/api' + url,
-      method: method as any,
-      payload: payload as any,
-      headers: { host: '127.0.0.1:3000', origin: 'http://127.0.0.1:3000', cookie },
-    });
-  await req('/auth/setup', 'POST', { token: 'test', password: 'test-password-12345' });
-  const login = await req('/auth/login', 'POST', { password: 'test-password-12345' });
-  const cookie = String(login.headers['set-cookie']).split(';')[0]!;
-  const auth = (url: string, method = 'GET', payload?: unknown) =>
-    req(url, method, payload, cookie);
+  const ctx = await appFixture('reports');
+  await ctx.signIn();
   const project = ctx.store.createProject({
     name: 'Reports',
     instructions: '',
     toolsEnabled: false,
   });
   const conversation = ctx.store.createConversation(project.id);
-  return {
-    ...ctx,
-    root,
-    project,
-    conversation,
-    req,
-    auth,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { force: true, recursive: true });
-    },
-  };
+  return { ...ctx, project, conversation };
 }
 const info = (python: string, file: string) =>
   JSON.parse(
@@ -194,13 +166,11 @@ test(
 );
 
 test(
-  'Reports settings are authenticated, inherit per field, preserve plugin switches, and normalize logos',
+  'Reports settings inherit per field, preserve plugin switches, and normalize logos',
   { skip: !process.env.FRAME_PYTHON },
   async () => {
     const f = await fixture();
     try {
-      assert.equal((await f.req('/plugins/reports')).statusCode, 401);
-      assert.equal((await f.req('/plugins/reports/sample', 'POST', {})).statusCode, 401);
       const base = f.reports.profile();
       // Upgrade existing organization and project profiles without losing their design.
       f.store.setMeta(
@@ -487,7 +457,6 @@ test(
       assert.notEqual(first.name, second.name);
       const file = path.join(f.store.artifacts(f.conversation), first.name);
       assert.match(info(f.python.executable, file).text, /North/);
-      assert.equal((await f.req(`/conversations/${id}/artifacts/${first.name}`)).statusCode, 401);
       assert.equal((await f.auth(`/conversations/${id}/artifacts/${first.name}`)).statusCode, 200);
       // A saved chart can be included even after Charts has been disabled.
       f.store.setMeta('charts:enabled', 'true');

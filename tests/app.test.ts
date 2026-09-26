@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createServer, get } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
+import { apiRoutes, appFixture, origin, waitUntil } from './helpers.js';
 import { deleteWorkspaceData } from '../server/deletion.js';
 import { readHistory, displayMessages } from '../server/history.js';
 import { applyUpdate } from '../web/snapshots.js';
@@ -14,7 +15,6 @@ import YAML from 'yaml';
 import { documentCommand } from '../server/python.js';
 import { SessionManager } from '@earendil-works/pi-coding-agent';
 
-const origin = 'http://127.0.0.1:3000';
 test('reasoning projection handles structured and tagged streams without animating history', () => {
   const message = {
     role: 'assistant',
@@ -90,48 +90,38 @@ test('production static UI is served with security headers', async () => {
   }
 });
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-app-test-'));
-  const ctx = await createApp({ dataDir: root, origin, setupToken: 'test-setup-token' });
-  const call = (url: string, method = 'GET', payload?: unknown, token = '') =>
-    ctx.app.inject({
-      url: `/api${url}`,
-      method: method as any,
-      payload: payload as any,
-      headers: { host: '127.0.0.1:3000', origin, ...(token ? { cookie: token } : {}) },
-    });
-  const setup = await call('/auth/setup', 'POST', {
-    token: 'test-setup-token',
-    password: 'test-password-12345',
-  });
-  assert.equal(setup.statusCode, 200);
-  const login = await call('/auth/login', 'POST', { password: 'test-password-12345' });
-  const token = String(login.headers['set-cookie']).split(';')[0]!;
-  const auth = (url: string, method = 'GET', payload?: unknown) =>
-    call(url, method, payload, token);
-  return {
-    ...ctx,
-    root,
-    call,
-    auth,
-    token,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { recursive: true, force: true });
-    },
-  };
+  const f = await appFixture('app');
+  await f.signIn();
+  return f;
 }
 
 test('authentication, origin checks, settings secrecy, and project boundaries', async () => {
   const f = await fixture();
   try {
-    assert.equal((await f.call('/projects')).statusCode, 401);
-    const blocked = await f.app.inject({
-      method: 'POST',
+    // Every API route, including plugin routes added later, requires a session and same-origin writes.
+    const routes = apiRoutes(f.app);
+    assert(routes.length > 60, `Only ${routes.length} routes found`);
+    const open = ['/api/auth/status', '/api/auth/setup', '/api/auth/login'];
+    for (const { method, url } of routes) {
+      const headers = { host: '127.0.0.1:3000', origin };
+      if (!open.includes(url)) {
+        const anonymous = await f.app.inject({ method: method as any, url, headers });
+        assert.equal(anonymous.statusCode, 401, `${method} ${url} without a session`);
+      }
+      if (method !== 'GET') {
+        const foreign = await f.app.inject({
+          method: method as any,
+          url,
+          headers: { ...headers, origin: 'https://evil.test', cookie: f.token },
+        });
+        assert.equal(foreign.statusCode, 403, `${method} ${url} from another origin`);
+      }
+    }
+    const crossSite = await f.app.inject({
       url: '/api/projects',
-      headers: { host: '127.0.0.1:3000', origin: 'https://evil.test', cookie: f.token },
-      payload: { name: 'No' },
+      headers: { host: '127.0.0.1:3000', cookie: f.token, 'sec-fetch-site': 'cross-site' },
     });
-    assert.equal(blocked.statusCode, 403);
+    assert.equal(crossSite.statusCode, 403);
     assert.equal(
       (await f.app.inject({ url: '/api/auth/status', headers: { host: 'evil.test' } })).statusCode,
       403,
@@ -183,13 +173,6 @@ test('authentication, origin checks, settings secrecy, and project boundaries', 
   }
 });
 
-async function waitUntil(test: () => boolean, timeout = 25000) {
-  const end = Date.now() + timeout;
-  while (!test()) {
-    if (Date.now() > end) throw new Error('Timed out waiting for agent');
-    await new Promise((resolve) => setTimeout(resolve, 30));
-  }
-}
 
 test(
   'SDK compaction checkpoints preserve history, resume once, expose usage and throughput, and survive failure/cancellation',
@@ -282,10 +265,6 @@ test(
       const c = seed();
       const original = readHistory(f.store.sessionFile(c.id));
       const id = randomUUID();
-      assert.equal(
-        (await f.call(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).statusCode,
-        401,
-      );
       assert.equal(
         (await f.auth(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).statusCode,
         202,
@@ -750,7 +729,6 @@ test(
       const observed = f.runner.snapshot(stopChat.id);
       assert.equal(observed.runId, stopRun);
       assert(f.runner.snapshot(stopChat.id).revision! > observed.revision!);
-      assert.equal((await f.call(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 401);
       assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: randomUUID() })).statusCode, 409);
       assert.equal(f.runner.active.get(stopChat.id)?.stopRequested, false);
       assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 200);
@@ -800,7 +778,6 @@ test('uploads, OKF export, reviewed conversation updates, revisions, and project
           Buffer.from('\r\n--frame-test--\r\n'),
         ]),
       });
-    assert.equal((await upload('private.md', Buffer.from('x'), '')).statusCode, 401);
     assert.equal((await upload('payload.exe', Buffer.from('x'))).statusCode, 400);
     assert.equal((await upload('bad.txt', Buffer.from([255, 255]))).statusCode, 400);
     assert.equal((await upload('not.pdf', Buffer.from('not a PDF'))).statusCode, 400);
@@ -1185,7 +1162,6 @@ test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and ro
     const create = async (name: string) => (await f.auth('/projects/' + p.id + '/wiki', 'POST', { name, text: '# Source\n\nA retained fact.' })).json();
     const doc = await create('Temporary page');
     const endpoint = '/projects/' + p.id + '/documents/' + doc.id;
-    assert.equal((await f.call(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 401);
     assert.equal((await f.auth('/projects/' + other.id + '/documents/' + doc.id, 'DELETE', { revision: doc.revision })).statusCode, 404);
     assert.equal((await f.auth(endpoint, 'DELETE', { revision: '0'.repeat(64) })).statusCode, 409);
     f.knowledge.locks.add(p.id);
