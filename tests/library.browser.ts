@@ -12,7 +12,7 @@ const model = createServer(async (req, res) => {
   received = JSON.parse(raw);
   res.writeHead(200, { 'Content-Type': 'text/event-stream' });
   const answer =
-    'Review the leave policy using [Paid Sick Leave](/api/library/packs/california-hr/1.0.0/pages/sick-leave). Confirm schedule and location first.';
+    'Review the leave policy using [Paid Sick Leave](/api/library/packs/california-hr/1.1.0/pages/sick-leave). Confirm schedule and location first.';
   res.end(
     'data: ' +
       JSON.stringify({
@@ -43,6 +43,9 @@ ctx.store.saveSettings({
   modelId: 'local-test',
   baseUrl: `http://127.0.0.1:${(model.address() as any).port}/v1`,
 });
+// Exercise upgrading a project that already uses the released HR v1.0 pack.
+ctx.library.install(ctx.library.get('california-hr', '1.0.0'));
+ctx.library.attach(project.id, 'california-hr', '1.0.0', null);
 let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
 try {
   await ctx.app.listen({ host: '127.0.0.1', port: 31880 });
@@ -61,10 +64,19 @@ try {
   await page.getByRole('tab', { name: 'Knowledge Library', exact: true }).click();
   const hr = page
     .locator('.library-card')
-    .filter({ has: page.getByRole('heading', { name: 'California HR Essentials' }) });
+    .filter({
+      has: page.getByRole('heading', { name: 'California HR Essentials' }),
+      hasText: 'v1.1.0',
+    });
   const contracts = page
     .locator('.library-card')
     .filter({ has: page.getByRole('heading', { name: 'Business Contract Review' }) });
+  for (const title of [
+    'Workplace Investigations',
+    'Performance Reviews & Improvement Plans',
+    'Commercial Leases',
+  ])
+    await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
   await hr.getByRole('button', { name: 'Install pack' }).click();
   await expect(hr.getByRole('button', { name: 'Installed', exact: true })).toBeDisabled();
   await contracts.getByRole('button', { name: 'Install pack' }).click();
@@ -87,8 +99,10 @@ try {
     await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.getByLabel('Project menu: People and Contracts').click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
-  await hr.getByRole('button', { name: 'Attach to project' }).click();
+  assert.equal(ctx.library.attachments(project.id)[0].version, '1.0.0');
+  await hr.getByRole('button', { name: 'Use this version' }).click();
   await expect(hr.getByRole('button', { name: 'Detach' })).toBeVisible();
+  assert.equal(ctx.library.attachments(project.id)[0].version, '1.1.0');
   await contracts.getByRole('button', { name: 'Attach to project' }).click();
   await expect(contracts.getByRole('button', { name: 'Detach' })).toBeVisible();
   assert.equal(ctx.library.attachments(project.id).length, 2);
@@ -110,7 +124,7 @@ try {
     request.includes('40 hours or five days'),
     'relevant library brief reaches actual SDK model request',
   );
-  assert(request.includes('/api/library/packs/california-hr/1.0.0/pages/sick-leave'));
+  assert(request.includes('/api/library/packs/california-hr/1.1.0/pages/sick-leave'));
   assert(
     !request.includes('Contract Review and Document Authority\n\nPack:'),
     'entire unrelated pack is not injected',

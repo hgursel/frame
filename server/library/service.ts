@@ -102,8 +102,9 @@ export class KnowledgeLibrary {
   install(input: unknown) {
     const pack = packSchema.parse(input);
     // Reserve bundled IDs: an imported file may not impersonate a Frame release.
-    const builtin = bundledPacks.find((p) => p.id === pack.id);
-    if (builtin && (builtin.version !== pack.version || hash(builtin) !== hash(pack)))
+    const reserved = bundledPacks.some((p) => p.id === pack.id);
+    const builtin = bundledPacks.find((p) => p.id === pack.id && p.version === pack.version);
+    if (reserved && (!builtin || hash(builtin) !== hash(pack)))
       throw error(
         'This ID is reserved for a bundled Frame pack. Use a separate ID for custom packs.',
       );
@@ -127,7 +128,11 @@ export class KnowledgeLibrary {
     const installed = this.installed(),
       all = [...installed];
     for (const pack of bundledPacks)
-      if (!all.some((p) => p.id === pack.id && p.version === pack.version)) all.push(pack);
+      if (
+        !all.some((p) => p.id === pack.id && p.version === pack.version) &&
+        !bundledPacks.some((p) => p.id === pack.id && newer(p.version, pack.version))
+      )
+        all.push(pack);
     const attached = projectId ? this.attachments(projectId) : [];
     return all.map((pack) => ({
       pack,

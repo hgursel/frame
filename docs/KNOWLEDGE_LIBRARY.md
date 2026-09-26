@@ -1,13 +1,22 @@
 # Knowledge Library
 
-Frame includes two optional, locally stored starter packs:
+Frame includes five optional, locally stored packs (26 focused sections in their current versions):
 
 | Pack | Version | Sections |
 | --- | --- | --- |
-| California HR Essentials | 1.0.0 | Handbook/applicability, hiring, pay/overtime, meals/rest, paid sick leave, protected leave/accommodations, complaints, departures, contractor classification |
-| Business Contract Review | 1.0.0 | Agreement review, renewals/obligations, supplier pricing/invoices, NDAs, amendment/version comparison |
+| California HR Essentials | 1.1.0 | 12 sections: original HR essentials plus Job Descriptions & Offer Letters, Pay Transparency & Equal Pay, and Background Checks & Fair Chance Hiring |
+| Business Contract Review | 1.1.0 | 6 sections: original contract workflows plus Statements of Work & Change Orders |
+| Workplace Investigations | 1.0.0 | 3 sections: complaint intake/plan, evidence timeline/interviews, and human-reviewed investigation reports |
+| Performance Reviews & Improvement Plans | 1.0.0 | 2 sections: evidence-based reviews and measurable improvement plans/follow-up |
+| Commercial Leases | 1.0.0 | 3 sections: premises/lease review, rent/operating costs, and options/repairs/exit |
 
 These are **Frame-authored reference briefs and review workflows**, not official legal text, licensed legal forms, a complete legal database, or legal advice. Source links point to agency publications; their full documents are not bundled. The contract pack contains original analysis procedures, not jurisdiction-specific legal rules. Use the actual project agreement as evidence of contractual terms.
+
+## Upgrading the first two packs
+
+Projects using California HR Essentials or Business Contract Review **1.0.0** keep that version. Install **1.1.0** in Settings, then select **Use this version** under the project’s Library references. Installing alone does not upgrade a project. Old content is preserved byte-for-byte and its citations continue to resolve. A fresh catalog shows only the latest bundled version; previously installed versions remain visible for review or rollback.
+
+The three new packs are separate choices. Investigation and performance material supports human-led documentation and review; it does not automatically determine credibility, guilt, applicant suitability, ratings, discipline, or termination. Commercial-lease and SOW material is an original review workflow, not a legal rulebook: cite actual agreements and verify jurisdiction-specific questions separately.
 
 ## Start using a pack
 
