@@ -1,3 +1,4 @@
+import { expandedPacks } from './expansions.js';
 import type { LibraryPack, LibraryPage, LibrarySource } from '../../shared/library.js';
 const source = (title: string, url: string, locator: string): LibrarySource => ({
   title,
@@ -28,7 +29,8 @@ const page = (
 });
 const rights =
   'Original Frame-authored briefs and workflows distributed with Frame. Linked agency publications are not reproduced or bundled. Sources are not endorsements. Source-check date is not a legal effective date or a certification of completeness.';
-export const bundledPacks: LibraryPack[] = [
+// Published v1.0 snapshots: keep their contents unchanged for pinned projects and citations.
+const initialPacks: LibraryPack[] = [
   {
     id: 'california-hr',
     version: '1.0.0',
@@ -391,3 +393,5 @@ Topic | earlier clause | later clause | substantive change | practical effect | 
     ],
   },
 ];
+
+export const bundledPacks: LibraryPack[] = [...initialPacks, ...expandedPacks(initialPacks)];

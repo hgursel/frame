@@ -128,7 +128,7 @@ Deferred from V1 at the owner's request. V1 retains one administrator.
 
 ## Shared Knowledge Library (implemented)
 
-- Optional bundled California HR Essentials and Business Contract Review packs with fourteen focused sections, original review workflows, source links, and applicability metadata. No IT/security catalog.
+- Five optional legal/HR packs with 26 current sections: expanded California HR Essentials and Business Contract Review (v1.1), plus Workplace Investigations, Performance Reviews & Improvement Plans, and Commercial Leases. Published v1.0 content remains unchanged; project upgrades are explicit. Original workflows, source links, and applicability metadata; no IT/security catalog.
 - Global install/export/validated JSON import and per-project version selection; immutable installed snapshots, explicit upgrades, and historical citation preservation.
 - Existing bounded retrieval/search/read tools include attached sections; read-only local citation viewer and latest-turn activity references. Project files and maintenance remain separate.
 - Automated API/retrieval/browser checks use a controlled model transport. Legal content is not a comprehensive or continuously updated source; real-model answer quality and professional review remain acceptance work. See [Knowledge Library](KNOWLEDGE_LIBRARY.md).

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -232,7 +233,12 @@ test('starter topics retrieve on representative HR and contract requests with bo
   try {
     for (const p of bundledPacks) {
       f.library.install(p);
-      f.library.attach(f.project.id, p.id, p.version, null);
+      f.library.attach(
+        f.project.id,
+        p.id,
+        p.version,
+        f.library.attachments(f.project.id).find((a) => a.packId === p.id)?.version || null,
+      );
     }
     const catalog = f.library.catalog(f.project.id);
     for (const [query, id] of [
@@ -247,6 +253,18 @@ test('starter topics retrieve on representative HR and contract requests with bo
       ['NDA confidentiality', 'nda'],
       ['Contract amendment version comparison', 'compare-versions'],
       ['Renewal notice deadline', 'renewal-obligations'],
+      ['Draft job descriptions and offer letters', 'job-descriptions-offers'],
+      ['Pay transparency equal pay salary range', 'pay-transparency'],
+      ['Background checks fair chance hiring', 'fair-chance'],
+      ['Complaint intake investigation scope', 'intake-plan'],
+      ['Witness interview evidence timeline', 'evidence-interviews'],
+      ['Investigation report findings evidence', 'investigation-report'],
+      ['Performance review evaluation feedback', 'performance-review'],
+      ['PIP coaching improvement plan checkpoints', 'improvement-plan'],
+      ['Commercial lease premises tenant landlord', 'lease-review'],
+      ['Rent CAM NNN operating costs reconciliation', 'rent-operating-costs'],
+      ['Lease renewal option repairs surrender', 'lease-options-exit'],
+      ['Statements of work SOW change orders deliverables', 'statements-of-work'],
     ])
       assert(
         rankKnowledge(catalog, query!)
@@ -260,6 +278,70 @@ test('starter topics retrieve on representative HR and contract requests with bo
           JSON.stringify(knowledgeContext(catalog, 'contract review sick leave', window)),
         ) <= Math.min(12000, Math.floor(window / 2)),
       );
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('expanded official packs preserve v1.0 snapshots and require explicit project upgrades', async () => {
+  const f = await fixture();
+  try {
+    // Fingerprints captured from the published PR #25 content, before expansion.
+    const fingerprints: Record<string, string> = {
+      'california-hr': 'fec311efbf2303b4f14fdc3a2fa3a76299fb805c8bf5be0da87ee5943464beee',
+      'business-contract-review':
+        'c6a66c2801f3d41100a655b1982270b0edc536eca231d7dd2db0016091a1af67',
+    };
+    assert.equal(
+      f.library.list().length,
+      5,
+      'Fresh catalog shows five current packs, not every historical version',
+    );
+    for (const id of Object.keys(fingerprints)) {
+      const old = f.library.get(id, '1.0.0'),
+        updated = f.library.get(id, '1.1.0');
+      assert.equal(
+        createHash('sha256').update(JSON.stringify(old)).digest('hex'),
+        fingerprints[id],
+      );
+      assert(updated.pages.length > old.pages.length);
+      f.library.install(old);
+      f.library.attach(f.project.id, id, old.version, null);
+      f.library.install(updated);
+      const entries = f.library.list(f.project.id).filter((p) => p.pack.id === id);
+      assert.equal(entries.length, 2);
+      assert.equal(entries.find((e) => e.attached)?.pack.version, '1.0.0');
+      assert.equal(entries.find((e) => e.attached)?.newerVersion, '1.1.0');
+      assert.equal(
+        f.library.catalog(f.project.id).filter((d) => d.id.startsWith('library:' + id + ':'))
+          .length,
+        old.pages.length,
+      );
+      f.library.attach(f.project.id, id, updated.version, old.version);
+      assert.equal(
+        f.library.catalog(f.project.id).filter((d) => d.id.startsWith('library:' + id + ':'))
+          .length,
+        updated.pages.length,
+      );
+      assert.equal(
+        (await f.call(libraryUrl(id, old.version, old.pages[0]!.id).slice(4))).statusCode,
+        200,
+      );
+      assert.throws(() => f.library.install({ ...updated, version: '1.2.0' }), /reserved/);
+      assert.throws(
+        () => f.library.install({ ...old, description: 'Changed historical content' }),
+        /reserved/,
+      );
+    }
+    for (const id of ['workplace-investigations', 'performance-reviews', 'commercial-leases']) {
+      const p = f.library.get(id, '1.0.0');
+      f.library.install(p);
+      f.library.attach(f.project.id, id, p.version, null);
+      assert(p.pages.length >= 2);
+      assert(f.library.catalog(f.project.id).some((d) => d.id.startsWith('library:' + id + ':')));
+    }
+    assert.equal(f.library.attachments(f.project.id).length, 5);
+    assert.equal(f.library.catalog(f.project.id).length, 26);
   } finally {
     await f.cleanup();
   }
