@@ -70,7 +70,15 @@ await writeFile(
       role: 'user',
       content: 'Always check change approval before maintenance and record the recovery plan.',
     },
-  }) + '\n',
+  }) +
+    '\n' +
+    JSON.stringify({
+      id: 'remember',
+      parentId: 'entry-one',
+      type: 'message',
+      message: { role: 'user', content: 'Remember this method.' },
+    }) +
+    '\n',
 );
 ctx.store.db
   .prepare('INSERT INTO runs VALUES (?,?,?,?,?)')
@@ -91,7 +99,8 @@ try {
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByRole('tab', { name: 'Knowledge', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Knowledge maintenance' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Project memory' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Schedule', exact: true }).click();
   await page.getByLabel('Daily start time').fill('02:00');
   await page.getByLabel('Maintenance timezone').selectOption('America/Los_Angeles');
   await expect(page.getByLabel('Maintenance timezone')).toHaveValue('America/Los_Angeles');
@@ -99,7 +108,14 @@ try {
   await page.getByLabel('Publishing policy').selectOption('review');
   await page.getByRole('button', { name: 'Save maintenance settings' }).click();
   await expect(page.getByRole('status')).toContainText('Maintenance settings saved');
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-memory-overview.png'),
+      fullPage: true,
+    });
   await page.getByRole('button', { name: 'Run maintenance now' }).click();
+  await page.getByRole('tab', { name: /^Review/ }).click();
   await expect(page.locator('.maintenance-draft summary')).toContainText('Change Approval', {
     timeout: 15000,
   });
@@ -117,9 +133,33 @@ try {
     });
   await page.getByRole('button', { name: 'Publish unreviewed', exact: true }).click();
   await expect(page.locator('.maintenance-draft')).toHaveCount(0);
-  const doc = ctx.knowledge.list(project.id)[0]!;
-  assert(doc);
-  assert.equal(ctx.wiki.metadata(doc.id).verified, undefined);
+  assert.equal(ctx.knowledge.list(project.id).length, 0);
+  const method = ctx.maintenance.methods.list(project.id)[0]!;
+  assert(method);
+  assert(!method.verified);
+  await page.getByRole('tab', { name: 'Methods', exact: true }).click();
+  await expect(page.locator('.memory-method summary')).toContainText('Change Approval');
+  await page.locator('.memory-method summary').click();
+  await expect(page.locator('.memory-method')).toContainText('Supplied to 0 turns');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const navOverlay = page.getByRole('button', { name: 'Close navigation', exact: true });
+  if (await navOverlay.isVisible()) await navOverlay.click({ position: { x: 370, y: 400 } });
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-memory-mobile.png'),
+      fullPage: true,
+    });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  // Authored pages retain their separate metadata workflow.
+  const doc = await ctx.knowledge.add(
+    project.id,
+    'Change Approval.md',
+    Buffer.from('Check approval and document the recovery plan.'),
+    'wiki',
+  );
+  await ctx.wiki.record(project.id, doc.id);
   await page.getByLabel('Project menu: Operations').click();
   await page.getByRole('button', { name: 'Knowledge', exact: true }).click();
   await page.getByRole('button', { name: 'Change Approval.md', exact: false }).click();

@@ -1006,9 +1006,10 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return (
-    <section className="settings-panel">
+    <section className="settings-panel" data-topic={tab}>
+      <span className="settings-eyebrow">WORKSPACE</span>
       <h1>Settings</h1>
-      <p className="muted">Configure your model, context, instructions, and document tools.</p>
+      <p className="muted">Manage your workspace, local model, knowledge, and connected tools.</p>
       <div className="settings-tabs" role="tablist" aria-label="Settings topics">
         {tabs.map((name, i) => (
           <button
@@ -1074,6 +1075,10 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           disabled={tab !== 'model' || busy}
           className="settings-topic"
         >
+          <div className="settings-section-heading">
+            <h2>Local model</h2>
+            <p>Connect Frame to your organization’s local inference endpoint.</p>
+          </div>
           <label>
             Endpoint URL
             <input
@@ -1122,6 +1127,10 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           disabled={tab !== 'context' || busy}
           className="settings-topic"
         >
+          <div className="settings-section-heading">
+            <h2>Context & generation</h2>
+            <p>Control how much the model can read, write, and retain during a conversation.</p>
+          </div>
           <div className="form-row">
             <label>
               Context window
@@ -1196,6 +1205,12 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           disabled={tab !== 'instructions' || busy}
           className="settings-topic"
         >
+          <div className="settings-section-heading">
+            <h2>Workspace instructions</h2>
+            <p>
+              Set shared guidance for every project. Project instructions add their own context.
+            </p>
+          </div>
           <label>
             Organization instructions
             <textarea

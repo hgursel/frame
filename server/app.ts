@@ -1,3 +1,4 @@
+import { recall, validSqlMethod } from './maintenance/recall.js';
 import { Incognito } from './incognito.js';
 import { Maintenance } from './maintenance/service.js';
 import { maintenanceApi } from './maintenance/api.js';
@@ -98,6 +99,23 @@ export async function createApp(options: {
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
   const maintenance = new Maintenance(store, wiki, runner, options.generator);
+  await maintenance.initialize();
+  mssql.notes.methodCatalog = (projectId) => {
+    try {
+      const settings = mssql.requireProject(projectId);
+      mssql.schema.ensureSource(projectId, settings);
+      if (mssql.schema.status(projectId).state !== 'ready') return [];
+      return maintenance.methods
+        .catalog(projectId, mssql.schema.generation(projectId), (m) => validSqlMethod(mssql, m))
+        .filter(
+          (m) =>
+            m.text.startsWith('Database: ') &&
+            settings.databases.includes(m.text.split('\n')[0]!.slice(10)),
+        );
+    } catch {
+      return [];
+    }
+  };
   const incognito = new Incognito(store, runner, knowledge);
   maintenance.startTimer();
   const streams = new Set<ServerResponse>();
@@ -321,18 +339,32 @@ export async function createApp(options: {
         );
         const runtime = project.toolsEnabled ? await python.status() : undefined;
         const catalog = await wiki.catalog(project.id);
-        return reply
-          .code(202)
-          .send(
-            runner.start(
-              id,
-              requestId,
-              text,
-              documents,
-              runtime?.state === 'ready' ? python.executable : undefined,
-              catalog,
-            ),
-          );
+        const recent =
+          runner
+            .snapshot(id)
+            .messages.filter((m) => m.role === 'user')
+            .at(-1)?.text || '';
+        const query = text.length < 80 ? `${recent.slice(0, 300)} ${text}` : text;
+        const recalled = recall(
+          maintenance.methods,
+          mssql,
+          project.id,
+          query,
+          catalog,
+          store.settings().contextWindow,
+        );
+        const started = runner.start(
+          id,
+          requestId,
+          text,
+          documents,
+          runtime?.state === 'ready' ? python.executable : undefined,
+          recalled.catalog,
+          'prompt',
+          recalled.reference,
+        );
+        if (!store.conversation(id)?.incognito) maintenance.methods.used(recalled.ids);
+        return reply.code(202).send(started);
       });
     },
   );

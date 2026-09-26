@@ -28,6 +28,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Keep useful answers.** Use **Useful → Save to knowledge** on answers and tool results. Review a new Markdown page or an update before saving it.
 - **Maintain knowledge on your schedule.** Run nightly health checks and learn reusable procedures, calculation rules, and parameterized SQL templates from completed chats. Choose review-first or automatic publishing; SQL results never become learned knowledge.
 - **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
+- **Remember useful methods.** Project memory learns recurring tasks and parameterized SQL without saving result values. Keep up to 30 methods per project, review changes, and supply relevant methods directly to future chats. [Configure learning and maintenance →](docs/KNOWLEDGE_MAINTENANCE.md)
 - **Keep the history.** Knowledge pages include revisions and provenance. Export a portable **Open Knowledge Format 0.2** bundle with an index and change log.
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 

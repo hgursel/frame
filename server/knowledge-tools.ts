@@ -89,7 +89,9 @@ export function knowledgeTools(
       async execute(_id, args) {
         if (
           args.targetId &&
-          !documents.some((d) => d.id === args.targetId && d.revision === args.revision)
+          !documents.some(
+            (d) => d.id === args.targetId && d.revision === args.revision && !d.method,
+          )
         )
           throw new Error('Read the current target page before proposing an update.');
         return {

@@ -71,7 +71,7 @@ The run makes several passes, most prominent objects first, so it is useful befo
 - **Subject areas.** The foreign-key graph is split into connected components and each is named and
   summarized, so a thousand peer tables become a few dozen navigable areas.
 - **Glossary.** Name fragments the schema repeats at least three times are defined once.
-- **Recipes.** Supported completed SELECT statements become parameterized templates with structural labels. Literal values, original aliases, comments, parameter values, and results are excluded; no model request is used to summarize raw SQL. Unsupported syntax is skipped. Successful execution is not proof of business correctness.
+- **Reusable query methods.** Recurring, supported SELECT structures are curated by [Project memory](KNOWLEDGE_MAINTENANCE.md), not harvested during schema explanation generation. Descriptions are generated from parameterized structure only; results and actual parameter values are excluded. Successful execution is not proof of business correctness.
 - **Vocabulary gaps.** Searches that returned nothing are recorded. A later run asks which known
   object each missing word names and, when the answer is a real object, adds it as an alias so the
   next search finds it.
@@ -104,9 +104,9 @@ Generation requests use llama.cpp's [JSON output and non-thinking options](https
 
 ### Structural knowledge only
 
-Knowledge generation never samples business rows. The former lookup sampling option is removed and old enabled settings are ignored. Existing generated lookup pages and legacy query recipes are retired from retrieval and exports on upgrade; historical database records, previous exports, and manually written wiki pages are not erased. Regenerate database knowledge to create sanitized recipes.
+Knowledge generation never samples business rows. The former lookup sampling option is removed and old enabled settings are ignored. The curated-memory upgrade permanently removes legacy generated SQL interpretations and automatic maintenance pages, while preserving imported schema facts and authored/source documents. Previous exports and backups are not erased. Run project maintenance to learn recurring sanitized query methods.
 
-Incognito queries are excluded from recipes and vocabulary-gap learning. Regular query execution and CSV downloads still work: this restriction applies to learned knowledge, not to asking questions about current data. Nightly [Knowledge maintenance](KNOWLEDGE_MAINTENANCE.md) also learns sanitized query templates without reading results, CSVs, charts, or assistant summaries from SQL conversations.
+Incognito queries are excluded from recipes and vocabulary-gap learning. Regular query execution and CSV downloads still work: this restriction applies to learned knowledge, not to asking questions about current data. Nightly [Knowledge maintenance](KNOWLEDGE_MAINTENANCE.md) learns sanitized query templates without reading results, CSVs, charts, or assistant summaries from SQL conversations.
 
 Small models receive five focused tools: `mssql_schema_search`, `mssql_schema_read`, `mssql_knowledge_search`, `mssql_query`, and `mssql_procedure`. Search returns at most 20 ranked objects, each with a one-line summary so the model can triage without a read; reads return up to 8,000 characters with a continuation offset. Metadata discovery is not repeated for every question, and the full schema is never inserted into the prompt. Ask the model to search for relevant tables and read their columns/relationships before composing a query. Put domain explanations in reviewed Markdown business notes. Treat database descriptions and result values as reference data, not instructions.
 

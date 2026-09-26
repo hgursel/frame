@@ -31,7 +31,8 @@ async function fixture(generator: any = { complete: async () => JSON.stringify(n
   const project = ctx.store.createProject({ name: 'Test', instructions: '', toolsEnabled: false });
   ctx.maintenance.save({ ...ctx.maintenance.settings(), projectIds: [project.id] });
   const conversation = ctx.store.createConversation(project.id);
-  const history = async (messages: any[]) => {
+  const history = async (messages: any[], confirm = true) => {
+    if (confirm) messages = [...messages, { role: 'user', content: 'Remember this method.' }];
     const entries = messages.map((message, i) => ({
       id: `entry-${i}`,
       parentId: i ? `entry-${i - 1}` : null,
@@ -184,7 +185,7 @@ test('description, tag and alias search ranks relevant pages without requiring e
   ];
   assert.equal(rankKnowledge(docs, 'How should I prepare maintenance approval?')[0]?.doc.id, 'b');
 });
-test('drafts stay out of catalog until reviewed; repeats deduplicate and publishing adds metadata without verification', async () => {
+test('confirmed methods stay out of recall until reviewed; repeats deduplicate without generating files', async () => {
   const f = await fixture();
   try {
     await f.history([
@@ -201,26 +202,40 @@ test('drafts stay out of catalog until reviewed; repeats deduplicate and publish
     await f.run();
     assert.equal(f.maintenance.status().candidates.length, 1);
     await f.maintenance.publish(draft.id, false);
-    const catalog = await f.wiki.catalog(f.project.id);
+    const catalog = f.maintenance.methods.catalog(f.project.id);
     assert.equal(catalog.length, 1);
+    assert.equal(f.knowledge.list(f.project.id).length, 0);
     assert.deepEqual(catalog[0]?.tags, ['maintenance']);
     assert(!catalog[0]?.verified);
-    assert.match(catalog[0]!.text, /category: procedure/);
+    assert.match(catalog[0]!.text, /recovery plan/);
     await assert.rejects(() => f.maintenance.publish(draft.id, false), /no longer/);
   } finally {
     await f.cleanup();
   }
 });
-test('automatic new pages publish without verification; SQL recipes use no model requests or results', async () => {
+test('automatic confirmed SQL methods use only sanitized structure for descriptive metadata', async () => {
   let calls = 0;
   const f = await fixture({
-    complete: async () => {
+    complete: async (request: any) => {
       calls++;
-      throw Error('Must not run model for SQL recipes');
+      assert.doesNotMatch(request.prompt, /Private|7654321/);
+      return JSON.stringify(note);
     },
   });
   try {
     f.maintenance.save({ ...f.maintenance.settings(), policy: 'new' });
+    const operation = randomUUID();
+    f.store.db
+      .prepare(
+        'INSERT INTO mssql_operations(id,conversationId,kind,source,status) VALUES (?,?,?,?,?)',
+      )
+      .run(
+        operation,
+        f.conversation.id,
+        'read',
+        f.mssql.schema.source(f.mssql.settings()),
+        'completed',
+      );
     await f.history([
       {
         role: 'assistant',
@@ -240,12 +255,13 @@ test('automatic new pages publish without verification; SQL recipes use no model
         role: 'toolResult',
         toolCallId: 'q1',
         toolName: 'mssql_query',
+        details: { sqlResult: { operationId: operation } },
         content: [{ type: 'text', text: 'Private result 7654321' }],
       },
     ]);
     await f.run();
-    assert.equal(calls, 0);
-    const pages = await f.wiki.catalog(f.project.id);
+    assert.equal(calls, 1);
+    const pages = f.maintenance.methods.list(f.project.id);
     assert.equal(pages.length, 1);
     assert.doesNotMatch(pages[0]!.text, /Private|7654321/);
     assert(!pages[0]?.verified);
@@ -409,10 +425,16 @@ test('incognito real SDK history remains memory-only across follow-ups and is re
   }
 });
 
-test('publication retries use the reserved page identity after an interrupted write', async () => {
-  const f = await fixture();
+test('metadata publication retries preserve the existing authored page after an interrupted write', async () => {
+  const f = await fixture({ complete: async () => JSON.stringify(note.discovery) });
   try {
-    await f.history([{ role: 'user', content: 'Check approval and prepare a recovery plan.' }]);
+    const doc = await f.knowledge.add(
+      f.project.id,
+      'Guide.md',
+      Buffer.from('Check approval and prepare a recovery plan.'),
+      'wiki',
+    );
+    await f.wiki.record(f.project.id, doc.id);
     await f.run();
     const draft = f.maintenance.status().candidates[0];
     const record = f.wiki.record.bind(f.wiki);
@@ -530,7 +552,10 @@ test('maintenance APIs enforce authentication and incognito is excluded from lis
       url: `/api/conversations/${f.conversation.id}/knowledge/0`,
       method: 'POST',
       headers: auth,
-      payload: { ...sqlDraft.json<Record<string, any>>(), text: sqlDraft.json().text + '\nSecret Customer owes 99999' },
+      payload: {
+        ...sqlDraft.json<Record<string, any>>(),
+        text: sqlDraft.json().text + '\nSecret Customer owes 99999',
+      },
     });
     assert.equal(rejectedSave.statusCode, 400);
     const saved = await f.app.inject({

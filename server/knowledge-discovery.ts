@@ -8,7 +8,17 @@ export const discoverySchema = z.object({
     .enum(['reference', 'definition', 'calculation_rule', 'query_recipe', 'procedure'])
     .default('reference'),
 });
-const words = (text: string) => [...new Set(text.toLowerCase().match(/[\p{L}\p{N}_]+/gu) || [])];
+const words = (text: string) => [
+  ...new Set(
+    text
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replaceAll('_', ' ')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .match(/[\p{L}\p{N}]+/gu) || [],
+  ),
+];
 const stop = new Set([
   'a',
   'an',
@@ -56,21 +66,35 @@ export function rankKnowledge(documents: NonNullable<WorkerInput['knowledge']>, 
     .sort((a, b) => b.score - a.score || a.doc.name.localeCompare(b.doc.name));
 }
 
-export function knowledgeHints(
+/** Bounded excerpts, not just an index: small models should not need a tool call to use memory. */
+export function knowledgeContext(
   documents: NonNullable<WorkerInput['knowledge']>,
   query: string,
-  budget: number,
+  contextWindow: number,
 ) {
-  const entries: unknown[] = [];
-  for (const { doc } of rankKnowledge(documents, query).slice(0, 5)) {
-    const entry = {
+  const pages: {
+    id: string;
+    title: string;
+    description?: string;
+    text: string;
+    verified: boolean;
+    truncated: boolean;
+    method: boolean;
+  }[] = [];
+  const budget = Math.min(12000, Math.floor(contextWindow / 2));
+  for (const { doc, score } of rankKnowledge(documents, query)) {
+    if (score < 4 || pages.length >= 3) continue;
+    const page = {
       id: doc.id,
       title: doc.name,
-      description: doc.description?.slice(0, 300),
-      verified: doc.verified,
+      description: doc.description,
+      text: doc.text.slice(0, 4500),
+      verified: !!doc.verified,
+      truncated: doc.text.length > 4500,
+      method: !!doc.method,
     };
-    if (Buffer.byteLength(JSON.stringify([...entries, entry])) > budget) break;
-    entries.push(entry);
+    if (Buffer.byteLength(JSON.stringify([...pages, page])) > budget) continue;
+    pages.push(page);
   }
-  return JSON.stringify(entries);
+  return pages;
 }

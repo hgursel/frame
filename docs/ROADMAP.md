@@ -117,3 +117,11 @@ Deferred from V1 at the owner's request. V1 retains one administrator.
 - [ ] Bad token, wrong model ID, full context, unavailable server, and malformed tool arguments fail visibly.
 - [ ] Two projects run without sharing conversation history; same-project concurrent tasks are rejected.
 - [ ] Backup/restore recovers settings, metadata, sessions, and project outputs together.
+
+## Curated project memory (implemented)
+
+- Up to 30 active methods per project in SQLite; three distinct completed chats or explicit confirmation qualify a task. No new Markdown files from conversation learning.
+- Shared project/SQL recall supplies bounded method content and cached schema references before generation; unchanged dependency hashes survive schema refreshes.
+- Overview, Methods, Review, and Schedule sections in Knowledge settings, with publication controls and recall counts.
+- One-time permanent cleanup of legacy automatic notes and SQL interpretations; preserve schema facts and authored/source documents.
+- Production Qwen/llama.cpp retrieval quality, business correctness, and latency remain deployment acceptance checks, not claims from mock tests.
