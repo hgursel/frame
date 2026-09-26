@@ -1,5 +1,13 @@
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, chmodSync, readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
+import {
+  mkdirSync,
+  chmodSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+  renameSync,
+  existsSync,
+} from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Conversation, Project, StoredSettings } from '../shared/types.js';
@@ -18,9 +26,12 @@ export const defaults: StoredSettings = {
 
 export class Store {
   readonly db: DatabaseSync;
+  /** Canonical path: descendant realpath checks detect replaced directories, not a symlinked data root. */
+  readonly root: string;
   ephemeralBranch?: (id: string) => any[];
-  constructor(readonly root: string) {
-    mkdirSync(root, { recursive: true, mode: 0o700 });
+  constructor(dataDir: string) {
+    mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+    const root = (this.root = realpathSync(dataDir));
     chmodSync(root, 0o700);
     for (const sub of ['projects', 'sessions', 'agent'])
       mkdirSync(path.join(root, sub), { recursive: true, mode: 0o700 });
@@ -75,8 +86,10 @@ export class Store {
       this.db.prepare('SELECT * FROM projects ORDER BY name').all() as unknown as Project[]
     ).map((p) => ({ ...p, toolsEnabled: !!p.toolsEnabled }));
   }
-  project(id: string) {
-    return this.projects().find((p) => p.id === id);
+  project(id: string): Project | undefined {
+    const p = this.db.prepare('SELECT * FROM projects WHERE id=?').get(id) as unknown as
+      Project | undefined;
+    return p && { ...p, toolsEnabled: !!p.toolsEnabled };
   }
   createProject(input: Omit<Project, 'id'>) {
     const project = { id: randomUUID(), ...input };

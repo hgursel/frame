@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createServer, get } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
+import { deleteWorkspaceData } from '../server/deletion.js';
 import { readHistory, displayMessages } from '../server/history.js';
 import { unzipSync, strFromU8 } from 'fflate';
 import YAML from 'yaml';
@@ -35,6 +36,35 @@ test('reasoning projection handles structured and tagged streams without animati
       ?.thinking,
     undefined,
   );
+});
+test('a data directory reached through a symlink stores knowledge and deletes projects', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'frame-symlink-test-'));
+  let app: Awaited<ReturnType<typeof createApp>>['app'] | undefined;
+  try {
+    await mkdir(path.join(root, 'real'));
+    await symlink(path.join(root, 'real'), path.join(root, 'link'));
+    const created = await createApp({
+      dataDir: path.join(root, 'link', 'data'),
+      origin,
+      setupToken: 'test',
+    });
+    app = created.app;
+    const project = created.store.createProject({
+      name: 'Linked',
+      instructions: '',
+      toolsEnabled: false,
+    });
+    const doc = await created.knowledge.add(project.id, 'notes.md', Buffer.from('# Notes'));
+    await created.wiki.record(project.id, doc.id);
+    assert.equal((await created.wiki.catalog(project.id))[0]?.revision, doc.revision);
+    assert.deepEqual(created.store.project(project.id), project);
+    assert.equal(created.knowledge.get(project.id, doc.id).truncated, false);
+    deleteWorkspaceData(created.store, created.runner, created.knowledge, project.id);
+    assert.equal(created.store.project(project.id), undefined);
+  } finally {
+    await app?.close();
+    await rm(root, { recursive: true, force: true });
+  }
 });
 test('production static UI is served with security headers', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'frame-static-test-'));

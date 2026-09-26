@@ -95,8 +95,9 @@ export class Wiki {
     await this.sync(projectId);
   }
   async concept(projectId: string, id: string) {
-    const doc = await this.knowledge.read(projectId, id);
-    const metadata = this.metadata(id);
+    return this.render(await this.knowledge.read(projectId, id), this.metadata(id));
+  }
+  private render(doc: { kind: string; name: string; text: string }, metadata: Record<string, any>) {
     // Source content is never treated as executable instructions or trusted frontmatter.
     return `---\n${YAML.stringify({ type: doc.kind === 'wiki' ? 'Knowledge Note' : 'Reference', title: doc.name, ...metadata })}---\n\n${doc.text}`;
   }
@@ -106,7 +107,11 @@ export class Wiki {
     const sections: Record<string, string[]> = { 'Knowledge pages': [], 'Source documents': [] };
     for (const doc of docs) {
       const metadata = this.metadata(doc.id);
-      await this.knowledge.atomic(directory, `${doc.id}.md`, await this.concept(projectId, doc.id));
+      await this.knowledge.atomic(
+        directory,
+        `${doc.id}.md`,
+        this.render(await this.knowledge.read(projectId, doc.id), metadata),
+      );
       sections[doc.kind === 'wiki' ? 'Knowledge pages' : 'Source documents']!.push(
         `* [${label(doc.name)}](${doc.id}.md) - ${label(String(metadata.description || 'Project reference')).slice(0, 160)}`,
       );
@@ -205,17 +210,21 @@ export class Wiki {
   }
   async catalog(projectId: string) {
     const entries = [];
-    for (const doc of this.knowledge.list(projectId))
+    // Runs before every chat turn: read each page and its metadata once.
+    for (const listed of this.knowledge.list(projectId)) {
+      const doc = await this.knowledge.read(projectId, listed.id);
+      const metadata = this.metadata(doc.id);
       entries.push({
         id: doc.id,
         name: doc.name,
-        revision: (await this.knowledge.read(projectId, doc.id)).revision,
-        text: await this.concept(projectId, doc.id),
-        description: String(this.metadata(doc.id).description || '').slice(0, 600),
-        tags: this.metadata(doc.id).frame?.tags || [],
-        aliases: this.metadata(doc.id).frame?.aliases || [],
-        verified: !!this.metadata(doc.id).verified?.length,
+        revision: doc.revision,
+        text: this.render(doc, metadata),
+        description: String(metadata.description || '').slice(0, 600),
+        tags: metadata.frame?.tags || [],
+        aliases: metadata.frame?.aliases || [],
+        verified: !!metadata.verified?.length,
       });
+    }
     return entries;
   }
   revisions(projectId: string, id: string) {

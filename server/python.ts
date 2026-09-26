@@ -90,6 +90,8 @@ export async function documentCommand(pythonPath: string, input: object, signal?
 export class PythonRuntime {
   private installing?: Promise<void>;
   private error = '';
+  /** A readiness check spawns Python; chat turns and the settings poll reuse a recent success. */
+  private readyUntil = 0;
   readonly executable: string;
   constructor(readonly dataDir: string) {
     this.executable =
@@ -97,15 +99,20 @@ export class PythonRuntime {
   }
   async status(): Promise<DocumentRuntimeStatus> {
     if (this.installing) return { state: 'installing', message: 'Installing document tools…' };
+    const ready = { state: 'ready', message: 'PDF and DOCX tools are ready.' } as const;
+    if (Date.now() < this.readyUntil && existsSync(this.executable)) return ready;
     try {
       if (
         existsSync(this.executable) &&
         (await documentCommand(this.executable, { command: 'status' })).ready
-      )
-        return { state: 'ready', message: 'PDF and DOCX tools are ready.' };
+      ) {
+        this.readyUntil = Date.now() + 60_000;
+        return ready;
+      }
     } catch {
       /* Show actionable local setup state. */
     }
+    this.readyUntil = 0;
     return {
       state: this.error ? 'error' : 'missing',
       message:
@@ -122,6 +129,7 @@ export class PythonRuntime {
         ),
       );
     this.error = '';
+    this.readyUntil = 0;
     this.installing = (async () => {
       await mkdir(path.join(this.dataDir, 'python'), { recursive: true, mode: 0o700 });
       if (!existsSync(this.executable))

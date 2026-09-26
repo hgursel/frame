@@ -34,9 +34,19 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
   process.on(signal, () => {
     if (closing) return;
     closing = true;
+    // A hung SQL, model, or Python request must not keep the service from stopping.
+    setTimeout(() => {
+      console.error('Shutdown timed out; exiting.');
+      process.exit(1);
+    }, 20_000).unref();
     void (async () => {
-      await runner.close();
-      await app.close();
-      process.exit(0);
+      try {
+        await runner.close();
+        await app.close();
+        process.exit(0);
+      } catch (error) {
+        console.error('Shutdown failed:', error);
+        process.exit(1);
+      }
     })();
   });
