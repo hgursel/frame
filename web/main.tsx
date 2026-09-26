@@ -1,3 +1,4 @@
+import { KnowledgeLibraryPanel, LibraryReader } from './Library.js';
 import { MaintenanceSettingsPanel } from './Maintenance.js';
 import './maintenance.css';
 import { PluginCatalog } from './PluginCatalog.js';
@@ -998,7 +999,15 @@ function Workspace() {
 
 function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () => Promise<void> }) {
   const [form, setForm] = useState(initial);
-  const tabs = ['model', 'context', 'instructions', 'documents', 'plugins', 'knowledge'] as const;
+  const tabs = [
+    'model',
+    'context',
+    'instructions',
+    'documents',
+    'plugins',
+    'knowledge',
+    'library',
+  ] as const;
   const [tab, setTab] = useState<(typeof tabs)[number]>('model');
   const [key, setKey] = useState('');
   const [clear, setClear] = useState(false);
@@ -1039,12 +1048,14 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
               }
             }}
           >
-            {name[0]!.toUpperCase() + name.slice(1)}
+            {name === 'library' ? 'Knowledge Library' : name[0]!.toUpperCase() + name.slice(1)}
           </button>
         ))}
       </div>
       <form
-        hidden={tab === 'documents' || tab === 'plugins' || tab === 'knowledge'}
+        hidden={
+          tab === 'documents' || tab === 'plugins' || tab === 'knowledge' || tab === 'library'
+        }
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -1278,6 +1289,14 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         {tab === 'plugins' && <PluginCatalog />}
       </div>
       <div
+        id="settings-library"
+        role="tabpanel"
+        aria-labelledby="tab-library"
+        hidden={tab !== 'library'}
+      >
+        {tab === 'library' && <KnowledgeLibraryPanel />}
+      </div>
+      <div
         id="settings-knowledge"
         role="tabpanel"
         aria-labelledby="tab-knowledge"
@@ -1367,6 +1386,7 @@ function ProjectForm({
           </p>
         )}
       </form>
+      {project && <KnowledgeLibraryPanel projectId={project.id} />}
       {project && <ProjectPlugins projectId={project.id} />}
     </section>
   );
@@ -1374,5 +1394,6 @@ function ProjectForm({
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
+    <LibraryReader />
   </React.StrictMode>,
 );

@@ -125,3 +125,11 @@ Deferred from V1 at the owner's request. V1 retains one administrator.
 - Overview, Methods, Review, and Schedule sections in Knowledge settings, with publication controls and recall counts.
 - One-time permanent cleanup of legacy automatic notes and SQL interpretations; preserve schema facts and authored/source documents.
 - Production Qwen/llama.cpp retrieval quality, business correctness, and latency remain deployment acceptance checks, not claims from mock tests.
+
+## Shared Knowledge Library (implemented)
+
+- Optional bundled California HR Essentials and Business Contract Review packs with fourteen focused sections, original review workflows, source links, and applicability metadata. No IT/security catalog.
+- Global install/export/validated JSON import and per-project version selection; immutable installed snapshots, explicit upgrades, and historical citation preservation.
+- Existing bounded retrieval/search/read tools include attached sections; read-only local citation viewer and latest-turn activity references. Project files and maintenance remain separate.
+- Automated API/retrieval/browser checks use a controlled model transport. Legal content is not a comprehensive or continuously updated source; real-model answer quality and professional review remain acceptance work. See [Knowledge Library](KNOWLEDGE_LIBRARY.md).
+- Deferred: online catalog/update service, automatic legal change monitoring, pack authoring UI, and global pack removal.

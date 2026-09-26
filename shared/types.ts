@@ -1,3 +1,4 @@
+import type { LibraryReference } from './library.js';
 import type { ChartRef } from './charts.js';
 import type { SqlApproval, SqlResult } from './plugins.js';
 export interface ModelSettings {
@@ -52,7 +53,7 @@ export interface ChatSnapshot {
   status: string;
   error?: string;
   metrics?: ChatMetrics;
-  memory?: { id: string; title: string }[];
+  memory?: { id: string; title: string; url?: string }[];
 }
 export interface ChatMetrics {
   context: {
@@ -83,6 +84,7 @@ export interface WorkerInput {
       verified: boolean;
       truncated: boolean;
       method: boolean;
+      library?: LibraryReference;
     }[];
     schema: { id: string; name: string; text: string; truncated: boolean }[];
     schemaAt?: string;
@@ -110,6 +112,7 @@ export interface WorkerInput {
     aliases?: string[];
     verified?: boolean;
     method?: boolean;
+    library?: LibraryReference;
   }[];
 }
 export interface KnowledgeDocument {

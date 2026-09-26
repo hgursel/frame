@@ -174,7 +174,10 @@ export class Runner extends EventEmitter {
       pluginAbort: new AbortController(),
     };
     active.snapshot.memory =
-      reference?.pages.filter((p) => p.method).map((p) => ({ id: p.id, title: p.title })) || [];
+      reference?.pages
+        .filter((p) => p.method || p.library)
+        .map((p) => ({ id: p.id, title: p.title, ...(p.library ? { url: p.library.url } : {}) })) ||
+      [];
     if (!conversation.incognito)
       this.store.setMeta(`memory:${id}`, JSON.stringify(active.snapshot.memory));
     this.active.set(id, active);

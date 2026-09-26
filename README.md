@@ -30,6 +30,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
 - **Remember useful methods.** Project memory learns recurring tasks and parameterized SQL without saving result values. Keep up to 30 methods per project, review changes, and supply relevant methods directly to future chats. [Configure learning and maintenance →](docs/KNOWLEDGE_MAINTENANCE.md)
 - **Keep the history.** Knowledge pages include revisions and provenance. Export a portable **Open Knowledge Format 0.2** bundle with an index and change log.
+- **Add shared legal and HR references.** Install California HR Essentials or Business Contract Review, attach a version to selected projects, and open cited sections inside chat. Packs contain concise, source-linked briefs and review workflows—not a complete legal database. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
 [Explore the knowledge workflow →](docs/KNOWLEDGE.md)
