@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
 import { deleteWorkspaceData } from '../server/deletion.js';
 import { readHistory, displayMessages } from '../server/history.js';
+import { applyUpdate } from '../web/snapshots.js';
 import { unzipSync, strFromU8 } from 'fflate';
 import YAML from 'yaml';
 import { documentCommand } from '../server/python.js';
@@ -550,12 +551,32 @@ test(
         )
           sawStream = true;
       });
+      // A tab holding the finished messages receives only the streaming tail.
+      let client = f.runner.snapshot(c.id);
+      let tails = 0;
+      const mismatches: string[] = [];
+      f.runner.on(c.id, () => {
+        const update = f.runner.update(c.id);
+        const merged = update && applyUpdate(client, update);
+        const full = f.runner.snapshot(c.id);
+        if (!merged) {
+          client = full;
+          return;
+        }
+        if (update.tail) tails++;
+        if (JSON.stringify(merged.messages) !== JSON.stringify(full.messages))
+          mismatches.push(JSON.stringify({ merged: merged.messages, full: full.messages }));
+        client = merged;
+      });
       await waitUntil(() => !f.runner.active.has(c.id));
       const snapshot = f.runner.snapshot(c.id);
       assert.equal(snapshot.error, undefined, JSON.stringify(snapshot));
       assert.equal(snapshot.status, 'completed');
       assert.equal(requests.length, 1);
       assert(sawStream);
+      assert(tails > 0, 'Streaming should produce tail-only updates');
+      assert.deepEqual(mismatches, []);
+      assert.equal(applyUpdate(client, snapshot), snapshot);
       assert(thinking.some((t) => t.includes('First I inspect')));
       assert(thinking.some((t) => t.includes('Then I compare')));
       assert(!snapshot.messages.some((m) => m.thinkingActive));

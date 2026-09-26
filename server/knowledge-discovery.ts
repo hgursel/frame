@@ -1,6 +1,6 @@
 import type { LibraryReference } from '../shared/library.js';
 import { z } from 'zod';
-import type { WorkerInput } from '../shared/types.js';
+import type { KnowledgePage } from '../shared/types.js';
 export const discoverySchema = z.object({
   description: z.string().trim().min(1).max(600),
   tags: z.array(z.string().trim().min(1).max(50)).max(12).default([]),
@@ -41,7 +41,7 @@ const stop = new Set([
   'that',
   'with',
 ]);
-export function rankKnowledge(documents: NonNullable<WorkerInput['knowledge']>, query: string) {
+export function rankKnowledge(documents: KnowledgePage[], query: string) {
   const terms = words(query).filter((t) => !stop.has(t));
   if (!terms.length) return documents.map((doc) => ({ doc, score: 0 }));
   return documents
@@ -68,11 +68,7 @@ export function rankKnowledge(documents: NonNullable<WorkerInput['knowledge']>, 
 }
 
 /** Bounded excerpts, not just an index: small models should not need a tool call to use memory. */
-export function knowledgeContext(
-  documents: NonNullable<WorkerInput['knowledge']>,
-  query: string,
-  contextWindow: number,
-) {
+export function knowledgeContext(documents: KnowledgePage[], query: string, contextWindow: number) {
   const pages: {
     id: string;
     title: string;
@@ -100,4 +96,48 @@ export function knowledgeContext(
     pages.push(page);
   }
   return pages;
+}
+
+/** Parent-side search_knowledge: a ranked page of catalog metadata, never page text. */
+export function searchKnowledge(documents: KnowledgePage[], args: unknown) {
+  const { query, offset } = z
+    .object({ query: z.string().max(200), offset: z.number().int().min(0).default(0) })
+    .parse(args);
+  const matches = rankKnowledge(documents, query).map((r) => r.doc);
+  return {
+    total: matches.length,
+    pages: matches
+      .slice(offset, offset + 10)
+      .map(({ id, name, revision, description, library }) => ({
+        id,
+        name,
+        revision,
+        description,
+        library,
+      })),
+    nextOffset: offset + 10 < matches.length ? offset + 10 : null,
+  };
+}
+
+/** Parent-side read_knowledge over the catalog captured at the start of the turn. */
+export function readKnowledge(documents: KnowledgePage[], args: unknown, contextWindow: number) {
+  const maximum = Math.min(6000, Math.floor(contextWindow / 2));
+  const { id, offset, length } = z
+    .object({
+      id: z.string().max(300),
+      offset: z.number().int().min(0).default(0),
+      length: z.number().int().min(1).max(maximum).optional(),
+    })
+    .parse(args);
+  const doc = documents.find((d) => d.id === id);
+  if (!doc) throw new Error('Knowledge page not found in this project.');
+  const end = offset + (length || maximum);
+  return {
+    id: doc.id,
+    name: doc.name,
+    revision: doc.revision,
+    library: doc.library,
+    text: doc.text.slice(offset, end),
+    nextOffset: end < doc.text.length ? end : null,
+  };
 }

@@ -1,12 +1,10 @@
-import { rankKnowledge } from './knowledge-discovery.js';
 import { Type } from 'typebox';
 import { defineTool } from '@earendil-works/pi-coding-agent';
-import type { WorkerInput } from '../shared/types.js';
+import type { KnowledgeEntry } from '../shared/types.js';
+import { invoke } from './plugin-rpc.js';
 
-export function knowledgeTools(
-  documents: NonNullable<WorkerInput['knowledge']>,
-  contextWindow: number,
-) {
+/** Page text stays in the parent process; search and read go through plugin RPC. */
+export function knowledgeTools(documents: KnowledgeEntry[], contextWindow: number) {
   const maximum = Math.min(6000, Math.floor(contextWindow / 2));
   return [
     defineTool({
@@ -18,26 +16,12 @@ export function knowledgeTools(
         query: Type.String({ maxLength: 200 }),
         offset: Type.Optional(Type.Integer({ minimum: 0 })),
       }),
-      async execute(_id, args) {
-        const matches = rankKnowledge(documents, args.query).map((r) => r.doc);
-        const offset = args.offset || 0;
+      async execute(_id, args, signal) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify({
-                total: matches.length,
-                pages: matches
-                  .slice(offset, offset + 10)
-                  .map(({ id, name, revision, description, library }) => ({
-                    id,
-                    name,
-                    revision,
-                    description,
-                    library,
-                  })),
-                nextOffset: offset + 10 < matches.length ? offset + 10 : null,
-              }),
+              text: JSON.stringify(await invoke('knowledge_search', args, signal)),
             },
           ],
           details: {},
@@ -54,26 +38,11 @@ export function knowledgeTools(
         offset: Type.Optional(Type.Integer({ minimum: 0 })),
         length: Type.Optional(Type.Integer({ minimum: 1, maximum })),
       }),
-      async execute(_id, args) {
-        const doc = documents.find((d) => d.id === args.id);
-        if (!doc) throw new Error('Knowledge page not found in this project.');
-        const offset = args.offset || 0;
-        const end = offset + (args.length || maximum);
+      async execute(_id, args, signal) {
+        const page = await invoke('knowledge_read', args, signal);
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify({
-                id: doc.id,
-                name: doc.name,
-                revision: doc.revision,
-                library: doc.library,
-                text: doc.text.slice(offset, end),
-                nextOffset: end < doc.text.length ? end : null,
-              }),
-            },
-          ],
-          details: { knowledgeSourceId: doc.id },
+          content: [{ type: 'text' as const, text: JSON.stringify(page) }],
+          details: { knowledgeSourceId: page.id as string },
         };
       },
     }),

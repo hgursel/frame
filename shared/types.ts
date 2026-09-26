@@ -46,6 +46,10 @@ export interface DisplayMessage {
 export interface ChatSnapshot {
   /** Monotonic server observation order; HTTP and SSE share this sequence. */
   revision?: number;
+  /** Identifies the finished-message list; a ChatUpdate applies only to the same version. */
+  messagesVersion?: number;
+  /** The last message is still being generated. */
+  streaming?: boolean;
   runId?: string;
   sqlApproval?: SqlApproval;
   messages: DisplayMessage[];
@@ -55,6 +59,14 @@ export interface ChatSnapshot {
   metrics?: ChatMetrics;
   memory?: { id: string; title: string; url?: string }[];
 }
+/** A streaming update: replaces only the in-progress last message of a same-version snapshot. */
+export type ChatUpdate = Omit<ChatSnapshot, 'messages' | 'streaming'> & {
+  messagesVersion: number;
+  tail: DisplayMessage | null;
+};
+/** Project knowledge sent to the worker. Page text stays in the parent and is read on demand. */
+export type KnowledgeEntry = NonNullable<WorkerInput['knowledge']>[number];
+export type KnowledgePage = KnowledgeEntry & { text: string };
 export interface ChatMetrics {
   context: {
     tokens: number | null;
@@ -106,7 +118,6 @@ export interface WorkerInput {
     id: string;
     name: string;
     revision: string;
-    text: string;
     description?: string;
     tags?: string[];
     aliases?: string[];
@@ -132,7 +143,14 @@ export interface DocumentRuntimeStatus {
 }
 export type WorkerOutput =
   | { type: 'plugin_call'; id: string; action: string; args: unknown }
-  | { type: 'snapshot'; messages: DisplayMessage[]; status: string; metrics: ChatMetrics }
+  | {
+      type: 'snapshot';
+      messages: DisplayMessage[];
+      tail?: DisplayMessage;
+      status: string;
+      metrics: ChatMetrics;
+    }
+  | { type: 'tail'; tail?: DisplayMessage; status: string; metrics: ChatMetrics }
   | { type: 'ephemeral_session'; entries: unknown[] }
   | { type: 'done'; error?: string }
   | { type: 'error'; error: string };

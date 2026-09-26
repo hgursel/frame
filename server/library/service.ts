@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { LibraryEntry, LibraryPack, LibraryReference } from '../../shared/library.js';
-import type { WorkerInput } from '../../shared/types.js';
+import type { KnowledgePage } from '../../shared/types.js';
 import type { Store } from '../store.js';
 import type { Runner } from '../runner.js';
 import type { Knowledge } from '../knowledge.js';
@@ -165,7 +165,7 @@ export class KnowledgeLibrary {
     }
     return { ok: true };
   }
-  catalog(projectId: string): NonNullable<WorkerInput['knowledge']> {
+  catalog(projectId: string): KnowledgePage[] {
     return this.attachments(projectId).flatMap((a) => {
       const pack = this.get(a.packId, a.version);
       const revision = hash(pack);

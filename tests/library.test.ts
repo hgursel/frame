@@ -8,7 +8,12 @@ import { createApp } from '../server/app.js';
 import { Store } from '../server/store.js';
 import { KnowledgeLibrary, libraryUrl } from '../server/library/service.js';
 import { bundledPacks } from '../server/library/bundles.js';
-import { knowledgeContext, rankKnowledge } from '../server/knowledge-discovery.js';
+import {
+  knowledgeContext,
+  rankKnowledge,
+  readKnowledge,
+  searchKnowledge,
+} from '../server/knowledge-discovery.js';
 import { knowledgeTools } from '../server/knowledge-tools.js';
 const origin = 'http://127.0.0.1:3000';
 async function fixture() {
@@ -180,12 +185,10 @@ test('knowledge tools read library provenance, reject library edits, and cannot 
     const catalog = f.library.catalog(f.project.id),
       doc = catalog[0]!;
     const tools = knowledgeTools(catalog, 32768) as any[];
-    const search = await tools[0].execute('s', { query: 'contract review' });
-    assert(
-      JSON.parse(search.content[0].text).pages.some((p: any) => p.library?.version === '1.0.0'),
-    );
-    const result = await tools[1].execute('r', { id: doc.id });
-    assert.equal(JSON.parse(result.content[0].text).library.version, '1.0.0');
+    const search = searchKnowledge(catalog, { query: 'contract review' });
+    assert(search.pages.some((p) => p.library?.version === '1.0.0'));
+    assert(!('text' in search.pages[0]!));
+    assert.equal(readKnowledge(catalog, { id: doc.id }, 32768).library?.version, '1.0.0');
     await assert.rejects(
       tools[2].execute('w', {
         title: 'Edit',
@@ -195,10 +198,7 @@ test('knowledge tools read library provenance, reject library edits, and cannot 
       }),
       /current target page/,
     );
-    await assert.rejects(
-      (knowledgeTools([], 32768)[1] as any).execute('r', { id: doc.id }),
-      /not found/,
-    );
+    assert.throws(() => readKnowledge([], { id: doc.id }, 32768), /not found/);
     assert.match(doc.text, /not official legal text/);
     const before = f.library.get('business-contract-review', '1.0.0');
     await f.maintenance.initialize();
