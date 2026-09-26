@@ -1,4 +1,5 @@
-import { queryTemplate } from '../../maintenance/extraction.js';
+import { rankKnowledge } from '../../knowledge-discovery.js';
+import type { WorkerInput } from '../../../shared/types.js';
 import { createHash } from 'node:crypto';
 import YAML from 'yaml';
 import type { Store } from '../../store.js';
@@ -40,6 +41,7 @@ export function fragments(name: string) {
 }
 
 export class SchemaNotes {
+  methodCatalog?: (projectId: string) => NonNullable<WorkerInput['knowledge']>;
   readonly jobs = new Map<
     string,
     { controller: AbortController; status: NotesStatus; done: Promise<void> }
@@ -119,29 +121,45 @@ export class SchemaNotes {
       )
       .all(...(kind ? [projectId, kind] : [projectId])) as any[];
   }
-  /** Domain, glossary and recipe pages are tens of rows, so a substring filter is enough. */
+  /** Rank generated interpretations and curated methods together; unmatched query words are allowed. */
   search(
     projectId: string,
     query = '',
     kind: 'domain' | 'glossary' | 'recipe' | 'codes' | 'any' = 'any',
   ) {
-    const terms = words(query).split(' ').filter(Boolean).slice(0, 6);
-    const where =
-      `projectId=? AND state<>'retired'${kind === 'any' ? '' : ' AND kind=?'}` +
-      terms.map(() => " AND instr(lower(title||' '||body), lower(?))>0").join('');
-    const args = [projectId, ...(kind === 'any' ? [] : [kind]), ...terms];
-    const total = (
-      this.store.db
-        .prepare(`SELECT count(*) AS n FROM mssql_pages WHERE ${where}`)
-        .get(...args) as any
-    ).n;
-    const pages = this.store.db
-      .prepare(
-        `SELECT id,kind,title,body,at,modelId,state FROM mssql_pages WHERE ${where} ORDER BY kind,title LIMIT 12`,
-      )
-      .all(...args);
-    return { pages, total, status: this.status(projectId) };
+    const source = this.pages(projectId, kind === 'any' ? undefined : kind).map((p) => ({
+      ...p,
+      name: p.title,
+      text: p.body,
+      revision: p.at,
+    }));
+    if (kind === 'any' || kind === 'recipe')
+      for (const m of this.methodCatalog?.(projectId) || [])
+        source.push({
+          ...m,
+          title: m.name,
+          body: m.text,
+          kind: 'recipe',
+          state: m.verified ? 'accepted' : 'proposed',
+        });
+    const ranked = rankKnowledge(source, query);
+    const pages = ranked.slice(0, 4).map(({ doc }) => ({
+      id: doc.id,
+      kind: source.find((p) => p.id === doc.id)?.kind,
+      title: doc.name,
+      body: doc.text.slice(0, 2200),
+      truncated: doc.text.length > 2200,
+      verified: !!doc.verified,
+    }));
+    return {
+      pages,
+      total: ranked.length,
+      status: this.status(projectId),
+      notice:
+        'Read learned method IDs with read_knowledge if truncated. Interpretations are not catalog facts.',
+    };
   }
+
   /**
    * A compact orientation card for the system prompt. The full schema never fits; the shape of it
    * does, and a small model that knows the subject areas searches with the right word first.
@@ -156,7 +174,7 @@ export class SchemaNotes {
       )
       .all(projectId, this.schema.generation(projectId)) as any[];
     return (
-      'Database map (orientation only; always confirm with mssql_schema_search before writing SQL).\n' +
+      'Database map (orientation only; use supplied catalog facts and search only for missing details).\n' +
       (domains.length
         ? 'Subject areas: ' +
           domains
@@ -340,7 +358,7 @@ export class SchemaNotes {
     await this.objectNotes(projectId, objects, signal, status);
     await this.domains(projectId, objects, signal, status);
     await this.glossary(projectId, objects, signal, status);
-    await this.recipes(projectId, settings, signal, status);
+    // Recurring query methods are curated by project maintenance, not harvested a second time.
     // Query result values are never inputs to knowledge generation.
     await this.vocabulary(projectId, settings, objects, signal, status);
   }
@@ -555,52 +573,6 @@ export class SchemaNotes {
           );
         status.count++;
       }
-    }
-  }
-  /**
-   * Pass E: statements that actually ran against this database are better evidence than anything
-   * a model can infer from names. Only completed reads are harvested, never a change.
-   */
-  private async recipes(
-    projectId: string,
-    settings: MssqlSettings,
-    signal: AbortSignal,
-    status: NotesStatus,
-  ) {
-    const rows = this.store.db
-      .prepare(
-        `SELECT o.databaseName, o.sql, max(o.at) AS at, count(*) AS runs FROM mssql_operations o
-         JOIN conversations c ON c.id=o.conversationId
-         WHERE c.projectId=? AND c.incognito=0 AND o.source=? AND o.kind='read' AND o.status='completed'
-         GROUP BY o.databaseName, o.sql ORDER BY runs DESC, at DESC LIMIT 25`,
-      )
-      .all(projectId, this.schema.source(settings)) as any[];
-    const usable = rows.filter((r) => settings.databases.includes(r.databaseName));
-    if (!usable.length) return;
-    const modelId = this.settings().modelId;
-    let index = 0;
-    for (const row of usable) {
-      await this.yield(signal, projectId, status);
-      index++;
-      status.progress = `Recording completed queries · ${index}/${usable.length}`;
-      const template = queryTemplate(row.sql);
-      if (!template) continue;
-      const title = `Parameterized query · ${row.databaseName}`;
-      this.store.db
-        .prepare('INSERT OR REPLACE INTO mssql_pages VALUES (?,?,?,?,?,?,?,?)')
-        .run(
-          createHash('sha256')
-            .update(`${projectId}:recipe:${row.databaseName}:${template}`)
-            .digest('hex'),
-          projectId,
-          'recipe',
-          title,
-          `Database: ${row.databaseName}\n\nReview parameters and current schema before use. No results or example values are retained.\n\n\`\`\`sql\n${template}\n\`\`\``,
-          new Date().toISOString(),
-          modelId,
-          'proposed',
-        );
-      status.count++;
     }
   }
 }

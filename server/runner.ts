@@ -61,6 +61,7 @@ export class Runner extends EventEmitter {
       .get(id) as { status: string; error?: string } | undefined;
     return {
       revision: ++this.revision,
+      memory: JSON.parse(this.store.meta(`memory:${id}`) || '[]'),
       messages: readHistory(this.store.sessionFile(id)),
       running: false,
       status: last?.status || 'Ready',
@@ -80,6 +81,7 @@ export class Runner extends EventEmitter {
     pythonPath?: string,
     knowledge?: WorkerInput['knowledge'],
     operation: WorkerInput['operation'] = 'prompt',
+    reference?: WorkerInput['reference'],
   ) {
     const existing = this.store.db
       .prepare('SELECT conversationId, status FROM runs WHERE id=?')
@@ -171,6 +173,10 @@ export class Runner extends EventEmitter {
       stopRequested: false,
       pluginAbort: new AbortController(),
     };
+    active.snapshot.memory =
+      reference?.pages.filter((p) => p.method).map((p) => ({ id: p.id, title: p.title })) || [];
+    if (!conversation.incognito)
+      this.store.setMeta(`memory:${id}`, JSON.stringify(active.snapshot.memory));
     this.active.set(id, active);
     let completed = false;
     let error: string | undefined;
@@ -225,6 +231,7 @@ export class Runner extends EventEmitter {
           );
       } else if (event.type === 'snapshot') {
         active.snapshot = {
+          memory: active.snapshot.memory,
           messages: event.messages,
           running: true,
           status: active.stopRequested ? 'Stopping' : event.status,
@@ -289,6 +296,7 @@ export class Runner extends EventEmitter {
         documents,
         pythonPath,
         knowledge,
+        reference,
         operation,
         reports:
           this.reports?.enabled() && this.reports.projectEnabled(project.id)

@@ -104,6 +104,17 @@ export function deleteWorkspaceData(
         store.db.prepare('DELETE FROM mssql_operations WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM runs WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM meta WHERE key=?').run(`metrics:${c.id}`);
+        store.db.prepare('DELETE FROM meta WHERE key=?').run(`memory:${c.id}`);
+        store.db
+          .prepare(
+            "DELETE FROM project_methods WHERE EXISTS (SELECT 1 FROM json_each(json_extract(project_methods.payload,'$.sources')) WHERE json_extract(value,'$.id')=?)",
+          )
+          .run(c.id);
+        store.db
+          .prepare(
+            "DELETE FROM maintenance_candidates WHERE EXISTS (SELECT 1 FROM json_each(json_extract(maintenance_candidates.payload,'$.sources')) WHERE json_extract(value,'$.id')=?)",
+          )
+          .run(c.id);
         store.db
           .prepare("DELETE FROM maintenance_candidates WHERE json_extract(payload,'$.sourceId')=?")
           .run(c.id);
@@ -119,6 +130,7 @@ export function deleteWorkspaceData(
             )
             .run(projectId);
         for (const table of [
+          'project_methods',
           'maintenance_candidates',
           'maintenance_processed',
           'maintenance_findings',

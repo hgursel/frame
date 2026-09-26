@@ -21,8 +21,10 @@ function Activity({
   chatId,
   canSave,
   onSave,
+  memory,
 }: {
   messages: IndexedMessage[];
+  memory?: ChatSnapshot['memory'];
   status?: string;
   running: boolean;
   paused: boolean;
@@ -36,10 +38,12 @@ function Activity({
   useEffect(() => {
     if (pinned.current && panel.current) panel.current.scrollTop = panel.current.scrollHeight;
   }, [messages]);
-  if (!steps.length && !status) return null;
+  if (!steps.length && !status && !memory?.length) return null;
   const failures = steps.filter(({ message }) => message.failed).length;
   const label =
-    status || `View activity · ${steps.length} ${steps.length === 1 ? 'step' : 'steps'}`;
+    status ||
+    (!steps.length && memory?.length ? 'View activity · Project memory' : undefined) ||
+    `View activity · ${steps.length} ${steps.length === 1 ? 'step' : 'steps'}`;
   return (
     <details
       className={`activity ${running ? 'activity-running' : ''} ${paused ? 'activity-paused' : ''}`}
@@ -72,7 +76,14 @@ function Activity({
           pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
         }}
       >
-        {!steps.length && (
+        {!!memory?.length && (
+          <div className="memory-reference">
+            Project memory supplied: {memory.map((m) => m.title).join(' · ')}
+            <br />
+            Manage methods in Settings → Knowledge.
+          </div>
+        )}
+        {!steps.length && !memory?.length && (
           <p className="activity-empty">
             {running
               ? 'Details will appear here as the task progresses.'
@@ -140,9 +151,10 @@ export function ConversationMessages({
             ? 'Stopped'
             : undefined;
   const paused = !connected || snapshot.status === 'Awaiting SQL approval';
-  const activity = (messages: IndexedMessage[], current: boolean) => (
+  const activity = (messages: IndexedMessage[], current: boolean, showMemory = false) => (
     <Activity
       messages={messages}
+      memory={showMemory ? snapshot.memory : undefined}
       status={current ? currentStatus : undefined}
       running={current && snapshot.running}
       paused={paused}
@@ -184,7 +196,11 @@ export function ConversationMessages({
                   if (block.kind === 'activity')
                     return (
                       <React.Fragment key={block.key}>
-                        {activity(block.messages, current && block.key === liveKey)}
+                        {activity(
+                          block.messages,
+                          current && block.key === liveKey,
+                          current && block.key === 'activity-start',
+                        )}
                       </React.Fragment>
                     );
                   const { message: m, index } = block.item;

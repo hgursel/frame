@@ -9,6 +9,10 @@ export function maintenanceApi(app: FastifyInstance, maintenance: Maintenance) {
     void maintenance.tick().catch(() => {});
     return reply.code(202).send(run);
   });
+  app.delete<{ Params: { id: string } }>('/api/maintenance/methods/:id', (request) => {
+    maintenance.methods.forget(z.string().uuid().parse(request.params.id));
+    return { ok: true };
+  });
   app.post('/api/maintenance/stop', () => {
     maintenance.stop();
     return { ok: true };

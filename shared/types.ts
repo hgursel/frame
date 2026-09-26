@@ -52,6 +52,7 @@ export interface ChatSnapshot {
   status: string;
   error?: string;
   metrics?: ChatMetrics;
+  memory?: { id: string; title: string }[];
 }
 export interface ChatMetrics {
   context: {
@@ -73,6 +74,19 @@ export interface ChatMetrics {
 }
 export interface WorkerInput {
   operation?: 'prompt' | 'compact';
+  reference?: {
+    pages: {
+      id: string;
+      title: string;
+      text: string;
+      description?: string;
+      verified: boolean;
+      truncated: boolean;
+      method: boolean;
+    }[];
+    schema: { id: string; name: string; text: string; truncated: boolean }[];
+    schemaAt?: string;
+  };
   reports?: { organization: string; template: string; instructions: string };
   charts?: boolean;
   mssql?: { databases: string[]; map?: string };
@@ -95,6 +109,7 @@ export interface WorkerInput {
     tags?: string[];
     aliases?: string[];
     verified?: boolean;
+    method?: boolean;
   }[];
 }
 export interface KnowledgeDocument {

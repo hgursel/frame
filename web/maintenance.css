@@ -89,3 +89,277 @@
 .maintenance-grid > label {
   min-width: 0;
 }
+/* Knowledge settings use the same restrained surfaces as the conversation UI. */
+.maintenance-panel {
+  max-width: 1060px;
+  width: 100%;
+}
+.memory-heading,
+.memory-card-heading,
+.memory-toolbar,
+.memory-list-heading,
+.memory-save {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.memory-heading {
+  margin: 8px 0 28px;
+  align-items: flex-start;
+}
+.settings-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--subtle);
+  font-weight: 700;
+}
+.memory-heading h2 {
+  font-size: 27px;
+  letter-spacing: -0.035em;
+  margin: 8px 0;
+}
+.memory-heading p,
+.memory-toolbar p,
+.memory-card-heading p {
+  margin: 6px 0 0;
+}
+.memory-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.memory-tabs button {
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--subtle);
+  white-space: nowrap;
+}
+.memory-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+  font-weight: 650;
+}
+.memory-count {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--hover);
+  margin-left: 7px;
+  font-size: 11px;
+}
+.memory-badge {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--subtle);
+  text-transform: capitalize;
+}
+.memory-badge.is-live {
+  color: var(--accent);
+}
+.memory-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+.memory-stats > div {
+  padding: 22px;
+  display: grid;
+  gap: 8px;
+}
+.memory-stats > div + div {
+  border-left: 1px solid var(--line);
+}
+.memory-stats span,
+.memory-stats small {
+  color: var(--subtle);
+  font-size: 12px;
+}
+.memory-stats strong {
+  font-size: 30px;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+}
+.memory-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+  margin: 0 0 16px;
+}
+.memory-card h3,
+.memory-toolbar h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.memory-card p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.memory-card-heading {
+  margin-bottom: 22px;
+}
+.memory-card-heading p {
+  color: var(--subtle);
+  max-width: 600px;
+}
+.memory-card > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.memory-card > summary .memory-badge {
+  display: inline-block;
+  margin-left: 12px;
+  font-weight: 400;
+}
+.memory-principles {
+  margin: 0;
+  padding-left: 22px;
+}
+.memory-principles li {
+  padding: 8px 0 8px 8px;
+  font-size: 13px;
+}
+.memory-principles span {
+  display: block;
+  color: var(--subtle);
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.memory-card progress {
+  width: 100%;
+  height: 5px;
+  accent-color: var(--ink);
+  margin: 0 0 20px;
+}
+.memory-empty {
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  padding: 50px 26px;
+  text-align: center;
+}
+.memory-empty p {
+  max-width: 520px;
+  margin: 12px auto 0;
+  color: var(--subtle);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.memory-toolbar {
+  margin: 0 0 22px;
+  align-items: end;
+}
+.memory-toolbar label {
+  min-width: 180px;
+}
+.memory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  color: var(--subtle);
+  font-size: 11px;
+  margin: 16px 0;
+}
+.memory-projects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.memory-projects .check {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.maintenance-panel form .memory-card {
+  margin: 0;
+}
+.maintenance-panel form .memory-card > label {
+  margin-top: 20px;
+}
+.memory-save {
+  padding: 8px 0 20px;
+}
+.memory-method .rich-markdown {
+  max-height: 400px;
+  overflow: auto;
+}
+.memory-reference {
+  font-size: 12px;
+  padding: 10px 0;
+  color: var(--subtle);
+}
+@media (max-width: 640px) {
+  .memory-heading,
+  .memory-card-heading,
+  .memory-toolbar,
+  .memory-save {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .memory-stats > div {
+    padding: 14px 10px;
+  }
+  .memory-stats small {
+    line-height: 1.5;
+  }
+  .memory-card {
+    padding: 18px;
+  }
+  .memory-tabs {
+    gap: 20px;
+  }
+  .memory-toolbar label {
+    width: 100%;
+  }
+}
+.settings-panel[data-topic='knowledge'] {
+  max-width: 1160px;
+  padding: 38px clamp(20px, 4vw, 50px);
+}
+.settings-panel {
+  max-width: 1000px;
+}
+.settings-panel > h1 {
+  margin: 8px 0 14px;
+  letter-spacing: -0.035em;
+}
+.settings-section-heading {
+  margin-bottom: 24px;
+}
+.settings-section-heading h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.settings-section-heading p {
+  color: var(--subtle);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+.settings-panel .settings-topic {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-top: 20px;
+}
+.settings-panel .settings-topic > label:last-child {
+  margin-bottom: 0;
+}
+@media (max-width: 640px) {
+  .settings-panel .settings-topic {
+    padding: 18px;
+  }
+}

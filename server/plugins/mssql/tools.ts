@@ -39,7 +39,7 @@ export function mssqlTools(databases: string[]) {
       name: 'mssql_knowledge_search',
       label: 'Search SQL subject areas and recipes',
       description:
-        'Search generated database knowledge: subject-area pages that name what a group of related tables covers, a glossary of abbreviations this schema repeats, and parameterized query templates without results or example values. Start here when a question uses business vocabulary rather than table names, then confirm the objects with mssql_schema_search. All of it is model-written interpretation and may be wrong; the catalog tables in mssql_schema_read are authoritative.',
+        'Search generated database knowledge: subject-area pages that name what a group of related tables covers, a glossary of abbreviations this schema repeats, and parameterized query templates without results or example values. Use this when the supplied reference pack lacks the needed business vocabulary or method. Check cached schema only for objects or details not already supplied. All of it is model-written interpretation and may be wrong; the catalog tables in mssql_schema_read are authoritative.',
       parameters: Type.Object({
         query: Type.String(),
         kind: Type.Optional(

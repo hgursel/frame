@@ -74,6 +74,7 @@ export interface LearningUnit {
   kind: 'query' | 'conversation';
   text: string;
   source: string;
+  confirmed?: boolean;
 }
 /** SQL-tainted conversations are structural-only, including replies before/after a query. */
 export function learningUnits(branch: any[]): LearningUnit[] {
@@ -87,6 +88,18 @@ export function learningUnits(branch: any[]): LearningUnit[] {
     calls.some((c) => c.name?.startsWith('mssql_')) ||
     messages.some((m) => m.toolName?.startsWith('mssql_'));
   if (sql) {
+    const confirmed = new Set<string>();
+    let lastRead: string | undefined;
+    for (const message of messages) {
+      if (
+        message.role === 'toolResult' &&
+        !message.isError &&
+        calls.some((c) => c.id === message.toolCallId && c.name === 'mssql_query')
+      )
+        lastRead = message.toolCallId;
+      if (lastRead && message.role === 'user' && explicitRemember([{ type: 'message', message }]))
+        confirmed.add(lastRead);
+    }
     return calls
       .filter(
         (c) =>
@@ -100,7 +113,15 @@ export function learningUnits(branch: any[]): LearningUnit[] {
         const database = String(c.arguments?.database || '');
         if (!text || !/^[\p{L}\p{N}_ -]{1,128}$/u.test(database)) return [];
         const body = `Database: ${database}\n\nParameterized query template; review parameters and current schema before execution. Prior execution is not business validation.\n\n\`\`\`sql\n${text}\n\`\`\`\n\nNo result rows, sample values, or parameter values are retained.`;
-        return [{ key: fingerprint(body), kind: 'query' as const, text: body, source: c.id }];
+        return [
+          {
+            key: fingerprint(body),
+            kind: 'query' as const,
+            text: body,
+            source: c.id,
+            confirmed: confirmed.has(c.id),
+          },
+        ];
       });
   }
   const prose = messages
@@ -138,6 +159,15 @@ export function learningUnits(branch: any[]): LearningUnit[] {
   };
   for (const m of prose) {
     if (!m.text.trim()) continue;
+    if (
+      m.role === 'user' &&
+      explicitRemember([{ type: 'message', message: { role: 'user', content: m.text } }])
+    ) {
+      flush();
+      const method = units.at(-1);
+      if (method) method.confirmed = true;
+      continue;
+    }
     // Stable complete-message groups deduplicate across follow-ups. Split long messages with
     // overlap so later corrections survive without sending an entire conversation to the model.
     if (current.length + m.text.length + 20 > 5000) flush();
@@ -152,4 +182,20 @@ export function learningUnits(branch: any[]): LearningUnit[] {
   }
   flush();
   return units;
+}
+
+/** Only a direct user request can confirm the latest method; assistant/tool text cannot. */
+export function explicitRemember(branch: any[]) {
+  const users = branch.filter((e) => e.type === 'message' && e.message?.role === 'user');
+  const last = users.at(-1)?.message.content;
+  const text =
+    typeof last === 'string'
+      ? last
+      : (last || [])
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join(' ');
+  return /^(?:please\s+)?remember this (?:method|procedure|rule|query|workflow)[.!]?$/i.test(
+    text.trim(),
+  );
 }
