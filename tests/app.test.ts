@@ -520,15 +520,15 @@ test(
       );
       assert.equal((await f.auth('/settings', 'PUT', f.store.settings())).statusCode, 409);
       let sawStream = false;
+      const disappeared: string[] = [];
       const thinking: string[] = [];
       f.runner.on(c.id, () => {
-        for (const message of f.runner.snapshot(c.id).messages)
+        const current = f.runner.snapshot(c.id);
+        for (const message of current.messages)
           if (message.thinkingActive) thinking.push(message.thinking || '');
-        if (
-          f.runner.snapshot(c.id).running &&
-          f.runner.snapshot(c.id).messages.some((m) => m.text.includes('Hello from'))
-        )
-          sawStream = true;
+        const hasAnswer = current.messages.some((m) => m.text.includes('Hello from'));
+        if (sawStream && !hasAnswer) disappeared.push(current.status);
+        if (current.running && hasAnswer) sawStream = true;
       });
       // A tab holding the finished messages receives only the streaming tail.
       let client = f.runner.snapshot(c.id);
@@ -553,6 +553,7 @@ test(
       assert.equal(snapshot.status, 'completed');
       assert.equal(requests.length, 1);
       assert(sawStream);
+      assert.deepEqual(disappeared, [], 'A streamed answer must not disappear at message_end');
       assert(tails > 0, 'Streaming should produce tail-only updates');
       assert.deepEqual(mismatches, []);
       assert.equal(applyUpdate(client, snapshot), snapshot);

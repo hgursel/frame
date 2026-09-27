@@ -420,9 +420,14 @@ async function run(input: WorkerInput): Promise<WorkerCompletion> {
         metrics.context.prunedTokens = 0;
       }
     }
+    // Pi notifies subscribers before appending message_end to the native session.
+    // Publish after that append so clearing the streaming tail never removes the answer.
+    if (event.type === 'message_end') {
+      queueMicrotask(() => publish(true));
+      return;
+    }
     publish(
       status !== previousStatus ||
-        event.type === 'message_end' ||
         event.type === 'compaction_start' ||
         event.type === 'compaction_end' ||
         (event.type === 'message_update' &&
