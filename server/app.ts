@@ -395,6 +395,8 @@ export async function createApp(options: {
     });
     reply.hijack();
     streams.add(reply.raw);
+    // While a run streams, a tab holding the current finished messages receives only the tail.
+    let sentVersion: number | undefined;
     const publish = () => {
       if (reply.raw.destroyed) return;
       if (!store.conversation(id)) {
@@ -412,7 +414,10 @@ export async function createApp(options: {
         reply.raw.destroy();
         return;
       }
-      reply.raw.write(`data: ${JSON.stringify(runner.snapshot(id))}\n\n`);
+      const update = runner.update(id);
+      const value = update && update.messagesVersion === sentVersion ? update : runner.snapshot(id);
+      sentVersion = value.messagesVersion;
+      reply.raw.write(`data: ${JSON.stringify(value)}\n\n`);
     };
     runner.on(id, publish);
     publish();

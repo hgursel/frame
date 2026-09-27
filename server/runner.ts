@@ -5,7 +5,15 @@ import { fork, type ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ChatSnapshot, WorkerOutput, WorkerInput } from '../shared/types.js';
+import type {
+  ChatSnapshot,
+  ChatUpdate,
+  DisplayMessage,
+  KnowledgePage,
+  WorkerOutput,
+  WorkerInput,
+} from '../shared/types.js';
+import { readKnowledge, searchKnowledge } from './knowledge-discovery.js';
 import { readHistory } from './history.js';
 import { Store } from './store.js';
 import { emptyMetrics, metricsKey } from './context.js';
@@ -14,7 +22,12 @@ type ActiveRun = {
   process: ChildProcess;
   projectId: string;
   runId: string;
+  /** Finished messages; `tail` is the message still being generated. */
   snapshot: ChatSnapshot;
+  tail?: DisplayMessage;
+  messagesVersion: number;
+  /** Full-text catalog captured at the start of the turn, served to the worker on demand. */
+  knowledge: KnowledgePage[];
   stopRequested: boolean;
   pluginAbort: AbortController;
 };
@@ -39,6 +52,9 @@ export class Runner extends EventEmitter {
       const sqlApproval = this.mssql?.approval(id);
       return {
         ...live.snapshot,
+        messages: live.tail ? [...live.snapshot.messages, live.tail] : live.snapshot.messages,
+        streaming: !!live.tail,
+        messagesVersion: live.messagesVersion,
         sqlApproval,
         status: sqlApproval && !live.stopRequested ? 'Awaiting SQL approval' : live.snapshot.status,
         runId: live.runId,
@@ -48,6 +64,7 @@ export class Runner extends EventEmitter {
     if (this.store.conversation(id)?.incognito)
       return {
         ...(this.ephemeral.get(id)?.snapshot || { messages: [], running: false, status: 'Ready' }),
+        messagesVersion: this.revision + 1,
         revision: ++this.revision,
       };
     const settings = this.store.settings();
@@ -60,6 +77,7 @@ export class Runner extends EventEmitter {
       )
       .get(id) as { status: string; error?: string } | undefined;
     return {
+      messagesVersion: this.revision + 1,
       revision: ++this.revision,
       memory: JSON.parse(this.store.meta(`memory:${id}`) || '[]'),
       messages: readHistory(this.store.sessionFile(id)),
@@ -70,6 +88,13 @@ export class Runner extends EventEmitter {
         cached?.key === metricsKey(settings, project) ? cached.metrics : emptyMetrics(settings),
     };
   }
+  /** The in-progress message of a live run, for listeners that already hold its finished messages. */
+  update(id: string): ChatUpdate | undefined {
+    const live = this.active.get(id);
+    if (!live) return;
+    const { messages: _, streaming: __, ...snapshot } = this.snapshot(id);
+    return { ...snapshot, messagesVersion: live.messagesVersion, tail: live.tail ?? null };
+  }
   projectBusy(id: string) {
     return [...this.active.values()].some((run) => run.projectId === id);
   }
@@ -79,7 +104,7 @@ export class Runner extends EventEmitter {
     prompt: string,
     documents?: WorkerInput['documents'],
     pythonPath?: string,
-    knowledge?: WorkerInput['knowledge'],
+    knowledge: KnowledgePage[] = [],
     operation: WorkerInput['operation'] = 'prompt',
     reference?: WorkerInput['reference'],
   ) {
@@ -170,6 +195,8 @@ export class Runner extends EventEmitter {
         running: true,
         status: operation === 'compact' ? 'Compacting context' : 'Preparing conversation',
       },
+      messagesVersion: ++this.revision,
+      knowledge,
       stopRequested: false,
       pluginAbort: new AbortController(),
     };
@@ -199,6 +226,10 @@ export class Runner extends EventEmitter {
         void Promise.resolve()
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
+            if (event.action === 'knowledge_search')
+              return searchKnowledge(active.knowledge, event.args);
+            if (event.action === 'knowledge_read')
+              return readKnowledge(active.knowledge, event.args, settings.contextWindow);
             if (event.action === 'reports_sources' && this.reports)
               return this.reports.sources(id, event.args);
             if (event.action === 'reports_create' && this.reports)
@@ -240,6 +271,13 @@ export class Runner extends EventEmitter {
           status: active.stopRequested ? 'Stopping' : event.status,
           metrics: event.metrics,
         };
+        active.tail = event.tail;
+        active.messagesVersion = ++this.revision;
+        this.emit(id);
+      } else if (event.type === 'tail') {
+        active.tail = event.tail;
+        active.snapshot.status = active.stopRequested ? 'Stopping' : event.status;
+        active.snapshot.metrics = event.metrics;
         this.emit(id);
       } else {
         completed = event.type === 'done';
@@ -269,7 +307,15 @@ export class Runner extends EventEmitter {
       if (conversation.incognito)
         this.ephemeral.set(id, {
           entries: this.ephemeral.get(id)?.entries || [],
-          snapshot: { ...active.snapshot, running: false, status, error },
+          snapshot: {
+            ...active.snapshot,
+            messages: active.tail
+              ? [...active.snapshot.messages, active.tail]
+              : active.snapshot.messages,
+            running: false,
+            status,
+            error,
+          },
         });
       if (active.snapshot.metrics && !conversation.incognito)
         this.store.setMeta(
@@ -298,7 +344,8 @@ export class Runner extends EventEmitter {
         prompt,
         documents,
         pythonPath,
-        knowledge,
+        // Metadata only: page text is served through knowledge_search/knowledge_read.
+        knowledge: knowledge.map(({ text: _, ...entry }) => entry),
         reference,
         operation,
         reports:

@@ -1,41 +1,22 @@
 import test from 'node:test';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
-import path from 'node:path';
-import { tmpdir } from 'node:os';
-import { createApp } from '../server/app.js';
+import { appFixture } from './helpers.js';
 import { Store } from '../server/store.js';
 import { KnowledgeLibrary, libraryUrl } from '../server/library/service.js';
 import { bundledPacks } from '../server/library/bundles.js';
-import { knowledgeContext, rankKnowledge } from '../server/knowledge-discovery.js';
+import {
+  knowledgeContext,
+  rankKnowledge,
+  readKnowledge,
+  searchKnowledge,
+} from '../server/knowledge-discovery.js';
 import { knowledgeTools } from '../server/knowledge-tools.js';
-const origin = 'http://127.0.0.1:3000';
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-library-'));
-  const ctx = await createApp({ dataDir: root, origin, setupToken: 'test' });
-  const project = ctx.store.createProject({ name: 'Legal', instructions: '', toolsEnabled: false });
-  let cookie = '';
-  const call = (url: string, method = 'GET', payload?: unknown) =>
-    ctx.app.inject({
-      url: '/api' + url,
-      method: method as any,
-      payload: payload as any,
-      headers: { host: '127.0.0.1:3000', origin, cookie },
-    });
-  await call('/auth/setup', 'POST', { token: 'test', password: 'test-password-123' });
-  const login = await call('/auth/login', 'POST', { password: 'test-password-123' });
-  cookie = String(login.headers['set-cookie']).split(';')[0]!;
-  return {
-    ...ctx,
-    root,
-    project,
-    call,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { recursive: true, force: true });
-    },
-  };
+  const f = await appFixture('library');
+  await f.signIn();
+  const project = f.store.createProject({ name: 'Legal', instructions: '', toolsEnabled: false });
+  return { ...f, project };
 }
 test('library installation is explicit; attachments and retrieval are scoped to each project', async () => {
   const f = await fixture();
@@ -44,16 +25,16 @@ test('library installation is explicit; attachments and retrieval are scoped to 
     assert.equal(f.library.catalog(f.project.id).length, 0);
     const endpoint = `/projects/${f.project.id}/library/${pack.id}`;
     assert.equal(
-      (await f.call(endpoint, 'PUT', { version: pack.version, previousVersion: null })).statusCode,
+      (await f.auth(endpoint, 'PUT', { version: pack.version, previousVersion: null })).statusCode,
       400,
     );
     assert.equal(
-      (await f.call('/library/install', 'POST', { id: pack.id, version: pack.version })).statusCode,
+      (await f.auth('/library/install', 'POST', { id: pack.id, version: pack.version })).statusCode,
       200,
     );
     assert.equal(f.library.catalog(f.project.id).length, 0);
     assert.equal(
-      (await f.call(endpoint, 'PUT', { version: pack.version, previousVersion: null })).statusCode,
+      (await f.auth(endpoint, 'PUT', { version: pack.version, previousVersion: null })).statusCode,
       200,
     );
     assert.equal(f.library.catalog(f.project.id).length, pack.pages.length);
@@ -71,16 +52,16 @@ test('library installation is explicit; attachments and retrieval are scoped to 
     // Documents and their revisions remain separate from shared packs.
     assert.equal(f.knowledge.list(f.project.id).length, 0);
     assert.equal(
-      (await f.call(endpoint, 'PUT', { version: null, previousVersion: null })).statusCode,
+      (await f.auth(endpoint, 'PUT', { version: null, previousVersion: null })).statusCode,
       409,
     );
     assert.equal(
-      (await f.call(endpoint, 'PUT', { version: null, previousVersion: pack.version })).statusCode,
+      (await f.auth(endpoint, 'PUT', { version: null, previousVersion: pack.version })).statusCode,
       200,
     );
     assert.equal(f.library.catalog(f.project.id).length, 0);
     assert.equal(
-      (await f.call(libraryUrl(pack.id, pack.version, 'sick-leave').slice(4))).statusCode,
+      (await f.auth(libraryUrl(pack.id, pack.version, 'sick-leave').slice(4))).statusCode,
       200,
       'historical citations still resolve after detach',
     );
@@ -130,33 +111,24 @@ test('pack versions are immutable, pinned across updates and restarts, and impor
         ],
       }),
     );
-    const exported = await f.call(`/library/packs/${pack.id}/${pack.version}`);
+    const exported = await f.auth(`/library/packs/${pack.id}/${pack.version}`);
     assert.equal(exported.statusCode, 200);
     assert.deepEqual(exported.json(), pack);
-    assert.equal((await f.call('/library/import', 'POST', pack)).statusCode, 200);
+    assert.equal((await f.auth('/library/import', 'POST', pack)).statusCode, 200);
   } finally {
     await f.cleanup();
   }
 });
-test('library endpoints require authentication and same-origin mutations; active runs block attachment changes', async () => {
+test('active runs block library attachment changes', async () => {
   const f = await fixture();
   try {
-    const unauth = await f.app.inject({ url: '/api/library', headers: { host: '127.0.0.1:3000' } });
-    assert.equal(unauth.statusCode, 401);
-    const foreign = await f.app.inject({
-      url: '/api/library/install',
-      method: 'POST',
-      headers: { host: '127.0.0.1:3000', origin: 'https://elsewhere.test' },
-      payload: { id: 'california-hr', version: '1.0.0' },
-    });
-    assert.equal(foreign.statusCode, 403);
     f.library.install(bundledPacks[0]);
     const original = f.runner.projectBusy;
     f.runner.projectBusy = () => true;
     try {
       assert.equal(
         (
-          await f.call(`/projects/${f.project.id}/library/california-hr`, 'PUT', {
+          await f.auth(`/projects/${f.project.id}/library/california-hr`, 'PUT', {
             version: '1.0.0',
             previousVersion: null,
           })
@@ -167,7 +139,7 @@ test('library endpoints require authentication and same-origin mutations; active
       f.runner.projectBusy = original;
     }
     assert.equal(f.library.attachments(f.project.id).length, 0);
-    assert.equal((await f.call('/library/packs/unknown/1.0.0/pages/missing')).statusCode, 404);
+    assert.equal((await f.auth('/library/packs/unknown/1.0.0/pages/missing')).statusCode, 404);
   } finally {
     await f.cleanup();
   }
@@ -180,12 +152,10 @@ test('knowledge tools read library provenance, reject library edits, and cannot 
     const catalog = f.library.catalog(f.project.id),
       doc = catalog[0]!;
     const tools = knowledgeTools(catalog, 32768) as any[];
-    const search = await tools[0].execute('s', { query: 'contract review' });
-    assert(
-      JSON.parse(search.content[0].text).pages.some((p: any) => p.library?.version === '1.0.0'),
-    );
-    const result = await tools[1].execute('r', { id: doc.id });
-    assert.equal(JSON.parse(result.content[0].text).library.version, '1.0.0');
+    const search = searchKnowledge(catalog, { query: 'contract review' });
+    assert(search.pages.some((p) => p.library?.version === '1.0.0'));
+    assert(!('text' in search.pages[0]!));
+    assert.equal(readKnowledge(catalog, { id: doc.id }, 32768).library?.version, '1.0.0');
     await assert.rejects(
       tools[2].execute('w', {
         title: 'Edit',
@@ -195,10 +165,7 @@ test('knowledge tools read library provenance, reject library edits, and cannot 
       }),
       /current target page/,
     );
-    await assert.rejects(
-      (knowledgeTools([], 32768)[1] as any).execute('r', { id: doc.id }),
-      /not found/,
-    );
+    assert.throws(() => readKnowledge([], { id: doc.id }, 32768), /not found/);
     assert.match(doc.text, /not official legal text/);
     const before = f.library.get('business-contract-review', '1.0.0');
     await f.maintenance.initialize();
@@ -215,7 +182,7 @@ test('project deletion removes attachments and preserves shared packs and other 
     f.library.attach(f.project.id, p.id, p.version, null);
     const other = f.store.createProject({ name: 'Other', instructions: '', toolsEnabled: false });
     f.library.attach(other.id, p.id, p.version, null);
-    const response = await f.call(`/projects/${f.project.id}`, 'DELETE', { confirm: true });
+    const response = await f.auth(`/projects/${f.project.id}`, 'DELETE', { confirm: true });
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(
       f.store.db.prepare('SELECT * FROM project_library WHERE projectId=?').all(f.project.id)
@@ -324,7 +291,7 @@ test('expanded official packs preserve v1.0 snapshots and require explicit proje
         updated.pages.length,
       );
       assert.equal(
-        (await f.call(libraryUrl(id, old.version, old.pages[0]!.id).slice(4))).statusCode,
+        (await f.auth(libraryUrl(id, old.version, old.pages[0]!.id).slice(4))).statusCode,
         200,
       );
       assert.throws(() => f.library.install({ ...updated, version: '1.2.0' }), /reserved/);

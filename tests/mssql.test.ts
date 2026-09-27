@@ -1,11 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile, mkdir, writeFile, symlink, rename, lstat } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile, mkdir, writeFile, symlink, rename, lstat } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { unzipSync, strFromU8 } from 'fflate';
-import { createApp } from '../server/app.js';
+import { appFixture } from './helpers.js';
 import { classify } from '../server/plugins/mssql/policy.js';
 import {
   SchemaCache,
@@ -19,48 +18,17 @@ import { recoverDeletions } from '../server/deletion.js';
 import { extractJson } from '../server/plugins/mssql/generate.js';
 import { config, FakeGenerator, FakeSql } from './sql-fixture.js';
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-sql-'));
   const driver = new FakeSql();
   const generator = new FakeGenerator();
-  const ctx = await createApp({
-    dataDir: root,
-    origin: 'http://127.0.0.1:3000',
-    setupToken: 'test',
-    sqlDriver: driver,
-    generator,
-  });
-  const req = (url: string, method = 'GET', payload?: unknown, cookie = '') =>
-    ctx.app.inject({
-      url: '/api' + url,
-      method: method as any,
-      payload: payload as any,
-      headers: { host: '127.0.0.1:3000', origin: 'http://127.0.0.1:3000', cookie },
-    });
-  await req('/auth/setup', 'POST', { token: 'test', password: 'test-password-1234' });
-  const login = await req('/auth/login', 'POST', { password: 'test-password-1234' });
-  const cookie = String(login.headers['set-cookie']).split(';')[0]!;
-  const auth = (url: string, method = 'GET', payload?: unknown) =>
-    req(url, method, payload, cookie);
+  const ctx = await appFixture('sql', { sqlDriver: driver, generator });
+  await ctx.signIn();
   const project = ctx.store.createProject({
     name: 'SQL development',
     instructions: '',
     toolsEnabled: false,
   });
   const conversation = ctx.store.createConversation(project.id);
-  return {
-    ...ctx,
-    root,
-    driver,
-    generator,
-    project,
-    conversation,
-    req,
-    auth,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { recursive: true, force: true });
-    },
-  };
+  return { ...ctx, driver, generator, project, conversation };
 }
 test('MSSQL SQL policy parses statements and fails closed at dangerous boundaries', () => {
   for (const sql of [
@@ -125,7 +93,6 @@ test('MSSQL SQL policy parses statements and fails closed at dangerous boundarie
 test('MSSQL settings are secret, project access is enforced, approvals execute exactly once', async () => {
   const f = await fixture();
   try {
-    assert.equal((await f.req('/plugins/mssql')).statusCode, 401);
     const saved = await f.auth('/plugins/mssql', 'PUT', config);
     assert.equal(saved.statusCode, 200);
     assert(!saved.body.includes('reader-secret'));
@@ -158,15 +125,6 @@ test('MSSQL settings are secret, project access is enforced, approvals execute e
     const approval = f.mssql.approval(f.conversation.id)!;
     assert(approval);
     assert.equal(f.driver.calls.length, 1);
-    assert.equal(
-      (
-        await f.req(`/conversations/${f.conversation.id}/sql-approvals/${approval.id}`, 'POST', {
-          runId,
-          approve: true,
-        })
-      ).statusCode,
-      401,
-    );
     assert.equal(
       (
         await f.auth(`/conversations/${randomUUID()}/sql-approvals/${approval.id}`, 'POST', {
@@ -574,7 +532,6 @@ test('Enrichment endpoints are authenticated, project-scoped, and blocked while 
     f.mssql.save(config);
     f.store.saveSettings({ ...f.store.settings(), modelId: 'test-model' });
     // Unauthenticated callers reach nothing.
-    assert.equal((await f.req(`/projects/${f.project.id}/mssql/notes/status`)).statusCode, 401);
     // The plugin must be enabled for the project before knowledge can be generated.
     assert.equal(
       (await f.auth(`/projects/${f.project.id}/mssql/notes`, 'POST', {})).statusCode,
@@ -901,7 +858,6 @@ test('Deleting conversations preserves shared knowledge; deleting projects clean
     f.store.db
       .prepare('INSERT INTO mssql_operations (id,conversationId,runId) VALUES (?,?,?)')
       .run('op', c, 'run');
-    assert.equal((await f.req(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 401);
     assert.equal((await f.auth(`/projects/${p}`, 'DELETE', {})).statusCode, 400);
     f.knowledge.locks.add(p);
     assert.equal((await f.auth(`/projects/${p}`, 'DELETE', { confirm: true })).statusCode, 409);
@@ -1028,7 +984,6 @@ test('Charts retain full typed SQL results, scope access, and delete with their 
       p = f.project.id;
     f.mssql.save(config);
     f.mssql.setProject(p, true);
-    assert.equal((await f.req('/plugins/charts')).statusCode, 401);
     assert.equal((await f.auth('/plugins/charts', 'PUT', { enabled: true })).statusCode, 200);
     assert.equal((await f.auth(`/projects/${p}/plugins`, 'PUT', { charts: true })).statusCode, 200);
     assert.equal(f.mssql.projectEnabled(p), true, 'Updating Charts must preserve MSSQL');
@@ -1068,7 +1023,6 @@ test('Charts retain full typed SQL results, scope access, and delete with their 
     assert(chart.notices.some((n) => n.includes('NULL')));
     assert.equal(f.charts.list(c)[0]!.rows, 30);
     const url = `/conversations/${c}/charts/${ref.id}`;
-    assert.equal((await f.req(url)).statusCode, 401);
     assert.equal((await f.auth(url)).json().rows.length, 30);
     const csv = await f.auth(url + '?format=csv');
     assert(csv.body.includes('"\'=unsafe","-10","0"'));
@@ -1280,7 +1234,6 @@ test('Automatic SQL CSVs stay downloadable inside query results but out of conve
     f.mssql.setProject(f.project.id, false);
     f.mssql.save({ ...config, enabled: false });
     const url = `/conversations/${conversation}/artifacts`;
-    assert.equal((await f.req(url)).statusCode, 401);
     const listing = await f.auth(url);
     assert.equal(listing.statusCode, 200);
     assert.deepEqual(
@@ -1295,7 +1248,6 @@ test('Automatic SQL CSVs stay downloadable inside query results but out of conve
     assert.equal(csv.body, await readFile(path.join(directory, result.csv), 'utf8'));
     assert.match(String(csv.headers['content-disposition']), /attachment/);
     assert.equal((await f.auth(`${url}/sql-${legacyId}.csv`)).body, 'legacy export');
-    assert.equal((await f.req(`${url}/${result.csv}`)).statusCode, 401);
     assert.equal(
       (await f.auth(`/conversations/${other.id}/artifacts/${result.csv}`)).statusCode,
       404,

@@ -1,11 +1,11 @@
 import { taskFingerprint } from '../server/maintenance/methods.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
+import { appFixture } from './helpers.js';
 import { fingerprint, explicitRemember, learningUnits } from '../server/maintenance/extraction.js';
 import { recall, queryDependencies } from '../server/maintenance/recall.js';
 import { knowledgeContext } from '../server/knowledge-discovery.js';
@@ -21,12 +21,8 @@ const note = {
   },
 };
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-memory-'));
   const driver = new FakeSql();
-  const ctx = await createApp({
-    dataDir: root,
-    origin: 'http://127.0.0.1:3000',
-    setupToken: 'test',
+  const ctx = await appFixture('memory', {
     sqlDriver: driver,
     generator: { complete: async () => JSON.stringify(note) },
   });
@@ -72,18 +68,7 @@ async function fixture() {
         break;
     }
   };
-  return {
-    ...ctx,
-    root,
-    driver,
-    project,
-    seed,
-    run,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { recursive: true, force: true });
-    },
-  };
+  return { ...ctx, driver, project, seed, run };
 }
 test('learning waits for three distinct chats, ignores incognito, and never grows knowledge files', async () => {
   const f = await fixture();
@@ -385,20 +370,11 @@ test('real SDK request receives method content automatically and activity refere
       modelId: 'local-test',
       baseUrl: `http://127.0.0.1:${(model.address() as any).port}/v1`,
     });
-    const headers = { host: '127.0.0.1:3000', origin: 'http://127.0.0.1:3000' };
-    await f.app.inject({
-      method: 'POST',
-      url: '/api/auth/setup',
-      headers,
-      payload: { token: 'test', password: 'memory-test-password' },
-    });
-    const login = await f.app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      headers,
-      payload: { password: 'memory-test-password' },
-    });
-    const auth = { ...headers, cookie: String(login.headers['set-cookie']).split(';')[0]! };
+    const auth = {
+      host: '127.0.0.1:3000',
+      origin: 'http://127.0.0.1:3000',
+      cookie: await f.signIn(),
+    };
     const chat = f.store.createConversation(f.project.id);
     for (const text of ['How do I prepare maintenance approval?', 'And the recovery plan?']) {
       const response = await f.app.inject({

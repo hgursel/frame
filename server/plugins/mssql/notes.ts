@@ -1,5 +1,5 @@
 import { rankKnowledge } from '../../knowledge-discovery.js';
-import type { WorkerInput } from '../../../shared/types.js';
+import type { KnowledgePage } from '../../../shared/types.js';
 import { createHash } from 'node:crypto';
 import YAML from 'yaml';
 import type { Store } from '../../store.js';
@@ -41,7 +41,7 @@ export function fragments(name: string) {
 }
 
 export class SchemaNotes {
-  methodCatalog?: (projectId: string) => NonNullable<WorkerInput['knowledge']>;
+  methodCatalog?: (projectId: string) => KnowledgePage[];
   readonly jobs = new Map<
     string,
     { controller: AbortController; status: NotesStatus; done: Promise<void> }

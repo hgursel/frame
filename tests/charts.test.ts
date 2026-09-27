@@ -1,10 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, mkdir, writeFile, symlink, link } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, symlink, link } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { createApp } from '../server/app.js';
+import { appFixture } from './helpers.js';
 import {
   parseCsv,
   parseMarkdown,
@@ -14,30 +13,16 @@ import {
 } from '../server/plugins/charts/data.js';
 
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-charts-'));
-  const app = await createApp({
-    dataDir: root,
-    origin: 'http://127.0.0.1:3000',
-    setupToken: 'test',
-  });
-  const project = app.store.createProject({
+  const f = await appFixture('charts');
+  const project = f.store.createProject({
     name: 'Chart sources',
     instructions: '',
     toolsEnabled: false,
   });
-  const conversation = app.store.createConversation(project.id);
-  app.store.setMeta('charts:enabled', 'true');
-  app.charts.setProject(project.id, true);
-  return {
-    ...app,
-    root,
-    project,
-    conversation,
-    cleanup: async () => {
-      await app.app.close();
-      await rm(root, { force: true, recursive: true });
-    },
-  };
+  const conversation = f.store.createConversation(project.id);
+  f.store.setMeta('charts:enabled', 'true');
+  f.charts.setProject(project.id, true);
+  return { ...f, project, conversation };
 }
 
 test('CSV and GFM tables preserve values and reject malformed or oversized input', () => {

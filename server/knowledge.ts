@@ -34,10 +34,12 @@ export class Knowledge {
         .all(projectId) as unknown as KnowledgeDocument[]
     ).map((d) => ({ ...d, truncated: !!d.truncated }));
   }
-  get(projectId: string, id: string) {
-    const doc = this.list(projectId).find((d) => d.id === id);
+  get(projectId: string, id: string): KnowledgeDocument {
+    const doc = this.store.db
+      .prepare('SELECT * FROM documents WHERE projectId=? AND id=?')
+      .get(projectId, id) as unknown as KnowledgeDocument | undefined;
     if (!doc) throw fail('Document not found in this project.', 404);
-    return doc;
+    return { ...doc, truncated: !!doc.truncated };
   }
   directory(doc: Pick<KnowledgeDocument, 'projectId' | 'id'>) {
     return path.join(this.store.projectPath(doc.projectId), 'knowledge', doc.id);

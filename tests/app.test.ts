@@ -6,13 +6,15 @@ import path from 'node:path';
 import { createServer, get } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { createApp } from '../server/app.js';
+import { apiRoutes, appFixture, origin, waitUntil } from './helpers.js';
+import { deleteWorkspaceData } from '../server/deletion.js';
 import { readHistory, displayMessages } from '../server/history.js';
+import { applyUpdate } from '../web/snapshots.js';
 import { unzipSync, strFromU8 } from 'fflate';
 import YAML from 'yaml';
 import { documentCommand } from '../server/python.js';
 import { SessionManager } from '@earendil-works/pi-coding-agent';
 
-const origin = 'http://127.0.0.1:3000';
 test('reasoning projection handles structured and tagged streams without animating history', () => {
   const message = {
     role: 'assistant',
@@ -35,6 +37,35 @@ test('reasoning projection handles structured and tagged streams without animati
       ?.thinking,
     undefined,
   );
+});
+test('a data directory reached through a symlink stores knowledge and deletes projects', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'frame-symlink-test-'));
+  let app: Awaited<ReturnType<typeof createApp>>['app'] | undefined;
+  try {
+    await mkdir(path.join(root, 'real'));
+    await symlink(path.join(root, 'real'), path.join(root, 'link'));
+    const created = await createApp({
+      dataDir: path.join(root, 'link', 'data'),
+      origin,
+      setupToken: 'test',
+    });
+    app = created.app;
+    const project = created.store.createProject({
+      name: 'Linked',
+      instructions: '',
+      toolsEnabled: false,
+    });
+    const doc = await created.knowledge.add(project.id, 'notes.md', Buffer.from('# Notes'));
+    await created.wiki.record(project.id, doc.id);
+    assert.equal((await created.wiki.catalog(project.id))[0]?.revision, doc.revision);
+    assert.deepEqual(created.store.project(project.id), project);
+    assert.equal(created.knowledge.get(project.id, doc.id).truncated, false);
+    deleteWorkspaceData(created.store, created.runner, created.knowledge, project.id);
+    assert.equal(created.store.project(project.id), undefined);
+  } finally {
+    await app?.close();
+    await rm(root, { recursive: true, force: true });
+  }
 });
 test('production static UI is served with security headers', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'frame-static-test-'));
@@ -59,48 +90,38 @@ test('production static UI is served with security headers', async () => {
   }
 });
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'frame-app-test-'));
-  const ctx = await createApp({ dataDir: root, origin, setupToken: 'test-setup-token' });
-  const call = (url: string, method = 'GET', payload?: unknown, token = '') =>
-    ctx.app.inject({
-      url: `/api${url}`,
-      method: method as any,
-      payload: payload as any,
-      headers: { host: '127.0.0.1:3000', origin, ...(token ? { cookie: token } : {}) },
-    });
-  const setup = await call('/auth/setup', 'POST', {
-    token: 'test-setup-token',
-    password: 'test-password-12345',
-  });
-  assert.equal(setup.statusCode, 200);
-  const login = await call('/auth/login', 'POST', { password: 'test-password-12345' });
-  const token = String(login.headers['set-cookie']).split(';')[0]!;
-  const auth = (url: string, method = 'GET', payload?: unknown) =>
-    call(url, method, payload, token);
-  return {
-    ...ctx,
-    root,
-    call,
-    auth,
-    token,
-    cleanup: async () => {
-      await ctx.app.close();
-      await rm(root, { recursive: true, force: true });
-    },
-  };
+  const f = await appFixture('app');
+  await f.signIn();
+  return f;
 }
 
 test('authentication, origin checks, settings secrecy, and project boundaries', async () => {
   const f = await fixture();
   try {
-    assert.equal((await f.call('/projects')).statusCode, 401);
-    const blocked = await f.app.inject({
-      method: 'POST',
+    // Every API route, including plugin routes added later, requires a session and same-origin writes.
+    const routes = apiRoutes(f.app);
+    assert(routes.length > 60, `Only ${routes.length} routes found`);
+    const open = ['/api/auth/status', '/api/auth/setup', '/api/auth/login'];
+    for (const { method, url } of routes) {
+      const headers = { host: '127.0.0.1:3000', origin };
+      if (!open.includes(url)) {
+        const anonymous = await f.app.inject({ method: method as any, url, headers });
+        assert.equal(anonymous.statusCode, 401, `${method} ${url} without a session`);
+      }
+      if (method !== 'GET') {
+        const foreign = await f.app.inject({
+          method: method as any,
+          url,
+          headers: { ...headers, origin: 'https://evil.test', cookie: f.token },
+        });
+        assert.equal(foreign.statusCode, 403, `${method} ${url} from another origin`);
+      }
+    }
+    const crossSite = await f.app.inject({
       url: '/api/projects',
-      headers: { host: '127.0.0.1:3000', origin: 'https://evil.test', cookie: f.token },
-      payload: { name: 'No' },
+      headers: { host: '127.0.0.1:3000', cookie: f.token, 'sec-fetch-site': 'cross-site' },
     });
-    assert.equal(blocked.statusCode, 403);
+    assert.equal(crossSite.statusCode, 403);
     assert.equal(
       (await f.app.inject({ url: '/api/auth/status', headers: { host: 'evil.test' } })).statusCode,
       403,
@@ -152,13 +173,6 @@ test('authentication, origin checks, settings secrecy, and project boundaries', 
   }
 });
 
-async function waitUntil(test: () => boolean, timeout = 25000) {
-  const end = Date.now() + timeout;
-  while (!test()) {
-    if (Date.now() > end) throw new Error('Timed out waiting for agent');
-    await new Promise((resolve) => setTimeout(resolve, 30));
-  }
-}
 
 test(
   'SDK compaction checkpoints preserve history, resume once, expose usage and throughput, and survive failure/cancellation',
@@ -251,10 +265,6 @@ test(
       const c = seed();
       const original = readHistory(f.store.sessionFile(c.id));
       const id = randomUUID();
-      assert.equal(
-        (await f.call(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).statusCode,
-        401,
-      );
       assert.equal(
         (await f.auth(`/conversations/${c.id}/compact`, 'POST', { requestId: id })).statusCode,
         202,
@@ -510,15 +520,32 @@ test(
       );
       assert.equal((await f.auth('/settings', 'PUT', f.store.settings())).statusCode, 409);
       let sawStream = false;
+      const disappeared: string[] = [];
       const thinking: string[] = [];
       f.runner.on(c.id, () => {
-        for (const message of f.runner.snapshot(c.id).messages)
+        const current = f.runner.snapshot(c.id);
+        for (const message of current.messages)
           if (message.thinkingActive) thinking.push(message.thinking || '');
-        if (
-          f.runner.snapshot(c.id).running &&
-          f.runner.snapshot(c.id).messages.some((m) => m.text.includes('Hello from'))
-        )
-          sawStream = true;
+        const hasAnswer = current.messages.some((m) => m.text.includes('Hello from'));
+        if (sawStream && !hasAnswer) disappeared.push(current.status);
+        if (current.running && hasAnswer) sawStream = true;
+      });
+      // A tab holding the finished messages receives only the streaming tail.
+      let client = f.runner.snapshot(c.id);
+      let tails = 0;
+      const mismatches: string[] = [];
+      f.runner.on(c.id, () => {
+        const update = f.runner.update(c.id);
+        const merged = update && applyUpdate(client, update);
+        const full = f.runner.snapshot(c.id);
+        if (!merged) {
+          client = full;
+          return;
+        }
+        if (update.tail) tails++;
+        if (JSON.stringify(merged.messages) !== JSON.stringify(full.messages))
+          mismatches.push(JSON.stringify({ merged: merged.messages, full: full.messages }));
+        client = merged;
       });
       await waitUntil(() => !f.runner.active.has(c.id));
       const snapshot = f.runner.snapshot(c.id);
@@ -526,6 +553,10 @@ test(
       assert.equal(snapshot.status, 'completed');
       assert.equal(requests.length, 1);
       assert(sawStream);
+      assert.deepEqual(disappeared, [], 'A streamed answer must not disappear at message_end');
+      assert(tails > 0, 'Streaming should produce tail-only updates');
+      assert.deepEqual(mismatches, []);
+      assert.equal(applyUpdate(client, snapshot), snapshot);
       assert(thinking.some((t) => t.includes('First I inspect')));
       assert(thinking.some((t) => t.includes('Then I compare')));
       assert(!snapshot.messages.some((m) => m.thinkingActive));
@@ -699,7 +730,6 @@ test(
       const observed = f.runner.snapshot(stopChat.id);
       assert.equal(observed.runId, stopRun);
       assert(f.runner.snapshot(stopChat.id).revision! > observed.revision!);
-      assert.equal((await f.call(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 401);
       assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: randomUUID() })).statusCode, 409);
       assert.equal(f.runner.active.get(stopChat.id)?.stopRequested, false);
       assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 200);
@@ -749,7 +779,6 @@ test('uploads, OKF export, reviewed conversation updates, revisions, and project
           Buffer.from('\r\n--frame-test--\r\n'),
         ]),
       });
-    assert.equal((await upload('private.md', Buffer.from('x'), '')).statusCode, 401);
     assert.equal((await upload('payload.exe', Buffer.from('x'))).statusCode, 400);
     assert.equal((await upload('bad.txt', Buffer.from([255, 255]))).statusCode, 400);
     assert.equal((await upload('not.pdf', Buffer.from('not a PDF'))).statusCode, 400);
@@ -1134,7 +1163,6 @@ test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and ro
     const create = async (name: string) => (await f.auth('/projects/' + p.id + '/wiki', 'POST', { name, text: '# Source\n\nA retained fact.' })).json();
     const doc = await create('Temporary page');
     const endpoint = '/projects/' + p.id + '/documents/' + doc.id;
-    assert.equal((await f.call(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 401);
     assert.equal((await f.auth('/projects/' + other.id + '/documents/' + doc.id, 'DELETE', { revision: doc.revision })).statusCode, 404);
     assert.equal((await f.auth(endpoint, 'DELETE', { revision: '0'.repeat(64) })).statusCode, 409);
     f.knowledge.locks.add(p.id);

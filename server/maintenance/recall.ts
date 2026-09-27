@@ -1,4 +1,4 @@
-import type { WorkerInput } from '../../shared/types.js';
+import type { KnowledgePage } from '../../shared/types.js';
 import type { MssqlPlugin } from '../plugins/mssql/service.js';
 import { factHashOf } from '../plugins/mssql/notes.js';
 import type { Method, Methods } from './methods.js';
@@ -52,7 +52,7 @@ export function recall(
   sql: MssqlPlugin,
   projectId: string,
   query: string,
-  documents: NonNullable<WorkerInput['knowledge']>,
+  documents: KnowledgePage[],
   contextWindow: number,
 ) {
   let generation: string | undefined;

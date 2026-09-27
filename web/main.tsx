@@ -11,13 +11,14 @@ import { createRoot } from 'react-dom/client';
 import { AttachmentPicker } from './AttachmentPicker.js';
 import type {
   ChatSnapshot,
+  ChatUpdate,
   Conversation,
   Project,
   PublicSettings,
   KnowledgeDocument,
 } from '../shared/types.js';
 import { api } from './api.js';
-import { newerSnapshot } from './snapshots.js';
+import { applyUpdate } from './snapshots.js';
 import { ConversationMessages } from './ConversationMessages.js';
 import { ContextPanel, Throughput } from './ContextPanel.js';
 import { KnowledgePanel, SaveKnowledge, DocumentTools } from './Knowledge.js';
@@ -212,6 +213,12 @@ function Workspace() {
     running: false,
     status: 'Ready',
   });
+  // Streaming updates merge into the latest snapshot synchronously, not a stale render's copy.
+  const snapshotRef = useRef(snapshot);
+  const showSnapshot = (value: ChatSnapshot) => {
+    snapshotRef.current = value;
+    setSnapshot(value);
+  };
   const [draft, setDraft] = useState('');
   const [lastSubmitted, setLastSubmitted] = useState<{
     chatId: string;
@@ -222,11 +229,14 @@ function Workspace() {
   const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(false);
   const [stoppingChat, setStoppingChat] = useState('');
-  const applySnapshot = (id: string, value: ChatSnapshot) => {
-    if (currentChat.current === id) {
-      setSnapshot((current) => newerSnapshot(current, value));
-      setLoadedChatId(id);
-    }
+  /** Returns false when a streaming update needs a full snapshot first. */
+  const applySnapshot = (id: string, value: ChatSnapshot | ChatUpdate) => {
+    if (currentChat.current !== id) return true;
+    const next = applyUpdate(snapshotRef.current, value);
+    if (!next) return false;
+    if (next !== snapshotRef.current) showSnapshot(next);
+    setLoadedChatId(id);
+    return true;
   };
   const [artifacts, setArtifacts] = useState<{ name: string }[]>([]);
   const [settings, setSettings] = useState<PublicSettings>();
@@ -275,7 +285,7 @@ function Workspace() {
     void refresh().catch((e) => setError(e.message));
   }, []);
   useEffect(() => {
-    setSnapshot({ messages: [], running: false, status: 'Ready' });
+    showSnapshot({ messages: [], running: false, status: 'Ready' });
     setArtifacts([]);
     setConnected(false);
     setLoadedChatId('');
@@ -287,12 +297,12 @@ function Workspace() {
     let lastEvent = 0;
     let polling = false;
     let receivedRevision = 0;
-    const receive = (value: ChatSnapshot) => {
+    const receive = (value: ChatSnapshot | ChatUpdate) => {
       if (!live || currentChat.current !== chatId) return;
       if ((value.revision ?? 0) < receivedRevision) return;
       receivedRevision = value.revision ?? 0;
       running = value.running;
-      applySnapshot(chatId, value);
+      if (!applySnapshot(chatId, value)) void reconcile();
     };
     const reconcile = async () => {
       if (polling || !live) return;
@@ -471,7 +481,7 @@ function Workspace() {
         setDraft('');
         setAttached([]);
         setLastSubmitted(undefined);
-        setSnapshot({ messages: [], running: false, status: 'Ready' });
+        showSnapshot({ messages: [], running: false, status: 'Ready' });
         setPage('chat');
         if (kind === 'projects') {
           currentProject.current = '';
