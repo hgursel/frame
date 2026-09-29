@@ -4,12 +4,14 @@ import type { Runner } from '../runner.js';
 import type { MssqlPlugin } from './mssql/service.js';
 import type { ChartsPlugin } from './charts/service.js';
 import type { ReportsPlugin } from './reports/service.js';
+import type { PrivateTools } from './private-tools/service.js';
 export function projectPluginsApi(
   app: FastifyInstance,
   runner: Runner,
   sql: MssqlPlugin,
   charts: ChartsPlugin,
   reports: ReportsPlugin,
+  privateTools: PrivateTools,
 ) {
   const project = (id: string) => {
     z.string().uuid().parse(id);
@@ -24,6 +26,8 @@ export function projectPluginsApi(
     chartsSystemEnabled: charts.enabled(),
     reports: reports.projectEnabled(id),
     reportsSystemEnabled: reports.enabled(),
+    privateTools: privateTools.projectEnabled(id),
+    privateToolsSystemEnabled: privateTools.settings().enabled,
   });
   app.get<{ Params: { id: string } }>('/api/projects/:id/plugins', (req) =>
     snapshot(project(req.params.id)),
@@ -45,12 +49,14 @@ export function projectPluginsApi(
         mssql: z.boolean().optional(),
         charts: z.boolean().optional(),
         reports: z.boolean().optional(),
+        privateTools: z.boolean().optional(),
       })
       .strict()
       .parse(req.body);
     if (value.mssql !== undefined) sql.setProject(id, value.mssql);
     if (value.charts !== undefined) charts.setProject(id, value.charts);
     if (value.reports !== undefined) reports.setProject(id, value.reports);
+    if (value.privateTools !== undefined) privateTools.setProject(id, value.privateTools);
     return snapshot(id);
   });
 }

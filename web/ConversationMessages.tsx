@@ -168,7 +168,8 @@ export function ConversationMessages({
           : snapshot.status === 'stopped'
             ? 'Stopped'
             : undefined;
-  const paused = !connected || snapshot.status === 'Awaiting SQL approval';
+  const paused =
+    !connected || ['Awaiting SQL approval', 'Awaiting tool approval'].includes(snapshot.status);
   const activity = (messages: IndexedMessage[], current: boolean, showMemory = false) => (
     <Activity
       messages={messages}

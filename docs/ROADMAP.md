@@ -92,6 +92,13 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Incognito transcript/compaction state stays in memory, is excluded from history and learning, and ends on leave/reload/end or heartbeat expiry. Temporary plugin files and records are cleaned up; host tools and permanent uploads are disabled in incognito.
 - Tests cover scheduling, interruption/restart, publishing policies, SQL value exclusion, retrieval, memory-only SDK follow-ups, and browser settings/review/incognito workflows. Real-model knowledge quality remains an acceptance step.
 
+## Private Tools (implemented)
+
+- System settings for local executable operations, fixed arguments, dotenv paths, usage guidance, and flat typed JSON inputs; enable separately per project.
+- Exact per-call approvals by default, optional automatic execution, process-group cancellation, timeouts, and combined output limits. No automatic execution on save or retry after failure.
+- Credentials stay in local environment files. Worker definitions exclude paths and fixed arguments; exact environment values are redacted from stdout before returning results. No general host tools required.
+- Tests exercise harmless private scripts, real SDK calls, settings/approval UI, and mobile layout. Your actual integration remains private and requires local validation. See [Private Tools](PRIVATE_TOOLS.md).
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.

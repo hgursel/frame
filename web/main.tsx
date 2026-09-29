@@ -4,6 +4,7 @@ import './maintenance.css';
 import { PluginCatalog } from './PluginCatalog.js';
 import './charts.css';
 import { ProjectPlugins, SqlApprovalCard } from './Plugins.js';
+import { PrivateApprovalCard } from './PrivateTools.js';
 import './plugins.css';
 import { SidebarMenu } from './SidebarMenu.js';
 import React, { useEffect, useRef, useState } from 'react';
@@ -812,6 +813,9 @@ function Workspace() {
                   onSave={setSaveIndex}
                   canSave={!incognitoId || incognitoId !== chatId}
                 />
+                {snapshot.privateApprovals?.map((approval) => (
+                  <PrivateApprovalCard key={approval.id} approval={approval} chatId={chatId} />
+                ))}
                 {snapshot.sqlApproval && (
                   <SqlApprovalCard
                     key={snapshot.sqlApproval.id}
