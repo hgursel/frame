@@ -1,4 +1,6 @@
 import { KnowledgeLibrary, libraryApi } from './library/service.js';
+import { PrivateTools } from './plugins/private-tools/service.js';
+import { privateToolsApi } from './plugins/private-tools/api.js';
 import { recall, validSqlMethod } from './maintenance/recall.js';
 import { Incognito } from './incognito.js';
 import { Maintenance } from './maintenance/service.js';
@@ -96,7 +98,8 @@ export async function createApp(options: {
       : undefined;
   };
   const reports = new ReportsPlugin(store, python, charts);
-  const runner = new Runner(store, mssql, charts, reports);
+  const privateTools = new PrivateTools(store);
+  const runner = new Runner(store, mssql, charts, reports, privateTools);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
@@ -469,7 +472,8 @@ export async function createApp(options: {
   knowledgeApi(app, knowledge, wiki, runner);
   libraryApi(app, library, runner, knowledge);
   mssqlApi(app, mssql, runner);
-  projectPluginsApi(app, runner, mssql, charts, reports);
+  projectPluginsApi(app, runner, mssql, charts, reports, privateTools);
+  privateToolsApi(app, privateTools, runner);
   reportsApi(app, reports, runner);
   chartsApi(app, charts, runner);
   wiki.schemaFiles = (id) => {
@@ -507,6 +511,7 @@ export async function createApp(options: {
     mssql,
     charts,
     reports,
+    privateTools,
     maintenance,
     incognito,
   };
