@@ -188,7 +188,7 @@ export class KnowledgeLibrary {
           description: page.description,
           tags: page.tags,
           library,
-          text: `# ${page.title}\n\nPack: ${pack.title} v${pack.version}. ${authored ? 'Frame-authored' : 'Imported, unverified'} ${page.kind}; not official legal text or company policy.\nSource check: ${pack.reviewedAt}; not a guarantee of current law. Effective date: ${page.effectiveDate || 'varies by provision; verify the applicable source'}.\nApplicability: ${page.applicability}\nLocal citation: [${page.title}](${library.url})\n\n${page.text}\n\n## Publisher references\n${page.sources.map((s) => `- [${s.title}](${s.url}) — ${s.locator}`).join('\n') || 'Original review workflow; cite the actual project agreements for factual and legal claims.'}`,
+          text: `# ${page.title}\n\nPack: ${pack.title} v${pack.version}. ${authored ? 'Frame-authored' : 'Imported, unverified'} ${page.kind}; not official legal text, an agency standard, or company policy.\nSource check: ${pack.reviewedAt}; verify current guidance and applicable requirements. Effective date: ${page.effectiveDate || 'varies by provision; verify the applicable source'}.\nApplicability: ${page.applicability}\nLocal citation: [${page.title}](${library.url})\n\n${page.text}\n\n## Publisher references\n${page.sources.map((s) => `- [${s.title}](${s.url}) — ${s.locator}`).join('\n') || 'Author-provided workflow or template; cite project documents for organizational facts and verify applicable requirements separately.'}`,
         };
       });
     });

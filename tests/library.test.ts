@@ -232,6 +232,17 @@ test('starter topics retrieve on representative HR and contract requests with bo
       ['Rent CAM NNN operating costs reconciliation', 'rent-operating-costs'],
       ['Lease renewal option repairs surrender', 'lease-options-exit'],
       ['Statements of work SOW change orders deliverables', 'statements-of-work'],
+      ['Compare our security procedures with this framework and identify gaps', 'csf-gap-review'],
+      ['Cybersecurity assessment questions and evidence', 'security-assessment'],
+      ['Create a cybersecurity risk register template', 'risk-register'],
+      ['MFA account security access review', 'account-security'],
+      ['Logging detection SIEM coverage', 'logging-detection'],
+      ['Prioritize vulnerabilities using CISA KEV', 'vulnerability-triage'],
+      ['Create an incident-response checklist for our IT team', 'incident-checklist'],
+      ['Review our proposed internal AI application for operational risks', 'ai-rmf-overview'],
+      ['AI use assessment template', 'ai-use-assessment'],
+      ['AI governance human oversight', 'ai-oversight'],
+      ['Local model evaluation monitoring regression', 'ai-evaluation-monitoring'],
     ])
       assert(
         rankKnowledge(catalog, query!)
@@ -261,8 +272,8 @@ test('expanded official packs preserve v1.0 snapshots and require explicit proje
     };
     assert.equal(
       f.library.list().length,
-      5,
-      'Fresh catalog shows five current packs, not every historical version',
+      8,
+      'Fresh catalog shows eight current packs, not every historical version',
     );
     for (const id of Object.keys(fingerprints)) {
       const old = f.library.get(id, '1.0.0'),
