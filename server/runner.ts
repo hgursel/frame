@@ -1,5 +1,5 @@
 import type { ReportsPlugin } from './plugins/reports/service.js';
-import type { PrivateTools } from './plugins/private-tools/service.js';
+import type { Skills } from './skills.js';
 import type { ChartsPlugin } from './plugins/charts/service.js';
 import type { MssqlPlugin } from './plugins/mssql/service.js';
 import { fork, type ChildProcess } from 'node:child_process';
@@ -41,32 +41,24 @@ export class Runner extends EventEmitter {
     readonly mssql?: MssqlPlugin,
     readonly charts?: ChartsPlugin,
     readonly reports?: ReportsPlugin,
-    readonly privateTools?: PrivateTools,
+    readonly skills?: Skills,
   ) {
     super();
     this.setMaxListeners(100);
     store.ephemeralBranch = (id) => (this.ephemeral.get(id)?.entries || []) as any[];
     mssql?.on('change', (id: string) => this.emit(id));
-    privateTools?.on('change', (id: string) => this.emit(id));
   }
   snapshot(id: string): ChatSnapshot {
     const live = this.active.get(id);
     if (live) {
       const sqlApproval = this.mssql?.approval(id);
-      const privateApprovals = this.privateTools?.approvals(id) || [];
       return {
         ...live.snapshot,
         messages: live.tail ? [...live.snapshot.messages, live.tail] : live.snapshot.messages,
         streaming: !!live.tail,
         messagesVersion: live.messagesVersion,
         sqlApproval,
-        privateApprovals,
-        status:
-          !live.stopRequested && privateApprovals.length
-            ? 'Awaiting tool approval'
-            : sqlApproval && !live.stopRequested
-              ? 'Awaiting SQL approval'
-              : live.snapshot.status,
+        status: sqlApproval && !live.stopRequested ? 'Awaiting SQL approval' : live.snapshot.status,
         runId: live.runId,
         revision: ++this.revision,
       };
@@ -236,8 +228,6 @@ export class Runner extends EventEmitter {
         void Promise.resolve()
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
-            if (event.action === 'private_tool' && this.privateTools)
-              return this.privateTools.invoke(id, runId, event.args, active.pluginAbort.signal);
             if (event.action === 'knowledge_search')
               return searchKnowledge(active.knowledge, event.args);
             if (event.action === 'knowledge_read')
@@ -359,7 +349,8 @@ export class Runner extends EventEmitter {
         // Metadata only: page text is served through knowledge_search/knowledge_read.
         knowledge: knowledge.map(({ text: _, ...entry }) => entry),
         reference,
-        privateTools: this.privateTools?.context(project.id),
+        // Skills are read and run with host tools, so they are offered only when those are on.
+        skills: project.toolsEnabled ? this.skills?.context(project.id) : undefined,
         operation,
         reports:
           this.reports?.enabled() && this.reports.projectEnabled(project.id)

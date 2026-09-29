@@ -309,8 +309,6 @@ export function PluginSettings() {
   );
 }
 export function ProjectPlugins({ projectId }: { projectId: string }) {
-  const [privateTools, setPrivateTools] = useState(false);
-  const [privateSystem, setPrivateSystem] = useState(false);
   const [reports, setReports] = useState(false);
   const [reportsSystem, setReportsSystem] = useState(false);
   const [charts, setCharts] = useState(false);
@@ -331,14 +329,10 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
       chartsSystemEnabled: boolean;
       reports: boolean;
       reportsSystemEnabled: boolean;
-      privateTools: boolean;
-      privateToolsSystemEnabled: boolean;
     }>(`/projects/${projectId}/plugins`)
       .then((v) => {
         if (live) {
           setEnabled(v.mssql);
-          setPrivateTools(v.privateTools);
-          setPrivateSystem(v.privateToolsSystemEnabled);
           setSystem(v.systemEnabled);
           setCharts(v.charts);
           setReports(v.reports);
@@ -357,22 +351,6 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project plugins</h2>
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          aria-label="Enable Private Tools for this project"
-          disabled={!loaded || busy}
-          checked={privateTools}
-          onChange={(e) => setPrivateTools(e.target.checked)}
-        />
-        Private Tools
-      </label>
-      <p className="muted small">
-        Use registered local integrations with their configured approval rules.{' '}
-        {privateSystem
-          ? 'Private Tools is enabled system-wide.'
-          : 'Configure Private Tools in Settings → Plugins first.'}
-      </p>
       <label className="checkbox">
         <input
           type="checkbox"
@@ -435,7 +413,6 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
               mssql: enabled,
               charts,
               reports,
-              privateTools,
             });
             setNotice('Project plugins saved.');
             setSavedVersion((v) => v + 1);

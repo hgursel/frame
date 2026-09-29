@@ -92,17 +92,23 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Incognito transcript/compaction state stays in memory, is excluded from history and learning, and ends on leave/reload/end or heartbeat expiry. Temporary plugin files and records are cleaned up; host tools and permanent uploads are disabled in incognito.
 - Tests cover scheduling, interruption/restart, publishing policies, SQL value exclusion, retrieval, memory-only SDK follow-ups, and browser settings/review/incognito workflows. Real-model knowledge quality remains an acceptance step.
 
-## Private Tools (implemented)
+## Skills (implemented)
 
-- System settings for local executable operations, fixed arguments, dotenv paths, usage guidance, and flat typed JSON inputs; enable separately per project.
-- Exact per-call approvals by default, optional automatic execution, process-group cancellation, timeouts, and combined output limits. No automatic execution on save or retry after failure.
-- Credentials stay in local environment files. Worker definitions exclude paths and fixed arguments; exact environment values are redacted from stdout before returning results. No general host tools required.
-- Tests exercise harmless private scripts, real SDK calls, settings/approval UI, and mobile layout. Your actual integration remains private and requires local validation. See [Private Tools](PRIVATE_TOOLS.md).
+- Settings for absolute Agent Skills folders scanned with the Pi SDK loader; warnings for invalid, duplicate, or unreadable skills. Rescanned each turn, with no execution or installation on save.
+- Per-project skill selection. Skills are offered only with trusted agent tools and never in incognito chats; `disable-model-invocation` skills are hidden from the model but available through `/skill:name`.
+- Composer `/` picker inserting `/skill:name`; Pi expands the full `SKILL.md` for that turn. History and knowledge learning show the short command instead of the skill body; preflight counts the expansion.
+- Skills load their own credentials. Frame does not read, inject, or redact `.env` values, and trusted agent tools remain unsandboxed.
+- Replaces Private Tools: its code is removed and stored registrations are deleted on startup; external scripts are untouched.
+- API, real-SDK/mock-model, and browser tests. Skill selection and adherence with a real local model remain acceptance work. See [Skills](SKILLS.md).
+
+## Private Tools (removed)
+
+The registered-script plugin with per-operation JSON inputs, approvals, and `.env` redaction was removed in favor of Skills. Stored registrations are deleted on startup; external scripts and credentials are untouched.
 
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
-2. **MCP and skills:** choose one maintained MCP integration or narrow adapter; support selected transports, secret references, connectivity tests, explicit trust, project scoping, and cleanup. Install trusted skills only after displaying what code/dependencies will run. Bridge extension dialogs and cancel unsupported interactions. Do not silently auto-approve.
+2. **MCP:** deferred at the owner's request in favor of Skills. If revisited, choose one maintained integration or narrow adapter with selected transports, secret references, connectivity tests, explicit trust, project scoping, and cleanup. Do not silently auto-approve. Online skill installation, if added, must display what code and dependencies will run first.
 3. **Knowledge refinements:** full OKF bundle import/round-trip editing, semantic contradiction review, richer dependency tracking, and larger knowledge quotas. Scheduled structural health checks and controlled conversation learning are implemented; no autonomous factual verification.
 4. **Packaging and diagnostics:** repeatable Ubuntu installer/uninstaller, dependency checks, sanitized diagnostics, admin password/token rotation, backup/restore commands, and signed versioned releases. Avoid unattended self-updates.
 

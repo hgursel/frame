@@ -1,5 +1,5 @@
 import type { LibraryReference } from './library.js';
-import type { PrivateToolDefinition, PrivateToolApproval } from './private-tools.js';
+import type { SkillEntry } from './skills.js';
 import type { ChartRef } from './charts.js';
 import type { SqlApproval, SqlResult } from './plugins.js';
 export interface ModelSettings {
@@ -53,7 +53,6 @@ export interface ChatSnapshot {
   streaming?: boolean;
   runId?: string;
   sqlApproval?: SqlApproval;
-  privateApprovals?: PrivateToolApproval[];
   messages: DisplayMessage[];
   running: boolean;
   status: string;
@@ -88,7 +87,7 @@ export interface ChatMetrics {
   };
 }
 export interface WorkerInput {
-  privateTools?: { instructions: string; tools: PrivateToolDefinition[] };
+  skills?: SkillEntry[];
   operation?: 'prompt' | 'compact';
   reference?: {
     pages: {

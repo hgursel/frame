@@ -74,3 +74,76 @@
 .sql-result {
   min-width: 0;
 }
+.skill-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 14px;
+  display: grid;
+  gap: 8px;
+}
+.skill-list li {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.skill-list span {
+  color: var(--subtle);
+  font-size: 13px;
+}
+.skill-list code {
+  font-size: 11px;
+  color: var(--subtle);
+  overflow-wrap: anywhere;
+}
+.skill-list .skill-tag {
+  justify-self: start;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.skill-picker {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: calc(100% - 4px);
+  max-height: 260px;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px #0002;
+  padding: 6px;
+  z-index: 6;
+}
+.skill-picker [role='option'] {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  min-width: 0;
+}
+.skill-picker [role='option'][aria-selected='true'],
+.skill-picker [role='option']:hover {
+  background: var(--surface);
+}
+.skill-picker [role='option'] span {
+  color: var(--subtle);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.skill-picker p {
+  margin: 6px 10px;
+}
+@media (max-width: 760px) {
+  .skill-picker {
+    left: 12px;
+    right: 12px;
+  }
+}
