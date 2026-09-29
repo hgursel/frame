@@ -139,7 +139,7 @@ try {
   ctx.skills.save({ folders: [] });
   await page.getByRole('button', { name: /^Project menu:/ }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
-  await page.getByLabel('Remove unavailable skill lookup').uncheck();
+  await page.getByRole('button', { name: 'Remove unavailable skill lookup' }).click();
   await page.getByRole('button', { name: 'Save project skills', exact: true }).click();
   await expect(page.getByText('Project skills saved.', { exact: true })).toBeVisible();
   assert.deepEqual(ctx.skills.enabled(project.id), []);

@@ -187,16 +187,17 @@ export function ProjectSkillsSettings({ projectId }: { projectId: string }) {
         enabled
           .filter((name) => !value.skills.some((s) => s.name === name))
           .map((name) => (
-            <label className="checkbox" key={name}>
-              <input
-                type="checkbox"
+            <div className="button-row" key={name}>
+              <span>{name} — unavailable</span>
+              <button
+                type="button"
                 aria-label={`Remove unavailable skill ${name}`}
                 disabled={busy}
-                checked
-                onChange={() => setEnabled((names) => names.filter((n) => n !== name))}
-              />
-              {name} — unavailable; uncheck to remove
-            </label>
+                onClick={() => setEnabled((names) => names.filter((n) => n !== name))}
+              >
+                Remove
+              </button>
+            </div>
           ))}
       {value && (
         <button
