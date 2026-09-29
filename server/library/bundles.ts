@@ -1,4 +1,5 @@
 import { expandedPacks } from './expansions.js';
+import { securityAiPacks } from './security-ai.js';
 import type { LibraryPack, LibraryPage, LibrarySource } from '../../shared/library.js';
 const source = (title: string, url: string, locator: string): LibrarySource => ({
   title,
@@ -394,4 +395,8 @@ Topic | earlier clause | later clause | substantive change | practical effect | 
   },
 ];
 
-export const bundledPacks: LibraryPack[] = [...initialPacks, ...expandedPacks(initialPacks)];
+export const bundledPacks: LibraryPack[] = [
+  ...initialPacks,
+  ...expandedPacks(initialPacks),
+  ...securityAiPacks,
+];

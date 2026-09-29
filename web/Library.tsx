@@ -80,7 +80,7 @@ export function LibraryReader() {
                 {content.page.kind === 'review-workflow' ? 'Review workflow' : 'Reference brief'}
               </dd>
               <dt>Source check</dt>
-              <dd>{content.pack.reviewedAt} · not a current-law guarantee</dd>
+              <dd>{content.pack.reviewedAt} · verify current guidance and requirements</dd>
               <dt>Effective date</dt>
               <dd>
                 {content.page.effectiveDate || 'Varies by provision; verify the applicable source'}
@@ -103,8 +103,8 @@ export function LibraryReader() {
               </ul>
             ) : (
               <p className="muted">
-                Original review workflow. Cite the actual agreements for contractual facts; this
-                section states no jurisdiction-specific legal rule.
+                Author-provided workflow or template. Cite project documents for organizational
+                facts; this section is not an official agency form or rule.
               </p>
             )}
             <p className="library-rights muted small">{content.pack.rights}</p>
@@ -165,7 +165,9 @@ export function KnowledgeLibraryPanel({
     >
       <div className="library-heading">
         <div>
-          <span className="settings-eyebrow">{projectId ? 'SHARED REFERENCES' : 'LEGAL & HR'}</span>
+          <span className="settings-eyebrow">
+            {projectId ? 'SHARED REFERENCES' : 'REFERENCE CATALOG'}
+          </span>
           <h2>{projectId ? 'Library references' : 'Knowledge Library'}</h2>
           <p className="muted">
             {projectId

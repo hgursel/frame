@@ -62,12 +62,10 @@ try {
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByRole('tab', { name: 'Knowledge Library', exact: true }).click();
-  const hr = page
-    .locator('.library-card')
-    .filter({
-      has: page.getByRole('heading', { name: 'California HR Essentials' }),
-      hasText: 'v1.1.0',
-    });
+  const hr = page.locator('.library-card').filter({
+    has: page.getByRole('heading', { name: 'California HR Essentials' }),
+    hasText: 'v1.1.0',
+  });
   const contracts = page
     .locator('.library-card')
     .filter({ has: page.getByRole('heading', { name: 'Business Contract Review' }) });
@@ -75,6 +73,9 @@ try {
     'Workplace Investigations',
     'Performance Reviews & Improvement Plans',
     'Commercial Leases',
+    'Cybersecurity Essentials',
+    'IT Security Operations',
+    'Responsible AI at Work',
   ])
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
   await hr.getByRole('button', { name: 'Install pack' }).click();
@@ -90,6 +91,29 @@ try {
   ).toHaveAttribute('href', 'https://www.dir.ca.gov/dlse/paid_sick_leave.htm');
   await page.keyboard.press('Escape');
   await expect(reader).not.toBeVisible();
+  const cyber = page.locator('.library-card').filter({
+    has: page.getByRole('heading', { name: 'Cybersecurity Essentials', exact: true }),
+  });
+  await cyber.getByRole('button', { name: 'Install pack' }).click();
+  await expect(cyber.getByRole('button', { name: 'Installed', exact: true })).toBeDisabled();
+  await cyber.getByText('Explore sections').click();
+  await cyber
+    .getByRole('button', { name: 'Cybersecurity Risk Register Template', exact: true })
+    .click();
+  await expect(reader.getByRole('table')).toBeVisible();
+  await expect(reader.getByText(/not an official NIST form/)).toBeVisible();
+  await page.keyboard.press('Escape');
+  const ai = page.locator('.library-card').filter({
+    has: page.getByRole('heading', { name: 'Responsible AI at Work', exact: true }),
+  });
+  await ai.getByText('Explore sections').click();
+  await ai.getByRole('button', { name: 'AI-Use Assessment Template', exact: true }).click();
+  await expect(reader.getByRole('table')).toBeVisible();
+  await expect(reader.getByRole('link', { name: /NIST AI RMF Playbook/ })).toHaveAttribute(
+    'href',
+    'https://airc.nist.gov/airmf-resources/playbook/map/',
+  );
+  await page.keyboard.press('Escape');
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-library.png'),
