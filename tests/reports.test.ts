@@ -25,7 +25,7 @@ const info = (python: string, file: string) =>
       python,
       [
         '-c',
-        'import json,sys; from pypdf import PdfReader; r=PdfReader(sys.argv[1]); print(json.dumps({"pages":len(r.pages),"pageTexts":[p.extract_text() for p in r.pages],"text":"\\n".join(p.extract_text() for p in r.pages)}))',
+        'import json,sys; from pypdf import PdfReader; r=PdfReader(sys.argv[1]); fonts=[f.get_object() for p in r.pages for f in p["/Resources"]["/Font"].get_object().values()]; print(json.dumps({"pages":len(r.pages),"pageTexts":[p.extract_text() for p in r.pages],"text":"\\n".join(p.extract_text() for p in r.pages),"embeddedFonts":[str(f["/BaseFont"]) for f in fonts if f.get("/FontDescriptor") and "/FontFile2" in f["/FontDescriptor"]]}))',
         file,
       ],
       { encoding: 'utf8' },
@@ -293,6 +293,10 @@ test(
         assert.match(pdf.text, /210/);
         assert(!pdf.text.includes('**'));
         assert(!pdf.text.includes('<b>'));
+        assert(
+          pdf.embeddedFonts.some((name: string) => name.includes('LiberationSerif')),
+          'Reports must embed the bundled serif font, independent of the host fonts',
+        );
       }
       assert.equal(
         (await f.auth('/plugins/reports/sample', 'POST', {})).headers['content-type'],
