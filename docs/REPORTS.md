@@ -77,3 +77,9 @@ PDF charts are static snapshots of the saved chart data, drawn in the report pal
 - PDFs use the existing authenticated artifact download route. Deleting a conversation removes its PDFs; deleting a project also removes its report overrides and all conversation files.
 
 If generation fails, check **Settings → Documents**, source sizes, and the tool result. A model can still choose invalid arguments or write a weak report; validate your own llama.cpp model's tool use and content quality. Automated coverage uses the real Pi SDK with a controlled local endpoint, not a production model.
+
+## Markdown tables
+
+A Markdown block can contain headings, paragraphs, and multiple independent tables. Tables in one report may have different column counts. Use a header and separator for each table, at least one data row, and 1–20 cells per row matching that table's header. Separate tables with a blank line. Leading/trailing pipes are optional; literal pipes in cell values must be escaped as `\|`, including inside inline code. Inline emphasis is converted to plain cell text; quotes and Unicode punctuation remain intact.
+
+A plain paragraph immediately following a multi-column table without a blank line is treated as prose rather than an incomplete table row. Use blank lines for clarity, especially when the paragraph itself contains pipes. One-column tables retain standard Markdown behavior because a pipe-free line can be a valid data row. Table-like text inside fenced code is unchanged. Incorrect cell counts are rejected rather than silently padded or truncated. Errors identify the 1-based input block, table within that block, data row (excluding header/separator), original line, expected/actual counts, and a bounded row excerpt. Correct the named row and retry; do not remove all tables to work around an error.

@@ -244,9 +244,9 @@ export class ReportsPlugin {
     const abort = AbortSignal.any([controller.signal, ...(signal ? [signal] : [])]);
     try {
       const blocks: any[] = [];
-      for (const block of spec.blocks) {
+      for (const [index, block] of spec.blocks.entries()) {
         abort.throwIfAborted();
-        if (block.type === 'markdown') blocks.push(...reportMarkdown(block.text));
+        if (block.type === 'markdown') blocks.push(...reportMarkdown(block.text, index + 1));
         else if (block.type === 'chart')
           blocks.push({
             type: 'chart',

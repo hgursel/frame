@@ -558,3 +558,70 @@ test(
     }
   },
 );
+
+test('report creation identifies the original input block for malformed Markdown tables', async () => {
+  const f = await fixture();
+  try {
+    f.reports.update({ enabled: true, profile: f.reports.profile() });
+    f.reports.setProject(f.project.id, true);
+    await assert.rejects(
+      f.reports.create(f.conversation.id, {
+        title: 'Review',
+        blocks: [
+          { type: 'markdown', text: 'Introduction.' },
+          { type: 'page_break' },
+          { type: 'markdown', text: '| A | B |\n| --- | --- |\n| one | two | extra |' },
+        ],
+      }),
+      /Markdown block 3, table 1, data row 1.*expected 2 cells, received 3/,
+    );
+    assert.equal(f.reports.jobs.size, 0);
+    const files = await readdir(f.store.artifacts(f.conversation)).catch((error) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+    assert.equal(files.length, 0);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test(
+  'mixed-width Markdown tables and unseparated prose survive actual PDF generation',
+  { skip: !process.env.FRAME_PYTHON },
+  async () => {
+    const f = await fixture();
+    try {
+      f.reports.update({ enabled: true, profile: { ...f.reports.profile(), cover: false } });
+      f.reports.setProject(f.project.id, true);
+      await f.reports.create(f.conversation.id, {
+        title: 'Table regression',
+        blocks: [
+          {
+            type: 'markdown',
+            text: '## High Priority\n\n| Item | Finding | Owner | Status |\n| --- | --- | --- | --- |\n| **Alpha** | a\\|b — … "quoted" | Team | Open |\nSummary retained after table.\n\n### Medium Priority\n\n| Item | Finding | Status |\n| --- | --- | --- |\n| Beta | `x\\|y` | Review |',
+          },
+          { type: 'markdown', text: '| Item | Status |\n| --- | --- |\n| Gamma | Closed |' },
+        ],
+      });
+      const files = await readdir(f.store.artifacts(f.conversation));
+      const file = path.join(
+        f.store.artifacts(f.conversation),
+        files.find((x) => x.endsWith('.pdf'))!,
+      );
+      const pdf = info(f.python.executable, file);
+      for (const value of [
+        'Alpha',
+        'a|b — … "quoted"',
+        'Summary retained after table.',
+        'Medium Priority',
+        'Beta',
+        'x|y',
+        'Gamma',
+      ])
+        assert(pdf.text.includes(value), value);
+    } finally {
+      await f.cleanup();
+    }
+  },
+);
