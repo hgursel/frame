@@ -29,11 +29,13 @@ The default notice is “Confidential — For internal use only.” Edit it in *
 
 Report titles, section headings, chart titles, and table captions use Title Case. Acronyms, mixed-case names, and inline code are preserved; narrative text, table values, and column names are not recased. Logos fit within a 260 × 110 point area while preserving aspect ratio. Long cover content shrinks together when necessary to stay on one page.
 
+All layouts use Times-style Liberation Serif, with regular, bold, italic, and bold-italic faces. Titles are 20 pt, major headings 12.5 pt, subheadings 11 pt, and body text 10.5–11 pt with tighter paragraph spacing. Tables use readable 9 pt text, compact padding, repeated headers, and thin rules. Callouts are indented italic paragraphs rather than decorative boxes. Your saved colors still apply to headings, tables, charts, and fine rules; logos and the opening-page sequence are unchanged. These changes apply to newly generated PDFs and saved-design samples, not existing files.
+
 ## Layouts and instructions
 
 | Layout | Intended use | Presentation |
 | --- | --- | --- |
-| Executive summary | Findings, decisions, recommendations | Larger headings and more spacious typography |
+| Executive summary | Findings, decisions, recommendations | Classic serif body at 11 pt with restrained headings |
 | Data analysis | Charts, tables, and commentary | Tighter spacing and wider content area |
 | Technical report | Procedures, detailed sections, code | Numbered major sections and compact typography |
 
@@ -51,7 +53,7 @@ Be concise. Separate observed facts from estimates. Cite source filenames.
 Use existing conversation tables and charts; do not invent missing values.
 ```
 
-PDFs support headings, emphasis, lists, callouts, Markdown tables, code, repeated table headers, page numbers, and static vector charts. Wide tables split into labeled column groups with the first column repeated. Embedded fonts cover common Latin text; full multilingual typesetting and custom font uploads are not implemented. There is no arbitrary HTML/CSS template editor or remote image loading.
+PDFs support headings, emphasis, lists, callouts, Markdown tables, code, repeated table headers, page numbers, and static vector charts. Wide tables split into labeled column groups with the first column repeated. Bundled Liberation Serif 2.1.5 fonts (SIL OFL 1.1) are embedded in PDFs and require no host font installation. The fonts cover common Latin text; full multilingual typesetting and custom font uploads are not implemented. There is no arbitrary HTML/CSS template editor or remote image loading.
 
 ## Use through chat
 

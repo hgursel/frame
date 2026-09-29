@@ -62,9 +62,9 @@ def render(data):
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus import BaseDocTemplate, PageTemplate, NextPageTemplate, Frame, Paragraph, Spacer, PageBreak, LongTable, TableStyle, KeepTogether, KeepInFrame, Image, HRFlowable
     from reportlab.graphics.shapes import Drawing, Rect, Line, String, Circle, Polygon
-    import reportlab
-    fonts = Path(reportlab.__file__).parent / 'fonts'
-    for name, file in [('FrameText', 'Vera.ttf'), ('FrameBold', 'VeraBd.ttf'), ('FrameItalic', 'VeraIt.ttf'), ('FrameBoldItalic', 'VeraBI.ttf')]:
+    # Bundle all four styles so PDF appearance never depends on host-installed fonts.
+    fonts = Path(__file__).resolve().parent / 'fonts'
+    for name, file in [('FrameText', 'LiberationSerif-Regular.ttf'), ('FrameBold', 'LiberationSerif-Bold.ttf'), ('FrameItalic', 'LiberationSerif-Italic.ttf'), ('FrameBoldItalic', 'LiberationSerif-BoldItalic.ttf')]:
         pdfmetrics.registerFont(TTFont(name, str(fonts / file)))
     pdfmetrics.registerFontFamily('FrameText', normal='FrameText', bold='FrameBold', italic='FrameItalic', boldItalic='FrameBoldItalic')
     profile = data['profile']
@@ -75,17 +75,17 @@ def render(data):
     if profile['landscape']:
         page = landscape(page)
     pw, ph = page
-    margin = 44 if template == 'analytical' else 50
+    margin = 54 if template == 'analytical' else 60
     width = pw - 2 * margin
-    body_size = {'executive': 10.5, 'analytical': 9.5, 'technical': 9.5}[template]
+    body_size = 11 if template == 'executive' else 10.5
     def style(name, **kwargs):
-        return ParagraphStyle(name, fontName='FrameText', fontSize=body_size, leading=body_size * 1.5, textColor=ink, spaceAfter=9, **kwargs)
+        return ParagraphStyle(name, fontName='FrameText', fontSize=body_size, leading=body_size * 1.3, textColor=ink, spaceAfter=6, **kwargs)
     body = style('body')
-    heading = ParagraphStyle('heading', parent=body, fontName='FrameBold', fontSize=17 if template == 'executive' else 14, leading=22, textColor=primary, spaceBefore=18, spaceAfter=10, keepWithNext=True)
-    subheading = ParagraphStyle('subheading', parent=heading, fontSize=11.5, leading=16, textColor=secondary, spaceBefore=12)
-    title_style = ParagraphStyle('title', parent=body, fontName='FrameBold', fontSize=26 if template == 'executive' else 23, leading=33 if template == 'executive' else 29, textColor=primary, spaceAfter=20)
+    heading = ParagraphStyle('heading', parent=body, fontName='FrameBold', fontSize=12.5, leading=16, textColor=primary, spaceBefore=12, spaceAfter=6, keepWithNext=True)
+    subheading = ParagraphStyle('subheading', parent=heading, fontSize=11, leading=14, textColor=secondary, spaceBefore=9, spaceAfter=4)
+    title_style = ParagraphStyle('title', parent=body, fontName='FrameBold', fontSize=20, leading=25, textColor=primary, spaceAfter=12)
     small = ParagraphStyle('small', parent=body, fontSize=8, leading=12, textColor=muted, spaceAfter=8)
-    cell_style = ParagraphStyle('cell', parent=body, fontSize=8, leading=11, spaceAfter=0, splitLongWords=True)
+    cell_style = ParagraphStyle('cell', parent=body, fontSize=9, leading=11.5, spaceAfter=0, splitLongWords=True)
     header_ink = colors.white if sum(c * w for c, w in zip(primary.rgb(), [.2126, .7152, .0722])) < .55 else ink
     header_style = ParagraphStyle('table-head', parent=cell_style, fontName='FrameBold', textColor=header_ink)
     logo_bytes = base64.b64decode(data['logo']) if data.get('logo') else None
@@ -114,13 +114,12 @@ def render(data):
         return value + '...'
     def chrome(canvas, document):
         canvas.saveState()
-        canvas.setFillColor(primary)
-        canvas.rect(0, ph - 7, pw, 7, fill=1, stroke=0)
-        canvas.setFillColor(accent)
-        canvas.rect(margin, ph - 37, 23, 3, fill=1, stroke=0)
+        canvas.setStrokeColor(accent)
+        canvas.setLineWidth(.6)
+        canvas.line(margin, ph - 45, pw - margin, ph - 45)
         canvas.setFont('FrameBold', 8)
         canvas.setFillColor(primary)
-        canvas.drawString(margin + 33, ph - 38, fit_text(profile['organization'], 'FrameBold', 8, width - 33))
+        canvas.drawString(margin, ph - 36, fit_text(profile['organization'], 'FrameBold', 8, width))
         canvas.setStrokeColor(line)
         canvas.line(margin, 37, pw - margin, 37)
         canvas.setFillColor(muted)
@@ -153,8 +152,8 @@ def render(data):
         story.append(Spacer(1, 60 if ph > 700 else 20))
     story.append(Paragraph(html.escape(title_case(data['title'])), title_style))
     if data.get('subtitle'):
-        story.append(Paragraph(html.escape(data['subtitle']), ParagraphStyle('subtitle', parent=body, fontSize=12, leading=18, textColor=muted)))
-    story += [Spacer(1, 12), HRFlowable(width='22%', thickness=3, color=accent, hAlign='LEFT'), Spacer(1, 14), Paragraph(date.today().isoformat(), small)]
+        story.append(Paragraph(html.escape(data['subtitle']), ParagraphStyle('subtitle', parent=body, fontSize=11, leading=14, textColor=muted)))
+    story += [Spacer(1, 6), HRFlowable(width='100%', thickness=.5, color=accent, hAlign='LEFT'), Spacer(1, 8), Paragraph(date.today().isoformat(), small)]
     if profile['cover']:
         # Keep long titles/subtitles on a single cover, even in landscape orientation.
         story = [KeepInFrame(width, ph-117, story, mode='shrink'), NextPageTemplate('confidential'), PageBreak(),
@@ -250,8 +249,8 @@ def render(data):
             weights = [min(32, max(10, len(str(columns[i])), *(len(str(r[i])) for r in rows[:30]))) for i in indices]
             col_widths = [width*w/sum(weights) for w in weights]
             t = LongTable(vals, colWidths=col_widths, repeatRows=1, splitByRow=1, splitInRow=1, hAlign='LEFT')
-            t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), primary), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f3f6f7')]), ('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 8), ('RIGHTPADDING', (0,0), (-1,-1), 8), ('TOPPADDING', (0,0), (-1,-1), 7), ('BOTTOMPADDING', (0,0), (-1,-1), 7), ('LINEBELOW', (0,0), (-1,0), 1, accent), ('LINEBELOW', (0,1), (-1,-1), .3, line)]))
-            story.extend([t, Spacer(1, 12)])
+            t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), primary), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f3f6f7')]), ('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 6), ('RIGHTPADDING', (0,0), (-1,-1), 6), ('TOPPADDING', (0,0), (-1,-1), 5), ('BOTTOMPADDING', (0,0), (-1,-1), 5), ('LINEBELOW', (0,0), (-1,0), .6, accent), ('LINEBELOW', (0,1), (-1,-1), .3, line)]))
+            story.extend([t, Spacer(1, 9)])
     section = 0
     for block in data['blocks']:
         kind = block['type']
@@ -265,7 +264,7 @@ def render(data):
         elif kind == 'paragraph':
             story.append(Paragraph(block['text'], body))
         elif kind == 'callout':
-            st = ParagraphStyle('callout', parent=body, borderColor=accent, borderWidth=1, borderPadding=12, backColor=colors.HexColor('#f3f6f7'), spaceBefore=8, spaceAfter=18)
+            st = ParagraphStyle('callout', parent=body, fontName='FrameItalic', textColor=secondary, leftIndent=12, rightIndent=12, spaceBefore=3, spaceAfter=8)
             story.append(Paragraph(block['text'], st))
         elif kind == 'code':
             st = ParagraphStyle('code', parent=body, fontName='Courier', fontSize=8, leading=11, backColor=colors.HexColor('#f3f6f7'), borderPadding=8)
