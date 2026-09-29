@@ -137,6 +137,7 @@ export function deleteWorkspaceData(
           'knowledge_revisions',
           'documents',
           'project_plugins',
+          'project_skills',
           'report_settings',
           'mssql_schema',
           'mssql_schema_state',

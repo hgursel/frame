@@ -4,7 +4,7 @@ import './maintenance.css';
 import { PluginCatalog } from './PluginCatalog.js';
 import './charts.css';
 import { ProjectPlugins, SqlApprovalCard } from './Plugins.js';
-import { PrivateApprovalCard } from './PrivateTools.js';
+import { ProjectSkillsSettings, useSkillPicker } from './Skills.js';
 import './plugins.css';
 import { SidebarMenu } from './SidebarMenu.js';
 import React, { useEffect, useRef, useState } from 'react';
@@ -249,6 +249,12 @@ function Workspace() {
   }>();
   const project = projects.find((p) => p.id === projectId);
   const isIncognito = !!chatId && incognitoId === chatId;
+  const skillPicker = useSkillPicker(
+    projectId,
+    draft,
+    setDraft,
+    isIncognito ? 'Skills are unavailable in incognito chats.' : undefined,
+  );
   const canChangePrivacy =
     !!projectId &&
     !switchingPrivacy &&
@@ -813,9 +819,6 @@ function Workspace() {
                   onSave={setSaveIndex}
                   canSave={!incognitoId || incognitoId !== chatId}
                 />
-                {snapshot.privateApprovals?.map((approval) => (
-                  <PrivateApprovalCard key={approval.id} approval={approval} chatId={chatId} />
-                ))}
                 {snapshot.sqlApproval && (
                   <SqlApprovalCard
                     key={snapshot.sqlApproval.id}
@@ -877,6 +880,7 @@ function Workspace() {
                   {error}
                 </p>
               )}
+              {skillPicker.element}
               <form
                 className="composer"
                 onSubmit={(e) => {
@@ -911,7 +915,8 @@ function Workspace() {
                     if (pending) setPending(undefined);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    if (e.nativeEvent.isComposing || skillPicker.onKeyDown(e)) return;
+                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       if (!snapshot.running) void submit();
                     }
@@ -1401,6 +1406,7 @@ function ProjectForm({
         )}
       </form>
       {project && <KnowledgeLibraryPanel projectId={project.id} />}
+      {project && <ProjectSkillsSettings projectId={project.id} />}
       {project && <ProjectPlugins projectId={project.id} />}
     </section>
   );

@@ -1,5 +1,6 @@
 import parser from 'node-sql-parser';
 import { createHash } from 'node:crypto';
+import { collapseSkillInvocation } from '../../shared/skills.js';
 const sqlParser = new parser.Parser();
 export const fingerprint = (value: unknown) =>
   createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -134,6 +135,8 @@ export function learningUnits(branch: any[]): LearningUnit[] {
               .filter((p: any) => p.type === 'text')
               .map((p: any) => p.text)
               .join('\n');
+      // Skill bodies are administrator instructions, not conversation content to learn from.
+      if (m.role === 'user') text = collapseSkillInvocation(text);
       if (m.role === 'assistant' && text.trimStart().startsWith('<think>')) {
         const end = text.indexOf('</think>');
         text = end < 0 ? '' : text.slice(end + 8);

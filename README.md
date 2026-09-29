@@ -69,11 +69,11 @@ Set organization defaults and optional project overrides. Ask for a report direc
 
 [Set up Reports →](docs/REPORTS.md)
 
-### Your private integrations
+### Your own skills
 
-Register local scripts through **Private Tools** and enable them per project. Define JSON inputs, load credentials from a local `.env`, and require approval for individual operations. Your scripts and configuration stay on your installation; nothing needs to be published to GitHub. General host tools can remain disabled.
+Point Frame at folders of **Agent Skills**—the `SKILL.md` format used by OpenCode, Claude Code, and Pi—and enable them per project. The model sees each skill's name and description, reads the full instructions when a task matches, and runs its Bash or Python scripts with the project's trusted agent tools. Type `/` in the message box to pick a skill directly. Skills and their `.env` files stay on your installation; nothing is imported, uploaded, or published.
 
-[Connect a private script →](docs/PRIVATE_TOOLS.md)
+[Use your skills →](docs/SKILLS.md)
 
 ### A familiar workspace for local models
 
@@ -114,7 +114,7 @@ npm start
 2. Go to **Settings → Model**. Enter your llama.cpp endpoint, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
 3. In **Settings → Context**, match the context window to your llama.cpp slot and reserve room for output.
 4. Create a project, add documents under **Knowledge**, and start a conversation.
-5. Configure Reports, Charts, MSSQL, or Private Tools in **Settings → Plugins**, then enable them in **Project settings**. For MSSQL, initialize database knowledge.
+5. Configure Reports, Charts, MSSQL, or Skills in **Settings → Plugins**, then enable them in **Project settings**. For MSSQL, initialize database knowledge.
 
 The endpoint is reached from the Frame server. V1 accepts loopback and private IPv4 addresses; internal DNS names are not supported yet. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
 
@@ -138,7 +138,7 @@ For access from another computer, follow the [HTTPS reverse-proxy or SSH-tunnel 
 | [Knowledge maintenance](docs/KNOWLEDGE_MAINTENANCE.md) | Scheduling, publishing policies, health checks, SQL privacy, and incognito chats |
 | [MSSQL](docs/MSSQL.md)                 | Connection setup, SQL permissions, approvals, and schema knowledge              |
 | [Reports](docs/REPORTS.md)             | Branded PDF layouts, project overrides, chart/table sources, and local rendering |
-| [Private Tools](docs/PRIVATE_TOOLS.md) | Local script registration, private credentials, JSON inputs, and approvals |
+| [Skills](docs/SKILLS.md)               | Agent Skills folders, project enablement, `/skill` commands, and credentials    |
 | [Charts](docs/CHARTS.md)               | Chart types, dataset limits, exports, and saved snapshots                       |
 | [Context management](docs/CONTEXT.md)  | Token budgets, compaction, checkpoints, and measurement limits                  |
 | [Deployment](docs/DEPLOYMENT.md)       | Ubuntu service setup, private access, updates, and backups                      |
@@ -149,7 +149,7 @@ For access from another computer, follow the [HTTPS reverse-proxy or SSH-tunnel 
 
 ## Project status and contributing
 
-Frame is an actively developed **single-administrator V1**. MCP management, general skill installation, a packaged installer, and multi-user access are roadmap items. Automated tests cover API behavior, the real Pi SDK with a local mock endpoint, and browser workflows; validate your own llama.cpp model and SQL Server configuration before relying on them.
+Frame is an actively developed **single-administrator V1**. Online skill installation, a packaged installer, and multi-user access are roadmap items. Automated tests cover API behavior, the real Pi SDK with a local mock endpoint, and browser workflows; validate your own llama.cpp model and SQL Server configuration before relying on them.
 
 Have a bug or an idea? [Open an issue](https://github.com/hgursel/frame/issues). For code changes, read [AGENTS.md](AGENTS.md) and the [development guide](docs/DEVELOPMENT.md). Keep reports free of credentials and private organization data.
 

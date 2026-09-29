@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import type { DisplayMessage } from '../shared/types.js';
+import { collapseSkillInvocation } from '../shared/skills.js';
 
 /** A read-only display projection of Pi JSONL, never an independent transcript store. */
 export function displayMessages(messages: unknown[], activeThinking = false): DisplayMessage[] {
@@ -38,6 +39,7 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
         thinking = [thinking, close < 0 ? raw : raw.slice(0, close)].filter(Boolean).join('\n');
         text = close < 0 ? '' : raw.slice(close + 8).trimStart();
       }
+      if (m.role === 'user') text = collapseSkillInvocation(text);
       const attached = m.role === 'user' ? attachments : undefined;
       if (m.role === 'user') attachments = undefined;
       return [

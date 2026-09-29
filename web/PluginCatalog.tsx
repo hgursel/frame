@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { PluginSettings } from './Plugins.js';
 import { ChartsSettings } from './Charts.js';
 import { ReportsSettings } from './Reports.js';
-import { PrivateToolsSettings } from './PrivateTools.js';
+import { SkillsSettings } from './Skills.js';
 export function PluginCatalog() {
   const [selected, setSelected] = useState('reports');
   const plugins = [
     {
-      id: 'private-tools',
-      label: 'Private Tools',
-      description: 'Your local integrations',
-      view: <PrivateToolsSettings />,
+      id: 'skills',
+      label: 'Skills',
+      description: 'Your SKILL.md folders',
+      view: <SkillsSettings />,
     },
     {
       id: 'reports',
