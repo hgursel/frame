@@ -66,6 +66,10 @@ test('skill folders are validated, scanned with warnings, and enabled per projec
     const enabled = (await f.auth(url, 'PUT', { enabled: ['lookup', 'lookup'] })).json();
     assert.deepEqual(enabled.enabled, ['lookup']);
     assert.equal(enabled.hostTools, true);
+    const unknown = await f.auth(url, 'PUT', { enabled: ['not-installed'] });
+    assert.equal(unknown.statusCode, 400);
+    assert.match(unknown.json().error, /no longer available/);
+    assert.deepEqual(f.skills.enabled(f.project.id), ['lookup']);
     assert.deepEqual(
       f.skills.context(f.project.id).map((s) => s.name),
       ['lookup'],
@@ -79,6 +83,8 @@ test('skill folders are validated, scanned with warnings, and enabled per projec
     );
     await rm(path.join(f.other, 'lookup'), { recursive: true });
     assert.deepEqual(f.skills.context(f.project.id), []);
+    assert.equal((await f.auth(url, 'PUT', { enabled: [] })).statusCode, 200);
+    assert.deepEqual(f.skills.enabled(f.project.id), []);
 
     assert.equal(
       (await f.auth(`/projects/${f.project.id}`, 'DELETE', { confirm: true })).statusCode,

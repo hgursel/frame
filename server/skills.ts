@@ -38,7 +38,7 @@ export class Skills {
   settings(): SkillsSettings {
     return settingsSchema.parse(JSON.parse(this.store.meta('skills:settings') || '{"folders":[]}'));
   }
-  /** Saving only records paths: nothing is executed, installed, or read beyond SKILL.md frontmatter. */
+  /** Saving records paths and scans skill metadata; nothing is executed or installed. */
   save(value: unknown) {
     this.store.setMeta('skills:settings', JSON.stringify(settingsSchema.parse(value)));
     return this.catalog();
@@ -86,6 +86,15 @@ export class Skills {
   }
   setProject(projectId: string, names: string[]) {
     const unique = [...new Set(z.array(z.string().min(1).max(200)).max(200).parse(names))];
+    const available = new Set(this.catalog().skills.map((s) => s.name));
+    const missing = unique.filter((name) => !available.has(name));
+    if (missing.length)
+      throw Object.assign(
+        new Error(
+          `Skills no longer available: ${missing.join(', ')}. Rescan and update the selection.`,
+        ),
+        { statusCode: 400 },
+      );
     this.store.db.exec('BEGIN');
     try {
       this.store.db.prepare('DELETE FROM project_skills WHERE projectId=?').run(projectId);

@@ -135,6 +135,14 @@ try {
       .getByText('/skill:lookup record 42', { exact: true }),
   ).toBeVisible();
   await expect(page.getByText('BROWSER-SKILL-BODY')).toHaveCount(0);
+  // Removing a skill folder must not leave an invisible project selection that cannot be cleared.
+  ctx.skills.save({ folders: [] });
+  await page.getByRole('button', { name: /^Project menu:/ }).click();
+  await page.getByRole('button', { name: 'Project settings', exact: true }).click();
+  await page.getByLabel('Remove unavailable skill lookup').uncheck();
+  await page.getByRole('button', { name: 'Save project skills', exact: true }).click();
+  await expect(page.getByText('Project skills saved.', { exact: true })).toBeVisible();
+  assert.deepEqual(ctx.skills.enabled(project.id), []);
   assert.deepEqual(errors, []);
   console.log(
     'Skills browser passed: folder scan and warnings, project enablement, host-tool gating, picker keyboard use, /skill expansion, collapsed history, and mobile layout.',

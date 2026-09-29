@@ -183,7 +183,22 @@ export function ProjectSkillsSettings({ projectId }: { projectId: string }) {
           <p className="muted small">{s.description}</p>
         </React.Fragment>
       ))}
-      {!!value?.skills.length && (
+      {value &&
+        enabled
+          .filter((name) => !value.skills.some((s) => s.name === name))
+          .map((name) => (
+            <label className="checkbox" key={name}>
+              <input
+                type="checkbox"
+                aria-label={`Remove unavailable skill ${name}`}
+                disabled={busy}
+                checked
+                onChange={() => setEnabled((names) => names.filter((n) => n !== name))}
+              />
+              {name} — unavailable; uncheck to remove
+            </label>
+          ))}
+      {value && (
         <button
           disabled={busy}
           onClick={async () => {

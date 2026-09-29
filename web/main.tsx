@@ -1326,8 +1326,9 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
       <div className="scope-note">
         <strong>V1 · Single administrator</strong>
         <p>
-          Multi-user access is planned for V2. MCP management and general skill installation are
-          upcoming. Local models must already be running in llama.cpp.
+          Multi-user access is planned for V2. Add local skill folders under Plugins. Online skill
+          installation and MCP management are not available. Local models must already be running in
+          llama.cpp.
         </p>
       </div>
     </section>
