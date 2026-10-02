@@ -1,4 +1,3 @@
-import { queryTemplate } from './maintenance/extraction.js';
 import { discoverySchema } from './knowledge-discovery.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -171,38 +170,7 @@ export function knowledgeApi(
       throw Object.assign(new Error('Wait for the response to finish before saving knowledge.'), {
         statusCode: 409,
       });
-    let message = snapshot.messages[index];
-    const structuralOnly =
-      snapshot.messages.some((m) => m.name?.startsWith('mssql_')) ||
-      !!knowledge.store.db
-        .prepare('SELECT 1 FROM mssql_operations WHERE conversationId=? LIMIT 1')
-        .get(id);
-    if (structuralOnly) {
-      const operation = message?.sqlResult?.operationId;
-      const row = operation
-        ? (knowledge.store.db
-            .prepare(
-              "SELECT sql FROM mssql_operations WHERE id=? AND conversationId=? AND kind='read' AND status='completed'",
-            )
-            .get(operation, id) as { sql: string } | undefined)
-        : undefined;
-      const template = row?.sql ? queryTemplate(row.sql) : undefined;
-      if (!template)
-        throw Object.assign(
-          new Error(
-            'SQL conversations can save only parameterized query templates. Use Save useful result on a successful SELECT query; results and example values are excluded.',
-          ),
-          { statusCode: 400 },
-        );
-      message = {
-        ...message!,
-        text:
-          'Parameterized query template. Review parameters and current schema before use. No results or example values are retained.\n\n```sql\n' +
-          template +
-          '\n```',
-        proposal: undefined,
-      };
-    }
+    const message = snapshot.messages[index];
     if (
       !message ||
       !['assistant', 'tool'].includes(message.role) ||
@@ -230,7 +198,6 @@ export function knowledgeApi(
     ];
     const available = new Set(knowledge.list(conversation.projectId).map((doc) => doc.id));
     return {
-      structuralOnly,
       conversation,
       message,
       source,
@@ -246,12 +213,9 @@ export function knowledgeApi(
         z.coerce.number().int().min(0).parse(request.params.index),
       );
       return {
-        structuralOnly: value.structuralOnly,
         sourceRevision: value.sourceRevision,
         text: value.message.proposal?.text || value.message.text,
-        title: value.structuralOnly
-          ? 'SQL Query Template'
-          : value.message.proposal?.title || 'Conversation note',
+        title: value.message.proposal?.title || 'Conversation note',
         targetId: value.message.proposal?.targetId,
         revision: value.message.proposal?.revision,
         sourceIds: value.sourceIds,
@@ -277,13 +241,6 @@ export function knowledgeApi(
         request.params.id,
         z.coerce.number().int().min(0).parse(request.params.index),
       );
-      if (value.structuralOnly && body.text !== value.message.text)
-        throw Object.assign(
-          new Error(
-            'SQL knowledge must use the sanitized query template without added values or examples.',
-          ),
-          { statusCode: 400 },
-        );
       return change(value.conversation.projectId, async () => {
         if (body.sourceRevision !== value.sourceRevision)
           throw Object.assign(new Error('Conversation changed. Reopen the knowledge draft.'), {

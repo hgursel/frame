@@ -50,7 +50,7 @@ export function knowledgeTools(documents: KnowledgeEntry[], contextWindow: numbe
       name: 'propose_knowledge',
       label: 'Propose knowledge update',
       description:
-        'Propose a concise, reusable Markdown knowledge page or revision. Do not save automatically. Never include SQL result rows, sample values, aggregates or actual query parameters in knowledge. SQL query templates are saved through the successful query result instead. Include evidence links, related /<page-id>.md links, uncertainty and contradictions. For updates, read the current page and provide its full revised body, targetId and revision. The user must review and save in the conversation.',
+        'Propose a concise, reusable Markdown knowledge page or revision. Do not save automatically. You may propose recipes, calculation rules, SQL queries, and explanations from any conversation, including SQL conversations. Include specific results or example values only when the user requests them. Include evidence links, related /<page-id>.md links, uncertainty and contradictions. For updates, read the current page and provide its full revised body, targetId and revision. The user must review and save in the conversation.',
       parameters: Type.Object({
         title: Type.String({ minLength: 1, maxLength: 160 }),
         text: Type.String({ minLength: 1, maxLength: 60000 }),

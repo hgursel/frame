@@ -474,7 +474,7 @@ test('restart recovers a paused job and deletes abandoned incognito tool files a
     await rm(f.root, { recursive: true, force: true });
   }
 });
-test('incognito is excluded from listing and knowledge saves', async () => {
+test('manual SQL knowledge saves are editable while incognito stays excluded', async () => {
   const f = await fixture();
   try {
     const auth = {
@@ -509,38 +509,41 @@ test('incognito is excluded from listing and knowledge saves', async () => {
       headers: auth,
     });
     assert.equal(sqlDraft.statusCode, 200, sqlDraft.body);
-    assert.doesNotMatch(sqlDraft.body, /Secret Customer|99999/);
-    assert.equal(sqlDraft.json().structuralOnly, true);
-    assert.equal(
-      (
-        await f.app.inject({
-          url: `/api/conversations/${f.conversation.id}/knowledge/1`,
-          headers: auth,
-        })
-      ).statusCode,
-      400,
-    );
-    const rejectedSave = await f.app.inject({
+    assert.match(sqlDraft.json().text, /Secret Customer/);
+    const assistantDraft = await f.app.inject({
+      url: `/api/conversations/${f.conversation.id}/knowledge/1`,
+      headers: auth,
+    });
+    assert.equal(assistantDraft.statusCode, 200, assistantDraft.body);
+    const recipe =
+      '## Customer balance recipe\n\nGroup outstanding invoices by customer.\n\nExample: Secret Customer owes 99999.';
+    const saved = await f.app.inject({
+      url: `/api/conversations/${f.conversation.id}/knowledge/1`,
+      method: 'POST',
+      headers: auth,
+      payload: {
+        ...assistantDraft.json<Record<string, any>>(),
+        title: 'Balance recipe',
+        text: recipe,
+      },
+    });
+    assert.equal(saved.statusCode, 200, saved.body);
+    assert.match(await f.wiki.concept(f.project.id, saved.json().id), /Customer balance recipe/);
+    assert.match(await f.wiki.concept(f.project.id, saved.json().id), /Secret Customer owes 99999/);
+    const doc = f.knowledge.get(f.project.id, saved.json().id);
+    const updated = await f.app.inject({
       url: `/api/conversations/${f.conversation.id}/knowledge/0`,
       method: 'POST',
       headers: auth,
       payload: {
         ...sqlDraft.json<Record<string, any>>(),
-        text: sqlDraft.json().text + '\nSecret Customer owes 99999',
+        targetId: doc.id,
+        revision: doc.revision,
+        text: recipe + '\nReview overdue invoices weekly.',
       },
     });
-    assert.equal(rejectedSave.statusCode, 400);
-    const saved = await f.app.inject({
-      url: `/api/conversations/${f.conversation.id}/knowledge/0`,
-      method: 'POST',
-      headers: auth,
-      payload: sqlDraft.json(),
-    });
-    assert.equal(saved.statusCode, 200, saved.body);
-    assert.doesNotMatch(
-      await f.wiki.concept(f.project.id, saved.json().id),
-      /Secret Customer|99999/,
-    );
+    assert.equal(updated.statusCode, 200, updated.body);
+    assert.match(await f.wiki.concept(f.project.id, doc.id), /Review overdue invoices weekly/);
     const c = f.store.createConversation(f.project.id, true);
     f.incognito.touch(c.id);
     assert(

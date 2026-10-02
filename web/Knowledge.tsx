@@ -453,7 +453,6 @@ export function KnowledgePanel({
 }
 
 type Draft = {
-  structuralOnly?: boolean;
   sourceRevision: string;
   text: string;
   title: string;
@@ -525,9 +524,7 @@ export function SaveKnowledge({
         </button>
       </div>
       <p className="muted">
-        {draft?.structuralOnly
-          ? 'Only the parameterized query template is saved. Results, sample values, and parameter values are excluded. Saving does not verify its business meaning.'
-          : 'Keep the useful parts, add evidence, and note uncertainty. Saving does not verify a claim.'}
+        Keep the useful parts, add evidence, and note uncertainty. Saving does not verify a claim.
       </p>
       {error && (
         <p className="error" role="alert">
@@ -572,9 +569,7 @@ export function SaveKnowledge({
                       ...draft,
                       targetId,
                       revision: page.revision,
-                      text: draft.structuralOnly
-                        ? sourceText
-                        : `${page.text}\n\n## Conversation insight\n\n${sourceText}`,
+                      text: `${page.text}\n\n## Conversation insight\n\n${sourceText}`,
                     });
                   } else {
                     setOriginal('');
@@ -629,7 +624,6 @@ export function SaveKnowledge({
               required
               maxLength={120000}
               value={draft.text}
-              readOnly={draft.structuralOnly}
               onChange={(e) => setDraft({ ...draft, text: e.target.value })}
             />
           </label>
