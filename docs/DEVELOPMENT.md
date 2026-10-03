@@ -4,7 +4,7 @@
 
 Optional settings are documented in [.env.example](../.env.example); copy it to `.env` if needed. Both `npm start` and `npm run dev` read `.env`. Runtime model and project configuration is managed in the browser. Deployment-level bind/origin/storage choices remain outside the UI.
 
-For access from another computer, use an HTTPS reverse proxy with the exact `FRAME_ORIGIN`, or a local SSH tunnel. The Node service binds only to loopback. See [deployment notes](DEPLOYMENT.md).
+For access from another computer, configure explicit LAN binding and the exact `FRAME_ORIGIN`, use an HTTPS reverse proxy, or use a local SSH tunnel. The Node service defaults to loopback; direct private-IPv4 HTTP requires `FRAME_ALLOW_HTTP_LAN=true`. See [deployment notes](DEPLOYMENT.md).
 
 ```bash
 npm run check

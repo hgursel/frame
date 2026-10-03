@@ -118,7 +118,7 @@ npm start
 
 The endpoint is reached from the Frame server. V1 accepts loopback and private IPv4 addresses; internal DNS names are not supported yet. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
 
-For access from another computer, follow the [HTTPS reverse-proxy or SSH-tunnel guide](docs/DEPLOYMENT.md). Deployment-level network and storage settings are configured outside the browser.
+For access from another computer, follow the [LAN, HTTPS reverse-proxy, or SSH-tunnel guide](docs/DEPLOYMENT.md). Deployment-level network and storage settings are configured outside the browser.
 
 ## Local by design
 

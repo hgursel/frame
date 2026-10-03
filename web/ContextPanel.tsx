@@ -1,3 +1,4 @@
+import { copyText } from './browser-compat.js';
 import React from 'react';
 import type { ChatMetrics, PublicSettings } from '../shared/types.js';
 
@@ -134,7 +135,7 @@ export function CopyMessage({ text }: { text: string }) {
       className="copy-message"
       aria-label="Copy response"
       onClick={() => {
-        void navigator.clipboard.writeText(text).then(
+        void copyText(text).then(
           () => setNotice('Copied'),
           () => setNotice('Copy unavailable'),
         );

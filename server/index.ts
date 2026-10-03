@@ -1,22 +1,15 @@
+import { listenConfig } from './listen-config.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { randomToken } from './security.js';
 
 process.umask(0o077);
-const port = Number(process.env.FRAME_PORT || 3000);
-const host = process.env.FRAME_HOST || '127.0.0.1';
-const origin = process.env.FRAME_ORIGIN || `http://127.0.0.1:${port}`;
-if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid FRAME_PORT');
-if (!['127.0.0.1', '::1'].includes(host))
-  throw new Error(
-    'Frame binds to loopback only. Use an authenticated deployment behind an HTTPS reverse proxy for LAN access.',
+const { host, port, origin, httpLan } = listenConfig();
+if (httpLan)
+  console.warn(
+    'LAN HTTP enabled: passwords, sessions, and chat traffic are not encrypted. Use only on a trusted network; HTTPS is recommended.',
   );
-if (
-  !new URL(origin).hostname.match(/^(127\.0\.0\.1|localhost|\[::1\])$/) &&
-  !origin.startsWith('https://')
-)
-  throw new Error('Non-loopback FRAME_ORIGIN requires HTTPS');
 const setupToken = process.env.FRAME_SETUP_TOKEN || randomToken();
 const source = fileURLToPath(new URL('..', import.meta.url));
 const webDir = path.resolve(source, import.meta.url.endsWith('.ts') ? 'dist/web' : 'web');
