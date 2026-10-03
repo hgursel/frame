@@ -271,7 +271,7 @@ function Workspace() {
   useEffect(() => {
     if (pinned.current && scrollArea.current)
       scrollArea.current.scrollTop = scrollArea.current.scrollHeight;
-  }, [snapshot, page, artifacts]);
+  }, [snapshot, page]);
   const refresh = async () => {
     const [p, c, s] = await Promise.all([
       api<Project[]>('/projects'),
@@ -300,14 +300,15 @@ function Workspace() {
     if (!chatId) return;
     let live = true;
     let healthy = false;
+    let running = true;
     let lastEvent = 0;
-    let lastReconcile = 0;
     let polling = false;
     let receivedRevision = 0;
     const receive = (value: ChatSnapshot | ChatUpdate) => {
       if (!live || currentChat.current !== chatId) return;
       if ((value.revision ?? 0) < receivedRevision) return;
       receivedRevision = value.revision ?? 0;
+      running = value.running;
       if (!applySnapshot(chatId, value)) void reconcile();
     };
     const reconcile = async () => {
@@ -318,7 +319,6 @@ function Workspace() {
       } catch (e) {
         if (live) setError((e as Error).message);
       } finally {
-        lastReconcile = Date.now();
         polling = false;
       }
     };
@@ -344,11 +344,7 @@ function Workspace() {
     };
     // A proxy can leave SSE open but buffered. Reconcile stalled active streams too.
     const poll = setInterval(() => {
-      // POST/HTTP responses can start a new run while SSE still looks idle. Read
-      // the current UI snapshot, not the last state received by this stream.
-      const staleAfter = snapshotRef.current.running ? 3000 : 15000;
-      if (!healthy || Date.now() - Math.max(lastEvent, lastReconcile) > staleAfter)
-        void reconcile();
+      if (!healthy || (running && Date.now() - lastEvent > 3000)) void reconcile();
     }, 2000);
     void reconcile();
     return () => {
@@ -444,10 +440,6 @@ function Workspace() {
         text: request.text,
         documentIds: request.documentIds,
       });
-      if (currentChat.current === id) {
-        pinned.current = true;
-        setShowJump(false);
-      }
       setLastSubmitted(request);
       setPending((current) => (current?.id === request.id ? undefined : current));
       if (currentChat.current === id) {
@@ -839,7 +831,6 @@ function Workspace() {
                     {artifacts.map((a) => (
                       <a
                         key={a.name}
-                        download={a.name}
                         href={`/api/conversations/${chatId}/artifacts/${encodeURIComponent(a.name)}`}
                       >
                         ↓ {a.name}
