@@ -283,7 +283,11 @@ test(
         await writeFile(file, Buffer.from(result.pdf, 'base64'));
         const pdf = info(f.python.executable, file);
         assert(pdf.pages >= 3 && pdf.pages <= 6);
-        assert.equal(pdf.pageTexts[1].trim(), 'Confidential — For internal use only.');
+        assert.match(pdf.pageTexts[1], /Confidential — For internal use only/);
+        assert.match(pdf.pageTexts[1], /Quarterly Operations Review/);
+        assert.match(pdf.pageTexts[1], /FRAME LABS/);
+        assert.doesNotMatch(pdf.pageTexts[0], /FRAME LABS|Operations \/ Internal/);
+        assert.doesNotMatch(pdf.text, /Operations \/ Internal/);
         assert.match(pdf.pageTexts[0], /Quarterly Operations Review/);
         assert.match(pdf.pageTexts[2], /Executive Summary/);
         assert(!pdf.pageTexts[0].includes('REPORT'));
@@ -332,9 +336,9 @@ test(
       );
       assert(dimensions[0] > dimensions[1]);
       assert.equal(dimensions[2], 1);
-      assert.equal(
-        info(f.python.executable, landscapePath).pageTexts[1].trim(),
-        'Confidential - Project Review Only',
+      assert.match(
+        info(f.python.executable, landscapePath).pageTexts[1],
+        /Confidential - Project Review Only/,
       );
       const geometry = JSON.parse(
         execFileSync(
@@ -382,7 +386,7 @@ test(
       await writeFile(longPath, Buffer.from(longCover.pdf, 'base64'));
       const longPdf = info(f.python.executable, longPath);
       assert.equal(longPdf.pages, 3, 'Long cover must not spill into the confidentiality page');
-      assert.equal(longPdf.pageTexts[1].trim(), 'Confidential - Project Review Only');
+      assert.match(longPdf.pageTexts[1], /Confidential - Project Review Only/);
       assert.match(longPdf.pageTexts[2], /The body starts after the notice/);
       const escaped = reportMarkdown(
         '**Bold** and <img src="http://127.0.0.1/private">\n\n```text\n<unsafe>\n```',

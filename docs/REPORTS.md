@@ -11,7 +11,7 @@ Reports is the only built-in PDF generator. The older `create_document` tool is 
 1. Install the optional runtime in **Settings → Documents**. Ubuntu needs Python 3 and `python3-venv`. An existing working Frame document runtime already has the required packages.
 2. Open **Settings → Plugins → Reports**, enable the plugin, and configure its design. The plugin menu separates Reports, Charts, and MSSQL while preserving unsaved drafts when switching between them.
 3. Under **Branding**, set the organization name, choose primary/secondary/accent colors, and upload a PNG or JPEG logo. Logos save immediately; use **Save report settings** for the other controls.
-4. Under **Layout**, choose a default layout, Letter or A4, portrait or landscape, cover/confidentiality pages, the editable confidentiality notice, and footer text.
+4. Under **Layout**, choose a default layout, Letter or A4, portrait or landscape, cover/confidentiality pages, and the editable confidentiality notice. Headers use the report title; footers use the organization name.
 5. Under **Instructions**, describe required sections, titles, descriptions, and writing style in Markdown. Save, then use **Download saved-design sample** to inspect the layout. The sample contains fictional data and does not call the model or apply writing instructions.
 6. Enable **Reports** in a project's settings. **Customize report design** provides optional overrides for that project.
 
@@ -21,34 +21,37 @@ Project fields inherit organization defaults individually until changed. **Use o
 
 With **Cover and confidentiality pages** enabled (the default), PDFs use this order:
 
-1. A cover with the larger, centered logo and a smaller report-specific title. The generic Report label has been removed.
-2. An otherwise blank page containing only the confidentiality notice near the bottom, without headers, logos, footer rules, or page numbers.
+1. A cover with the larger, centered logo and a smaller report-specific title. The cover has no header, footer, or rules.
+2. A confidentiality page with the notice near the bottom, the report title and rule at the top, and the organization name and rule at the bottom. Body page numbering starts on the following page.
 3. The report body, with page numbering starting at 1.
 
 The default notice is “Confidential — For internal use only.” Edit it in **Settings → Plugins → Reports → Layout**, or override it for a project. It is plain text, supports line breaks, and is limited to 1,200 characters. It cannot be empty. The existing cover preference is retained on upgrade; enabling the renamed control includes both opening pages. Disabling it keeps the compact report format without either opening page.
 
-Report titles, section headings, chart titles, and table captions use Title Case. Acronyms, mixed-case names, and inline code are preserved; narrative text, table values, and column names are not recased. Logos fit within a 260 × 110 point area while preserving aspect ratio. Long cover content shrinks together when necessary to stay on one page.
+Report titles, section headings, chart titles, and table captions use Title Case. Acronyms, mixed-case names, and inline code are preserved; narrative text, table values, and column names are not recased. Cover logos fit within a 390 × 165 point area (260 × 110 points in coverless reports) while preserving aspect ratio. Long cover content shrinks together when necessary to stay on one page.
 
-All layouts use Times-style Liberation Serif, with regular, bold, italic, and bold-italic faces. Titles are 20 pt, major headings 12.5 pt, subheadings 11 pt, and body text 10.5–11 pt with tighter paragraph spacing. Tables use readable 9 pt text, compact padding, repeated headers, and thin rules. Callouts are indented italic paragraphs rather than decorative boxes. Your saved colors still apply to headings, tables, charts, and fine rules; logos and the opening-page sequence are unchanged. These changes apply to newly generated PDFs and saved-design samples, not existing files.
+All layouts use Times-style Liberation Serif, with regular, bold, italic, and bold-italic faces. Cover titles are 18 pt (20 pt in coverless reports), major headings 12.5 pt, subheadings 11 pt, and body text 10.5–11 pt with tighter paragraph spacing. Tables use readable 9 pt text, compact padding, repeated headers, and thin rules. Callouts are indented italic paragraphs rather than decorative boxes. Your saved colors still apply to headings, tables, charts, and fine rules; logos and the opening-page sequence are unchanged. These changes apply to newly generated PDFs and saved-design samples, not existing files.
 
 ## Layouts and instructions
 
-| Layout | Intended use | Presentation |
-| --- | --- | --- |
+| Layout            | Intended use                         | Presentation                                         |
+| ----------------- | ------------------------------------ | ---------------------------------------------------- |
 | Executive summary | Findings, decisions, recommendations | Classic serif body at 11 pt with restrained headings |
-| Data analysis | Charts, tables, and commentary | Tighter spacing and wider content area |
-| Technical report | Procedures, detailed sections, code | Numbered major sections and compact typography |
+| Data analysis     | Charts, tables, and commentary       | Tighter spacing and wider content area               |
+| Technical report  | Procedures, detailed sections, code  | Numbered major sections and compact typography       |
 
 The model selects content and can choose a layout for a particular request. Design controls determine formatting; instructions guide the model, rather than enforce a fixed form or execute code. For example:
 
 ```markdown
 ## Required sections
+
 Executive summary, scope, findings, recommendations, sources.
 
 ## Recommendations
+
 Include an owner, priority, and next action for each recommendation.
 
 ## Writing style
+
 Be concise. Separate observed facts from estimates. Cite source filenames.
 Use existing conversation tables and charts; do not invent missing values.
 ```

@@ -242,19 +242,13 @@ export function ReportsSettings({ projectId }: { projectId?: string }) {
             />,
           )}
           <p className="muted small">
-            Cover → confidentiality page → report. The notice appears at the bottom of an otherwise
-            blank page. Report titles and section headings use Title Case.
+            Cover → confidentiality page → report. The notice appears near the bottom of its own
+            page. Report titles and section headings use Title Case.
           </p>
-          {field(
-            'footer',
-            'Footer text',
-            <input
-              value={form.footer}
-              maxLength={160}
-              placeholder="Department or confidentiality label"
-              onChange={(e) => change('footer', e.target.value)}
-            />,
-          )}
+          <p className="muted small">
+            Headers show the report title. Footers show the organization name, including on the
+            confidentiality page. The cover has no header or footer.
+          </p>
           <p className="muted">
             Wide tables split into labeled column groups. Table headers repeat on new pages. Saved
             charts render as static vector graphics.

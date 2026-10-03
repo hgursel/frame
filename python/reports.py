@@ -91,7 +91,7 @@ def render(data):
     logo_bytes = base64.b64decode(data['logo']) if data.get('logo') else None
     logo_img = Image(io.BytesIO(logo_bytes)) if logo_bytes else None
     if logo_img:
-        scale = 1.25 if profile['cover'] else 1
+        scale = 1.5 if profile['cover'] else 1
         ratio = min(min(260 * scale, width) / logo_img.imageWidth, 110 * scale / logo_img.imageHeight)
         logo_img.drawWidth, logo_img.drawHeight = logo_img.imageWidth * ratio, logo_img.imageHeight * ratio
         logo_img.hAlign = 'CENTER'
@@ -120,36 +120,37 @@ def render(data):
         canvas.line(margin, ph - 45, pw - margin, ph - 45)
         canvas.setFont('FrameBold', 8)
         canvas.setFillColor(primary)
-        canvas.drawString(margin, ph - 36, fit_text(profile['organization'], 'FrameBold', 8, width))
+        canvas.drawString(margin, ph - 36, fit_text(title_case(data['title']), 'FrameBold', 8, width))
         canvas.setStrokeColor(line)
         canvas.line(margin, 37, pw - margin, 37)
         canvas.setFillColor(muted)
         canvas.setFont('FrameText', 7)
-        canvas.drawString(margin, 24, fit_text(profile['footer'] or profile['organization'], 'FrameText', 7, width - 35))
+        canvas.drawString(margin, 24, fit_text(profile['organization'], 'FrameText', 7, width - 35))
         number = document.page - (2 if profile['cover'] else 0)
         if number > 0:
             canvas.drawRightString(pw-margin, 24, str(number))
         canvas.restoreState()
     def confidentiality(canvas, document):
-        # This page deliberately has no report chrome, footer, logo, or page number.
+        # Use the same header/footer as body pages; body numbering starts afterward.
+        chrome(canvas, document)
         notice_style = ParagraphStyle('notice', parent=small, fontSize=9, leading=14, alignment=1)
         notice = Paragraph(html.escape(profile['confidentialityNotice']).replace('\n', '<br/>'), notice_style)
-        _, height = notice.wrap(width, ph - 104)
-        if height > ph - 104:
+        _, height = notice.wrap(width, ph - 117)
+        if height > ph - 117:
             raise ValueError('Confidentiality notice is too tall. Shorten it or remove extra line breaks.')
         canvas.saveState()
         notice.drawOn(canvas, margin, 52)
         canvas.restoreState()
     def frame():
         return Frame(margin, 52, width, ph-117, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    doc.addPageTemplates([
+    doc.addPageTemplates(([PageTemplate(id='cover', frames=[frame()])] if profile['cover'] else []) + [
         PageTemplate(id='report', frames=[frame()], onPage=chrome),
         PageTemplate(id='confidential', frames=[frame()], onPage=confidentiality),
     ])
     # Three lines of cover breathing room above the centered logo.
     story = [Spacer(1, 48)] if profile['cover'] else []
     if logo_img:
-        story += [logo_img, Spacer(1, 22)]
+        story += [logo_img, Spacer(1, 6 if profile['cover'] else 22)]
     if profile['cover']:
         story.append(Spacer(1, 60 if ph > 700 else 20))
     story.append(Paragraph(html.escape(title_case(data['title'])), title_style))
