@@ -1,3 +1,4 @@
+import { requestId, copyText } from './browser-compat.js';
 import React, { useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -5,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 function CopyCode({ source }: { source: string }) {
   const [notice, setNotice] = useState('');
   return <button type="button" onClick={() => {
-    void navigator.clipboard.writeText(source).then(() => setNotice('Copied'), () => setNotice('Copy unavailable'));
+    void copyText(source).then(() => setNotice('Copied'), () => setNotice('Copy unavailable'));
   }}>{notice || 'Copy code'}</button>;
 }
 
@@ -25,7 +26,7 @@ function diagram(source: string, dark: boolean): Promise<string> {
     host.setAttribute('aria-hidden', 'true');
     document.body.append(host);
     try {
-      const { svg } = await mermaid.render('frame-diagram-' + crypto.randomUUID(), source, host);
+      const { svg } = await mermaid.render('frame-diagram-' + requestId(), source, host);
       if (svg.length > 1_000_000) throw new Error('Diagram is too large');
       // An SVG image cannot run script or access the application DOM.
       return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);

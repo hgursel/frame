@@ -1,3 +1,4 @@
+import { requestId } from './browser-compat.js';
 import { KnowledgeLibraryPanel, LibraryReader } from './Library.js';
 import { MaintenanceSettingsPanel } from './Maintenance.js';
 import './maintenance.css';
@@ -433,7 +434,7 @@ function Workspace() {
       const id = pending?.chatId || chatId || (await newChat());
       if (!id) return;
       const request = pending || {
-        id: crypto.randomUUID(),
+        id: requestId(),
         chatId: id,
         text: draft.trim(),
         documentIds: attached,
@@ -513,7 +514,7 @@ function Workspace() {
     if (!chatId || compacting || snapshot.running) return;
     const id = chatId;
     if (compactRequest.current?.chat !== id)
-      compactRequest.current = { chat: id, id: crypto.randomUUID() };
+      compactRequest.current = { chat: id, id: requestId() };
     setCompacting(true);
     setError('');
     try {

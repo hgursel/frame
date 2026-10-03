@@ -1,6 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, networkInterfaces } from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -92,15 +92,28 @@ await new Promise<void>((resolve) => model.listen(0, '127.0.0.1', resolve));
 
 const root = await mkdtemp(path.join(tmpdir(), 'frame-browser-test-'));
 const port = 31876;
+const lan = process.env.FRAME_TEST_HTTP_LAN === 'true';
+const lanHost = Object.values(networkInterfaces())
+  .flat()
+  .find(
+    (a) =>
+      a?.family === 'IPv4' &&
+      !a.internal &&
+      /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(a.address),
+  )?.address;
+if (lan && !lanHost)
+  throw new Error('LAN browser regression needs a private IPv4 network interface.');
+const browserHost = lan ? lanHost! : '127.0.0.1';
+const browserOrigin = `http://${browserHost}:${port}`;
 const { app } = await createApp({
   dataDir: root,
-  origin: `http://127.0.0.1:${port}`,
+  origin: browserOrigin,
   setupToken: 'browser-test-bootstrap',
   webDir: path.resolve('dist/web'),
 });
 let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
 try {
-  await app.listen({ host: '127.0.0.1', port });
+  await app.listen({ host: browserHost, port });
   browser = await chromium.launch({
     headless: true,
     executablePath: process.env.FRAME_BROWSER_EXECUTABLE,
@@ -109,14 +122,18 @@ try {
   const errors: string[] = [];
   const externalRequests: string[] = [];
   page.on('request', (request) => {
-    if (/^https?:/.test(request.url()) && !request.url().startsWith(`http://127.0.0.1:${port}/`))
+    if (/^https?:/.test(request.url()) && !request.url().startsWith(`${browserOrigin}/`))
       externalRequests.push(request.url());
   });
   page.on('pageerror', (error) => {
     errors.push(error.message);
     console.error('Browser error:', error.message);
   });
-  await page.goto(`http://127.0.0.1:${port}`);
+  await page.goto(browserOrigin);
+  if (lan) {
+    assert.equal(await page.evaluate(() => window.isSecureContext), false);
+    assert.equal(await page.evaluate(() => typeof crypto.randomUUID), 'undefined');
+  }
   await page.getByLabel('Setup token').fill('browser-test-bootstrap');
   await page.getByLabel('Administrator password').fill('browser-test-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
@@ -233,6 +250,12 @@ try {
       fullPage: true,
     });
   await page.getByRole('button', { name: 'Light appearance', exact: false }).click();
+  if (lan) {
+    await page.getByRole('button', { name: 'Copy response', exact: true }).first().click();
+    await expect(
+      page.getByRole('button', { name: 'Copy response', exact: true }).first(),
+    ).toHaveText('Copied');
+  }
   await page.getByRole('button', { name: 'Useful · Save to knowledge', exact: false }).click();
   await page.getByLabel('Page title', { exact: true }).fill('Migration knowledge');
   await page
