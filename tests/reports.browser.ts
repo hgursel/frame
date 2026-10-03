@@ -22,9 +22,11 @@ const model = createServer(async (req, res) => {
   )
     modelError = 'Reports incorrectly requires host or SQL tools';
   const lastUser = body.messages.findLastIndex((m: any) => m.role === 'user');
+  const followUp = JSON.stringify(body.messages[lastUser]?.content).includes('What happens next?');
   const tools = body.messages.slice(lastUser + 1).filter((m: any) => m.role === 'tool');
-  const call =
-    tools.length === 0
+  const call = followUp
+    ? null
+    : tools.length === 0
       ? { name: 'reports_sources', args: { kind: 'document' } }
       : tools.length === 1
         ? {
@@ -54,10 +56,16 @@ const model = createServer(async (req, res) => {
           },
         ],
       }
-    : { role: 'assistant', content: 'Your branded PDF is ready.' };
+    : {
+        role: 'assistant',
+        content: followUp
+          ? 'Next, review the report recommendations.'
+          : 'Your branded PDF is ready.',
+      };
   const chunk = (d: object, finish: string | null) =>
     `data: ${JSON.stringify({ id: 'report', object: 'chat.completion.chunk', created: 1, model: 'reports-test', choices: [{ index: 0, delta: d, finish_reason: finish }] })}\n\n`;
   res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+  if (followUp) await new Promise((resolve) => setTimeout(resolve, 4500));
   res.end(chunk(delta, null) + chunk({}, call ? 'tool_calls' : 'stop') + 'data: [DONE]\n\n');
 });
 await new Promise<void>((resolve) => model.listen(0, '127.0.0.1', resolve));
@@ -84,6 +92,17 @@ try {
   page.setDefaultTimeout(15000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  await page.addInitScript(() => {
+    const Native = window.EventSource;
+    const setter = Object.getOwnPropertyDescriptor(Native.prototype, 'onmessage')!.set!;
+    window.EventSource = class extends Native {
+      set onmessage(handler: ((event: MessageEvent) => void) | null) {
+        setter.call(this, (event: MessageEvent) => {
+          if (!(window as any).holdChatEvents) handler?.call(this, event);
+        });
+      }
+    } as typeof EventSource;
+  });
   await page.goto(`http://127.0.0.1:${port}`);
   await page.getByLabel('Setup token').fill('test');
   await page.getByLabel('Administrator password').fill('test-password-12345');
@@ -172,13 +191,40 @@ try {
   );
   assert.equal(response.status(), 200);
   assert((await response.body()).subarray(0, 5).toString() === '%PDF-');
+  // Exercise the actual browser download, not just an HTTP request for the artifact.
+  const reportDownload = page.waitForEvent('download');
+  await file.click();
+  await reportDownload;
+  // Simulate a download/proxy leaving an apparently healthy SSE connection buffered.
+  await page.evaluate(() => {
+    (window as any).holdChatEvents = true;
+  });
+  await page.getByRole('textbox', { name: 'Message Frame' }).fill('What happens next?');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(
+    page.getByText('Next, review the report recommendations.', { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText('Next, review the report recommendations.', { exact: true }),
+  ).toBeInViewport();
+  await page.evaluate(() => {
+    (window as any).holdChatEvents = false;
+  });
+  await page
+    .getByRole('textbox', { name: 'Message Frame' })
+    .fill('What happens next? Explain again.');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(
+    page.getByText('Next, review the report recommendations.', { exact: true }),
+  ).toHaveCount(2, { timeout: 15000 });
+  await expect(file).toHaveCount(1);
   await page.reload();
   await page.getByRole('button', { name: 'Create a PDF service report', exact: true }).click();
   await expect(file).toHaveCount(1);
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);
   console.log(
-    'Reports browser passed: plugin navigation, retained drafts, branding/instructions, sample PDF, project overrides, mobile layout, real SDK generation without host tools/MSSQL, and reload.',
+    'Reports browser passed: plugin navigation, retained drafts, branding/instructions, sample PDF, project overrides, mobile layout, real SDK generation without host tools/MSSQL, actual PDF download, stalled-stream follow-up recovery, subsequent live turn, viewport, and reload.',
   );
 } finally {
   await browser?.close();
