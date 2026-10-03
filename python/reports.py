@@ -83,7 +83,7 @@ def render(data):
     body = style('body')
     heading = ParagraphStyle('heading', parent=body, fontName='FrameBold', fontSize=12.5, leading=16, textColor=primary, spaceBefore=12, spaceAfter=6, keepWithNext=True)
     subheading = ParagraphStyle('subheading', parent=heading, fontSize=11, leading=14, textColor=secondary, spaceBefore=9, spaceAfter=4)
-    title_style = ParagraphStyle('title', parent=body, fontName='FrameBold', fontSize=20, leading=25, textColor=primary, spaceAfter=12)
+    title_style = ParagraphStyle('title', parent=body, fontName='FrameBold', fontSize=18 if profile['cover'] else 20, leading=23 if profile['cover'] else 25, alignment=1 if profile['cover'] else 0, textColor=primary, spaceAfter=12)
     small = ParagraphStyle('small', parent=body, fontSize=8, leading=12, textColor=muted, spaceAfter=8)
     cell_style = ParagraphStyle('cell', parent=body, fontSize=9, leading=11.5, spaceAfter=0, splitLongWords=True)
     header_ink = colors.white if sum(c * w for c, w in zip(primary.rgb(), [.2126, .7152, .0722])) < .55 else ink
@@ -91,7 +91,8 @@ def render(data):
     logo_bytes = base64.b64decode(data['logo']) if data.get('logo') else None
     logo_img = Image(io.BytesIO(logo_bytes)) if logo_bytes else None
     if logo_img:
-        ratio = min(min(260, width) / logo_img.imageWidth, 110 / logo_img.imageHeight)
+        scale = 1.25 if profile['cover'] else 1
+        ratio = min(min(260 * scale, width) / logo_img.imageWidth, 110 * scale / logo_img.imageHeight)
         logo_img.drawWidth, logo_img.drawHeight = logo_img.imageWidth * ratio, logo_img.imageHeight * ratio
         logo_img.hAlign = 'CENTER'
     output = io.BytesIO()
@@ -145,15 +146,19 @@ def render(data):
         PageTemplate(id='report', frames=[frame()], onPage=chrome),
         PageTemplate(id='confidential', frames=[frame()], onPage=confidentiality),
     ])
-    story = []
+    # Three lines of cover breathing room above the centered logo.
+    story = [Spacer(1, 48)] if profile['cover'] else []
     if logo_img:
         story += [logo_img, Spacer(1, 22)]
     if profile['cover']:
         story.append(Spacer(1, 60 if ph > 700 else 20))
     story.append(Paragraph(html.escape(title_case(data['title'])), title_style))
     if data.get('subtitle'):
-        story.append(Paragraph(html.escape(data['subtitle']), ParagraphStyle('subtitle', parent=body, fontSize=11, leading=14, textColor=muted)))
-    story += [Spacer(1, 6), HRFlowable(width='100%', thickness=.5, color=accent, hAlign='LEFT'), Spacer(1, 8), Paragraph(date.today().isoformat(), small)]
+        story.append(Paragraph(html.escape(data['subtitle']), ParagraphStyle('subtitle', parent=body, fontSize=11, leading=14, alignment=1 if profile['cover'] else 0, textColor=muted)))
+    story.append(Spacer(1, 6))
+    if not profile['cover']:
+        story += [HRFlowable(width='100%', thickness=.5, color=accent, hAlign='LEFT'), Spacer(1, 8)]
+    story.append(Paragraph(date.today().isoformat(), ParagraphStyle('title-date', parent=small, alignment=1 if profile['cover'] else 0)))
     if profile['cover']:
         # Keep long titles/subtitles on a single cover, even in landscape orientation.
         story = [KeepInFrame(width, ph-117, story, mode='shrink'), NextPageTemplate('confidential'), PageBreak(),
