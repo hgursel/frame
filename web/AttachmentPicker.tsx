@@ -11,7 +11,9 @@ export function AttachmentPicker({
   onBusy,
   onToggle,
   onUploaded,
+  onImages,
 }: {
+  onImages: (files: File[]) => void;
   allowUpload?: boolean;
   projectId: string;
   documents: KnowledgeDocument[];
@@ -23,6 +25,7 @@ export function AttachmentPicker({
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const alive = useRef(true);
   const [busy, setBusy] = useState(false);
@@ -114,6 +117,20 @@ export function AttachmentPicker({
           >
             ↑ Upload from computer
           </button>
+          <button
+            type="button"
+            disabled={blocked}
+            onClick={() => {
+              if (menu.current) menu.current.open = false;
+              imageInput.current?.click();
+            }}
+          >
+            ▧ Upload images
+          </button>
+          <small>
+            Images stay in this chat. PNG, JPEG, WebP · up to 4 images. You can also paste
+            screenshots.
+          </small>
           <small>
             {allowUpload
               ? 'Up to 5 attachments · 10 MiB per file. Uploads are saved to this project’s knowledge.'
@@ -133,6 +150,20 @@ export function AttachmentPicker({
           const files = [...(e.target.files || [])];
           e.target.value = '';
           void upload(files);
+        }}
+      />
+      <input
+        ref={imageInput}
+        hidden
+        type="file"
+        multiple
+        accept="image/png,image/jpeg,image/webp"
+        aria-label="Upload chat images"
+        disabled={blocked}
+        onChange={(e) => {
+          const files = [...(e.target.files || [])];
+          e.target.value = '';
+          onImages(files);
         }}
       />
       {error && (

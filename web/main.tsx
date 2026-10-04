@@ -1,3 +1,4 @@
+import { useChatImages, ImagePreviews, type DraftImage } from './ChatImages.js';
 import { requestId } from './browser-compat.js';
 import { KnowledgeLibraryPanel, LibraryReader } from './Library.js';
 import { MaintenanceSettingsPanel } from './Maintenance.js';
@@ -178,7 +179,9 @@ function Workspace() {
   const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [attached, setAttached] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [documentUploading, setUploading] = useState(false);
+  const chatImages = useChatImages(`${projectId}:${chatId}`);
+  const uploading = documentUploading || chatImages.busy;
   const [saveIndex, setSaveIndex] = useState<number>();
   const refreshDocuments = async () => {
     if (projectId) {
@@ -226,6 +229,7 @@ function Workspace() {
     chatId: string;
     text: string;
     documentIds: string[];
+    images: DraftImage[];
   }>();
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -247,6 +251,7 @@ function Workspace() {
     chatId: string;
     text: string;
     documentIds: string[];
+    images: DraftImage[];
   }>();
   const project = projects.find((p) => p.id === projectId);
   const isIncognito = !!chatId && incognitoId === chatId;
@@ -426,7 +431,13 @@ function Workspace() {
     return chat.id;
   };
   const submit = async () => {
-    if ((!draft.trim() && !pending) || sending || uploading || switchingPrivacy || snapshot.running)
+    if (
+      (!draft.trim() && !chatImages.images.length && !pending) ||
+      sending ||
+      uploading ||
+      switchingPrivacy ||
+      snapshot.running
+    )
       return;
     setSending(true);
     setError('');
@@ -438,12 +449,14 @@ function Workspace() {
         chatId: id,
         text: draft.trim(),
         documentIds: attached,
+        images: chatImages.images,
       };
       setPending(request);
       await api(`/conversations/${id}/messages`, 'POST', {
         requestId: request.id,
         text: request.text,
         documentIds: request.documentIds,
+        images: request.images.map(({ name: _, ...image }) => image),
       });
       if (currentChat.current === id) {
         pinned.current = true;
@@ -454,6 +467,7 @@ function Workspace() {
       if (currentChat.current === id) {
         setDraft((current) => (current.trim() === request.text ? '' : current));
         setAttached([]);
+        chatImages.setImages([]);
       }
       const updated = await api<ChatSnapshot>(`/conversations/${id}`);
       applySnapshot(id, updated);
@@ -513,8 +527,7 @@ function Workspace() {
   const compact = async () => {
     if (!chatId || compacting || snapshot.running) return;
     const id = chatId;
-    if (compactRequest.current?.chat !== id)
-      compactRequest.current = { chat: id, id: requestId() };
+    if (compactRequest.current?.chat !== id) compactRequest.current = { chat: id, id: requestId() };
     setCompacting(true);
     setError('');
     try {
@@ -859,6 +872,7 @@ function Workspace() {
                         onClick={() => {
                           setDraft(lastSubmitted.text);
                           setAttached(lastSubmitted.documentIds);
+                          chatImages.setImages(lastSubmitted.images);
                           setPending(undefined);
                         }}
                       >
@@ -898,6 +912,15 @@ function Workspace() {
                   void submit();
                 }}
               >
+                {!!(pending?.images || chatImages.images).length && (
+                  <ImagePreviews
+                    images={pending?.images || chatImages.images}
+                    disabled={snapshot.running || !!pending || uploading || sending}
+                    onRemove={(index) =>
+                      chatImages.setImages((images) => images.filter((_, i) => i !== index))
+                    }
+                  />
+                )}
                 {!!attached.length && (
                   <div className="composer-attachments">
                     {attached.map((id) => (
@@ -922,7 +945,28 @@ function Workspace() {
                   maxLength={32000}
                   onChange={(e) => {
                     setDraft(e.target.value);
-                    if (pending) setPending(undefined);
+                    if (pending) {
+                      chatImages.setImages(pending.images);
+                      setPending(undefined);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const files = [...e.clipboardData.items]
+                      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+                      .map((item) => item.getAsFile())
+                      .filter((file): file is File => !!file);
+                    if (!files.length) return;
+                    e.preventDefault();
+                    if (
+                      !projectId ||
+                      snapshot.running ||
+                      pending ||
+                      sending ||
+                      uploading ||
+                      switchingPrivacy
+                    )
+                      return;
+                    void chatImages.add(files).catch((e) => setError(e.message));
                   }}
                   onKeyDown={(e) => {
                     if (e.nativeEvent.isComposing || skillPicker.onKeyDown(e)) return;
@@ -934,13 +978,21 @@ function Workspace() {
                 />
                 <div className="composer-footer">
                   <AttachmentPicker
-                    key={projectId}
+                    key={`${projectId}:${chatId}`}
+                    onImages={(files) => {
+                      void chatImages.add(files).catch((e) => setError(e.message));
+                    }}
                     projectId={projectId}
                     allowUpload={!incognitoId || incognitoId !== chatId}
                     documents={documents}
                     attached={attached}
                     disabled={
-                      !projectId || snapshot.running || !!pending || sending || switchingPrivacy
+                      !projectId ||
+                      snapshot.running ||
+                      !!pending ||
+                      sending ||
+                      switchingPrivacy ||
+                      uploading
                     }
                     onBusy={setUploading}
                     onToggle={(id) =>
@@ -975,7 +1027,7 @@ function Workspace() {
                         sending ||
                         uploading ||
                         switchingPrivacy ||
-                        !draft.trim() ||
+                        (!draft.trim() && !chatImages.images.length && !pending) ||
                         !projectId ||
                         !settings?.modelId
                       }

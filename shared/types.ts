@@ -1,3 +1,4 @@
+import type { ChatImage } from './images.js';
 import type { LibraryReference } from './library.js';
 import type { SkillEntry } from './skills.js';
 import type { ChartRef } from './charts.js';
@@ -39,6 +40,7 @@ export interface DisplayMessage {
   thinking?: string;
   thinkingActive?: boolean;
   attachments?: { id: string; name: string }[];
+  images?: { id: string }[];
   proposal?: { title: string; text: string; targetId?: string; revision?: string };
   knowledgeSourceId?: string;
   sqlResult?: SqlResult;
@@ -114,6 +116,7 @@ export interface WorkerInput {
   settings: StoredSettings;
   project: Project;
   prompt: string;
+  images?: ChatImage[];
   documents?: { id: string; name: string; text: string }[];
   pythonPath?: string;
   knowledge?: {
