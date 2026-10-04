@@ -546,7 +546,7 @@ test(
       const widePdf = info(f.python.executable, widePath);
       assert(widePdf.pages > 3);
       assert.match(widePdf.text, /R79C11/);
-      assert.match(widePdf.text, /part 3 of 3/);
+      assert.match(widePdf.text, /part 2 of 2/);
       if (process.env.FRAME_REPORT_QA)
         await writeFile(
           path.join(process.env.FRAME_REPORT_QA, 'charts.pdf'),
@@ -624,6 +624,100 @@ test(
         'Gamma',
       ])
         assert(pdf.text.includes(value), value);
+    } finally {
+      await f.cleanup();
+    }
+  },
+);
+
+test(
+  'PDF chart labels stay readable and tables use available page space',
+  { skip: !process.env.FRAME_PYTHON },
+  async () => {
+    const f = await fixture();
+    try {
+      const render = async (name: string, blocks: any[]) => {
+        const result = await reportCommand(f.python.executable, {
+          command: 'render',
+          title: name,
+          profile: { ...f.reports.profile(), cover: false },
+          blocks,
+        });
+        const file = path.join(process.env.FRAME_REPORT_QA || f.root, `${name}.pdf`);
+        await writeFile(file, Buffer.from(result.pdf, 'base64'));
+        return info(f.python.executable, file);
+      };
+      const charts = await render('number-labels', [
+        {
+          type: 'chart',
+          chart: {
+            title: 'Revenue',
+            kind: 'bar',
+            x: 'Region',
+            y: ['Revenue'],
+            rows: [
+              ['West', 1786000],
+              ['East', 893000],
+            ],
+          },
+        },
+        {
+          type: 'chart',
+          chart: {
+            title: 'Comparison',
+            kind: 'scatter',
+            x: 'Revenue',
+            y: ['Cost'],
+            rows: [
+              [1000000, -2000000],
+              [3000000, 4000000],
+            ],
+          },
+        },
+        {
+          type: 'chart',
+          chart: {
+            title: 'Small measurements',
+            kind: 'line',
+            x: 'Sample',
+            y: ['Value'],
+            rows: [
+              ['A', 0.0001],
+              ['B', 0.0004],
+            ],
+          },
+        },
+      ]);
+      for (const label of ['1.79M', '893K', '446.5K', '-2M', '3M', '0.0001', '0.0004'])
+        assert(charts.text.includes(label), label);
+      assert.doesNotMatch(charts.text, /\d(?:\.\d+)?e[+-]\d/i);
+      const columns = Array.from({ length: 9 }, (_, i) => `Col${i}`);
+      const table = await render('page-table', [
+        {
+          type: 'paragraph',
+          text: Array(15).fill('Introduction to the following table.').join('<br/>'),
+        },
+        {
+          type: 'table',
+          columns,
+          rows: Array.from({ length: 24 }, (_, i) => [`Row${i}end`, ...Array(8).fill(i)]),
+        },
+      ]);
+      assert.equal(table.pages, 2);
+      assert(!table.pageTexts[0].includes('Row0end'));
+      for (let i = 0; i < 24; i++) assert(table.pageTexts[1].includes(`Row${i}end`));
+      for (const column of columns) assert(table.pageTexts[1].includes(column));
+      assert.doesNotMatch(table.text, /Table columns - part/);
+      const long = await render('long-table', [
+        {
+          type: 'table',
+          columns: ['Record', 'Description'],
+          rows: Array.from({ length: 90 }, (_, i) => [`Record${i}end`, 'Content retained']),
+        },
+      ]);
+      assert(long.pages >= 3);
+      for (const page of long.pageTexts) assert(page.includes('Description'));
+      for (let i = 0; i < 90; i++) assert.equal(long.text.split(`Record${i}end`).length - 1, 1);
     } finally {
       await f.cleanup();
     }

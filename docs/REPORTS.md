@@ -56,7 +56,7 @@ Be concise. Separate observed facts from estimates. Cite source filenames.
 Use existing conversation tables and charts; do not invent missing values.
 ```
 
-PDFs support headings, emphasis, lists, callouts, Markdown tables, code, repeated table headers, page numbers, and static vector charts. Wide tables split into labeled column groups with the first column repeated. Bundled Liberation Serif 2.1.5 fonts (SIL OFL 1.1) are embedded in PDFs and require no host font installation. The fonts cover common Latin text; full multilingual typesetting and custom font uploads are not implemented. There is no arbitrary HTML/CSS template editor or remote image loading.
+PDFs support headings, emphasis, lists, callouts, Markdown tables, code, repeated table headers, page numbers, and static vector charts. Tables use content-aware column widths and stay together when they fit on a page. Longer tables continue with repeated headers; only tables too wide to fit split into labeled column groups with the first column repeated. Chart numbers use readable compact labels (for example, 1.79M), not scientific notation. Bundled Liberation Serif 2.1.5 fonts (SIL OFL 1.1) are embedded in PDFs and require no host font installation. The fonts cover common Latin text; full multilingual typesetting and custom font uploads are not implemented. There is no arbitrary HTML/CSS template editor or remote image loading.
 
 ## Use through chat
 
