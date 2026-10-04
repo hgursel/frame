@@ -120,6 +120,10 @@ The endpoint is reached from the Frame server. V1 accepts loopback and private I
 
 For access from another computer, follow the [LAN, HTTPS reverse-proxy, or SSH-tunnel guide](docs/DEPLOYMENT.md). Deployment-level network and storage settings are configured outside the browser.
 
+### Image conversations
+
+Use **+ → Upload images**, or paste a screenshot into the chat. Preview or remove images before sending; an image can also be sent without text. PNG, JPEG, and WebP are supported (four per message, 10 MiB per source image). Frame resizes images to a maximum 2048-pixel edge and sends them directly to your local vision model. Images stay in the conversation, not project knowledge; incognito images are temporary. Your llama.cpp server must already have vision support configured for the selected model.
+
 ## Local by design
 
 - **Your model endpoint.** Frame connects to the llama.cpp server you operate, with no cloud-model fallback.

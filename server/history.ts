@@ -1,3 +1,4 @@
+import { imageId } from './images.js';
 import { existsSync, readFileSync } from 'node:fs';
 import type { DisplayMessage } from '../shared/types.js';
 import { collapseSkillInvocation } from '../shared/skills.js';
@@ -51,6 +52,15 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
           thinking: thinking ? thinking.slice(0, 100_000) : undefined,
           thinkingActive: m.role === 'assistant' && (openTag || activeThinking),
           attachments: attached,
+          images:
+            m.role === 'user' && Array.isArray(m.content)
+              ? m.content
+                  .filter(
+                    (p: any) =>
+                      p.type === 'image' && ['image/png', 'image/jpeg'].includes(p.mimeType),
+                  )
+                  .map((p: any) => ({ id: imageId(p) }))
+              : undefined,
           proposal:
             m.role === 'toolResult' ? (m.details as any)?.frameKnowledgeProposal : undefined,
           chart:

@@ -1,3 +1,4 @@
+import { imagesSchema } from './images.js';
 import { KnowledgeLibrary, libraryApi } from './library/service.js';
 import { Skills, skillsApi } from './skills.js';
 import { recall, validSqlMethod } from './maintenance/recall.js';
@@ -326,14 +327,20 @@ export async function createApp(options: {
   );
   app.post<{ Params: { id: string } }>(
     '/api/conversations/:id/messages',
+    { bodyLimit: 12 * 1024 * 1024 },
     async (request, reply) => {
       const id = conversationId(request.params.id);
-      const { requestId, text, documentIds } = z
+      const { requestId, text, documentIds, images } = z
         .object({
           requestId: uuid,
-          text: z.string().trim().min(1).max(32000),
+          text: z.string().trim().max(32000),
+          images: imagesSchema,
           documentIds: z.array(uuid).max(5).default([]),
         })
+        .refine(
+          (value) => !!value.text || value.images.length > 0,
+          'Enter a message or attach an image.',
+        )
         .parse(request.body);
       if (store.db.prepare('SELECT id FROM runs WHERE id=?').get(requestId))
         return reply.code(202).send(runner.start(id, requestId, text));
@@ -363,16 +370,33 @@ export async function createApp(options: {
         const started = runner.start(
           id,
           requestId,
-          text,
+          text || 'Please describe the attached image(s).',
           documents,
           runtime?.state === 'ready' ? python.executable : undefined,
           recalled.catalog,
           'prompt',
           recalled.reference,
+          images,
         );
         if (!store.conversation(id)?.incognito) maintenance.methods.used(recalled.ids);
         return reply.code(202).send(started);
       });
+    },
+  );
+  app.get<{ Params: { id: string; hash: string } }>(
+    '/api/conversations/:id/images/:hash',
+    async (request, reply) => {
+      const id = conversationId(request.params.id);
+      const hash = z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .parse(request.params.hash);
+      const image = runner.image(id, hash);
+      if (!image) return reply.code(404).send({ error: 'Image not found in this conversation.' });
+      return reply
+        .header('Cache-Control', 'no-store')
+        .type(image.mimeType)
+        .send(Buffer.from(image.data, 'base64'));
     },
   );
   app.post<{ Params: { id: string } }>('/api/conversations/:id/stop', async (request) => {

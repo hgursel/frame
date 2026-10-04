@@ -1,3 +1,4 @@
+import { imageId } from './images.js';
 import type { ReportsPlugin } from './plugins/reports/service.js';
 import type { Skills } from './skills.js';
 import type { ChartsPlugin } from './plugins/charts/service.js';
@@ -15,11 +16,12 @@ import type {
   WorkerInput,
 } from '../shared/types.js';
 import { readKnowledge, searchKnowledge } from './knowledge-discovery.js';
-import { readHistory } from './history.js';
+import { readHistory, readSessionBranch } from './history.js';
 import { Store } from './store.js';
 import { emptyMetrics, metricsKey } from './context.js';
 
 type ActiveRun = {
+  images?: WorkerInput['images'];
   process: ChildProcess;
   projectId: string;
   runId: string;
@@ -97,6 +99,28 @@ export class Runner extends EventEmitter {
     const { messages: _, streaming: __, ...snapshot } = this.snapshot(id);
     return { ...snapshot, messagesVersion: live.messagesVersion, tail: live.tail ?? null };
   }
+  image(id: string, hash: string) {
+    const active = this.active.get(id)?.images?.find((image) => imageId(image) === hash);
+    if (active) return active;
+    const entries = this.store.conversation(id)?.incognito
+      ? this.ephemeral.get(id)?.entries || []
+      : readSessionBranch(this.store.sessionFile(id));
+    for (const entry of entries as any[]) {
+      if (
+        entry.type !== 'message' ||
+        entry.message?.role !== 'user' ||
+        !Array.isArray(entry.message.content)
+      )
+        continue;
+      for (const part of entry.message.content)
+        if (
+          part.type === 'image' &&
+          ['image/png', 'image/jpeg'].includes(part.mimeType) &&
+          imageId(part) === hash
+        )
+          return part;
+    }
+  }
   projectBusy(id: string) {
     return [...this.active.values()].some((run) => run.projectId === id);
   }
@@ -109,6 +133,7 @@ export class Runner extends EventEmitter {
     knowledge: KnowledgePage[] = [],
     operation: WorkerInput['operation'] = 'prompt',
     reference?: WorkerInput['reference'],
+    images?: WorkerInput['images'],
   ) {
     const existing = this.store.db
       .prepare('SELECT conversationId, status FROM runs WHERE id=?')
@@ -188,6 +213,7 @@ export class Runner extends EventEmitter {
     }
     const active: ActiveRun = {
       process: child,
+      images,
       projectId: project.id,
       runId,
       snapshot: {
@@ -345,6 +371,7 @@ export class Runner extends EventEmitter {
         project,
         prompt,
         documents,
+        images,
         pythonPath,
         // Metadata only: page text is served through knowledge_search/knowledge_read.
         knowledge: knowledge.map(({ text: _, ...entry }) => entry),

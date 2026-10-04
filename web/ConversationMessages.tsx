@@ -203,6 +203,24 @@ export function ConversationMessages({
                     ))}
                   </div>
                 )}
+                {!!turn.user.message.images?.length && (
+                  <div className="chat-images">
+                    {turn.user.message.images.map((image, i) => (
+                      <a
+                        key={`${image.id}:${i}`}
+                        href={`/api/conversations/${chatId}/images/${image.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          loading="lazy"
+                          src={`/api/conversations/${chatId}/images/${image.id}`}
+                          alt={`Attached image ${i + 1}`}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <RichMarkdown text={turn.user.message.text} />
               </article>
             )}

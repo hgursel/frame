@@ -113,7 +113,7 @@ async function run(input: WorkerInput): Promise<WorkerCompletion> {
         id: settings.modelId,
         name: settings.modelId,
         reasoning: false,
-        input: ['text'],
+        input: ['text', 'image'],
         contextWindow: settings.contextWindow,
         maxTokens: settings.maxTokens,
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -518,7 +518,9 @@ async function run(input: WorkerInput): Promise<WorkerCompletion> {
     }
     status = 'Waiting for model';
     publish(true);
-    await session.prompt(input.prompt);
+    await session.prompt(input.prompt, {
+      images: input.images?.map((image) => ({ type: 'image' as const, ...image })),
+    });
     partial = undefined;
     publish(true);
     const last = [...session.messages].reverse().find((m) => m.role === 'assistant');
