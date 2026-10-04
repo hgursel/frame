@@ -250,8 +250,8 @@ export function ReportsSettings({ projectId }: { projectId?: string }) {
             confidentiality page. The cover has no header or footer.
           </p>
           <p className="muted">
-            Wide tables split into labeled column groups. Table headers repeat on new pages. Saved
-            charts render as static vector graphics.
+            Tables stay together when they fit on a page. Wide tables use column groups; long tables
+            repeat headers. Saved charts render as static vector graphics.
           </p>
         </div>
         <div hidden={tab !== 'instructions'}>

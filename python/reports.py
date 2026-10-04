@@ -167,6 +167,16 @@ def render(data):
     else:
         story.append(Spacer(1, 12))
     palette = [primary, secondary, accent, colors.HexColor('#6486a4'), colors.HexColor('#926f9f')]
+    def chart_number(value):
+        """Compact labels like the chat charts, without scientific notation."""
+        value = float(value)
+        for scale, suffix in [(1e12, 'T'), (1e9, 'B'), (1e6, 'M'), (1e3, 'K')]:
+            if abs(value) >= scale:
+                return f'{value / scale:,.2f}'.rstrip('0').rstrip('.') + suffix
+        # Retain useful precision for very small measurements instead of labeling all ticks 0.
+        places = max(2, 2 - math.floor(math.log10(abs(value)))) if value else 2
+        result = f'{value:,.{places}f}'.rstrip('0').rstrip('.')
+        return '0' if result in ('', '-0') else result
     def chart_plot(chart):
         d = Drawing(width, 310)
         rows, kind = chart['rows'], chart['kind']
@@ -192,7 +202,7 @@ def render(data):
                 y = 294 - i * 14
                 x = width * .58
                 d.add(Rect(x, y-3, 6, 6, fillColor=palette[i % len(palette)], strokeColor=None))
-                label = f'{shorten(row[0], 20)}: {float(row[1]):g} ({float(row[1])/total:.1%})'
+                label = f'{shorten(row[0], 20)}: {chart_number(row[1])} ({float(row[1])/total:.1%})'
                 d.add(String(x+12, y-3, label, fontName='FrameText', fontSize=7, fillColor=ink))
         else:
             left, right, bottom, top = 48, width - 12, 50, 270
@@ -209,11 +219,11 @@ def render(data):
             for i in range(5):
                 value = lo + (hi-lo)*i/4
                 d.add(Line(left, y(value), right, y(value), strokeColor=line, strokeWidth=.5))
-                d.add(String(left-7, y(value)-3, f'{value:,.3g}', textAnchor='end', fontName='FrameText', fontSize=7, fillColor=muted))
+                d.add(String(left-7, y(value)-3, chart_number(value), textAnchor='end', fontName='FrameText', fontSize=7, fillColor=muted))
             d.add(Line(left, y(0), right, y(0), strokeColor=muted, strokeWidth=.7))
             if kind == 'scatter':
                 for i in range(5):
-                    d.add(String(left+(right-left)*i/4, 34, f'{xmin+(xmax-xmin)*i/4:g}', textAnchor='middle', fontName='FrameText', fontSize=7, fillColor=muted))
+                    d.add(String(left+(right-left)*i/4, 34, chart_number(xmin+(xmax-xmin)*i/4), textAnchor='middle', fontName='FrameText', fontSize=7, fillColor=muted))
             else:
                 for i, row in enumerate(rows):
                     if i % max(1, math.ceil(len(rows)/6)) == 0:
@@ -244,8 +254,20 @@ def render(data):
         columns, rows = block['columns'], block['rows']
         if not columns or len(columns) > 20 or len(rows) > 1000 or any(len(r) != len(columns) for r in rows):
             raise ValueError('Report tables support 1-20 columns and up to 1,000 consistent rows.')
-        bands = 8 if profile['landscape'] else 6
-        groups = [list(range(len(columns)))] if len(columns) <= bands else [[0] + list(range(i, min(i+bands-1, len(columns)))) for i in range(1, len(columns), bands-1)]
+        # Size by content, not a fixed column count. Short numeric columns can share
+        # a page; genuinely wide tables retain the first column in each band.
+        def column_width(i):
+            samples = [(str(columns[i]), 'FrameBold')] + [('NULL' if r[i] is None else str(r[i]), 'FrameText') for r in rows]
+            longest = max((pdfmetrics.stringWidth(word, font, 9) for value, font in samples for word in value.split()), default=0)
+            return min(120, max(48, longest + 12))
+        minimums = [column_width(i) for i in range(len(columns))]
+        groups, current = [], [0]
+        for i in range(1, len(columns)):
+            if sum(minimums[c] for c in current) + minimums[i] > width:
+                groups.append(current)
+                current = [0]
+            current.append(i)
+        groups.append(current)
         for group_number, indices in enumerate(groups):
             if len(groups) > 1:
                 story.append(Paragraph(f'Table columns - part {group_number+1} of {len(groups)} (first column repeated)', small))
@@ -253,10 +275,14 @@ def render(data):
             for row in rows:
                 vals.append([Paragraph(html.escape('NULL' if row[i] is None else str(row[i])).replace('\n', '<br/>'), cell_style) for i in indices])
             weights = [min(32, max(10, len(str(columns[i])), *(len(str(r[i])) for r in rows[:30]))) for i in indices]
-            col_widths = [width*w/sum(weights) for w in weights]
+            spare = width - sum(minimums[i] for i in indices)
+            col_widths = [minimums[i] + spare*w/sum(weights) for i, w in zip(indices, weights)]
             t = LongTable(vals, colWidths=col_widths, repeatRows=1, splitByRow=1, splitInRow=1, hAlign='LEFT')
             t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), primary), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f3f6f7')]), ('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 6), ('RIGHTPADDING', (0,0), (-1,-1), 6), ('TOPPADDING', (0,0), (-1,-1), 5), ('BOTTOMPADDING', (0,0), (-1,-1), 5), ('LINEBELOW', (0,0), (-1,0), .6, accent), ('LINEBELOW', (0,1), (-1,-1), .3, line)]))
-            story.extend([t, Spacer(1, 9)])
+            # If it fits a fresh page, move the whole table rather than leaving a
+            # fragment on the current page. Truly long tables still flow normally.
+            _, table_height = t.wrap(width, ph - 117)
+            story.extend([KeepTogether([t]) if table_height <= ph - 117 else t, Spacer(1, 9)])
     section = 0
     for block in data['blocks']:
         kind = block['type']
