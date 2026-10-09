@@ -127,6 +127,7 @@ test('conversation uploads are isolated, explicitly promoted, and cleaned up wit
     assert(promoted.id && promoted.id !== doc.id);
     assert.equal((await f.auth(url, 'POST', { confirm: true })).json().id, promoted.id);
     assert.equal(f.knowledge.list(p.id).length, 1);
+    assert.equal((await f.auth(`/conversations/${a.id}/files`)).json()[0].knowledgeId, promoted.id);
     assert.equal(
       (await f.auth(`/conversations/${a.id}`, 'DELETE', { confirm: true })).statusCode,
       200,

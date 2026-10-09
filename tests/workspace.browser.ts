@@ -100,6 +100,7 @@ try {
   await page.getByLabel('Setup token').fill('test');
   await page.getByLabel('Administrator password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
+  await expect(page.getByLabel('Upload chat files')).toBeEnabled();
   await page.getByLabel('Upload chat files').setInputFiles({
     name: 'chat-only.txt',
     mimeType: 'text/plain',
@@ -115,6 +116,11 @@ try {
   await page.reload();
   await page.getByRole('button', { name: 'Ask before writing', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Questions from Frame' })).toBeVisible();
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-questions.png'),
+      fullPage: true,
+    });
   await page.getByRole('radio', { name: 'Text A plain text file.' }).check();
   await page.getByLabel('Your answer or notes: Format').fill('Keep it concise.');
   await page.getByRole('button', { name: 'Next question' }).click();
@@ -152,6 +158,7 @@ try {
   if (await navigation.isVisible()) await navigation.click({ position: { x: 370, y: 400 } });
   await page.getByRole('button', { name: 'Outputs and sources' }).click();
   await expect(panel).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Added to knowledge ✓' })).toBeVisible();
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
     false,
@@ -180,6 +187,17 @@ try {
   console.log(
     'Workspace browser passed: chat uploads, refresh while waiting, multiple/custom answers, output/source downloads, explicit promotion, follow-up and mobile panel.',
   );
+} catch (error) {
+  const page = browser?.contexts()[0]?.pages()[0];
+  if (page) {
+    console.error((await page.locator('body').innerText()).slice(-5000));
+    if (process.env.FRAME_SCREENSHOT)
+      await page.screenshot({
+        path: process.env.FRAME_SCREENSHOT.replace('.png', '-workspace-failure.png'),
+        fullPage: true,
+      });
+  }
+  throw error;
 } finally {
   await browser?.close();
   await ctx.app.close();

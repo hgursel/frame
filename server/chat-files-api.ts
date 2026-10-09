@@ -19,7 +19,11 @@ export function chatFilesApi(
   type Params = { id: string; fileId: string };
   app.get<{ Params: Params }>('/api/conversations/:id/files', (request) => {
     const { files, conversation } = scope(request.params.id);
-    return files.list(conversation.projectId);
+    const projectIds = new Set(knowledge.list(conversation.projectId).map((d) => d.id));
+    return files.list(conversation.projectId).map((doc) => {
+      const knowledgeId = knowledge.store.meta(`chat-file-knowledge:${doc.id}`);
+      return { ...doc, ...(knowledgeId && projectIds.has(knowledgeId) ? { knowledgeId } : {}) };
+    });
   });
   app.post<{ Params: Params }>('/api/conversations/:id/files', async (request) => {
     const { files, conversation } = scope(request.params.id);

@@ -134,6 +134,7 @@ export interface WorkerInput {
 }
 export interface KnowledgeDocument {
   conversationId?: string;
+  knowledgeId?: string;
   id: string;
   projectId: string;
   name: string;

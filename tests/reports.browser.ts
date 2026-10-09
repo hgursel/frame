@@ -219,9 +219,11 @@ try {
   await expect(
     page.getByText('Next, review the report recommendations.', { exact: true }),
   ).toHaveCount(2, { timeout: 15000 });
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
   await expect(file).toHaveCount(1);
   await page.reload();
   await page.getByRole('button', { name: 'Create a PDF service report', exact: true }).click();
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
   await expect(file).toHaveCount(1);
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);

@@ -23,7 +23,7 @@ export function ConversationPanel({
   attached: string[];
   incognito: boolean;
   onAttach: (id: string) => void;
-  onSaved: () => void;
+  onSaved: (fileId: string, knowledgeId: string) => void;
   onClose: () => void;
 }) {
   const [error, setError] = useState('');
@@ -45,9 +45,13 @@ export function ConversationPanel({
     setSaving(id);
     setError('');
     try {
-      await api(`/conversations/${chatId}/files/${id}/knowledge`, 'POST', { confirm: true });
+      const doc = await api<KnowledgeDocument>(
+        `/conversations/${chatId}/files/${id}/knowledge`,
+        'POST',
+        { confirm: true },
+      );
       setSaved((v) => [...v, id]);
-      onSaved();
+      onSaved(id, doc.id);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -90,7 +94,11 @@ export function ConversationPanel({
             >
               ▤ {file.name}
             </a>
-            <small>Only in this conversation</small>
+            <small>
+              {file.knowledgeId || saved.includes(file.id)
+                ? 'Also saved to project knowledge'
+                : 'Only in this conversation'}
+            </small>
             <div className="panel-file-actions">
               <button
                 disabled={snapshot.running || (!attached.includes(file.id) && attached.length >= 5)}
@@ -102,10 +110,14 @@ export function ConversationPanel({
               </button>
               {!incognito && (
                 <button
-                  disabled={snapshot.running || !!saving || saved.includes(file.id)}
+                  disabled={
+                    snapshot.running || !!saving || !!file.knowledgeId || saved.includes(file.id)
+                  }
                   onClick={() => void save(file.id)}
                 >
-                  {saved.includes(file.id) ? 'Added to knowledge ✓' : 'Add to project knowledge'}
+                  {file.knowledgeId || saved.includes(file.id)
+                    ? 'Added to knowledge ✓'
+                    : 'Add to project knowledge'}
                 </button>
               )}
             </div>

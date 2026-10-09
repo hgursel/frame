@@ -1142,7 +1142,12 @@ function Workspace() {
                   attached={attached}
                   incognito={isIncognito}
                   onClose={() => setPanelOpen(false)}
-                  onSaved={() => void refreshDocuments()}
+                  onSaved={(fileId, knowledgeId) => {
+                    setChatFiles((files) =>
+                      files.map((f) => (f.id === fileId ? { ...f, knowledgeId } : f)),
+                    );
+                    void refreshDocuments();
+                  }}
                   onAttach={(id) =>
                     setAttached((ids) =>
                       ids.includes(id) ? ids.filter((v) => v !== id) : [...ids, id].slice(0, 5),
