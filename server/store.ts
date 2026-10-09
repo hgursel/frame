@@ -46,6 +46,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY, projectId TEXT NOT NULL REFERENCES projects(id), title TEXT NOT NULL, createdAt TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, conversationId TEXT NOT NULL REFERENCES conversations(id), status TEXT NOT NULL, error TEXT, createdAt INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS documents(id TEXT PRIMARY KEY, projectId TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, kind TEXT NOT NULL, extension TEXT NOT NULL, bytes INTEGER NOT NULL, revision TEXT NOT NULL, truncated INTEGER NOT NULL, updatedAt TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS chat_documents(id TEXT PRIMARY KEY, projectId TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, kind TEXT NOT NULL, extension TEXT NOT NULL, bytes INTEGER NOT NULL, revision TEXT NOT NULL, truncated INTEGER NOT NULL, updatedAt TEXT NOT NULL, conversationId TEXT NOT NULL REFERENCES conversations(id));
+      CREATE INDEX IF NOT EXISTS chat_documents_conversation ON chat_documents(conversationId);
       PRAGMA user_version=2;
     `);
     if (

@@ -390,8 +390,10 @@ try {
     page.getByRole('figure', { name: 'SQL scatter', exact: true }).locator('.chart-plot > svg'),
   ).toBeVisible();
   assert.equal(driver.calls.length, calls, 'Reloading charts must not re-execute SQL');
-  await expect(page.locator('.artifacts a')).toHaveCount(1);
-  await expect(page.locator('.artifacts a')).toContainText('requested-report.csv');
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
+  await expect(page.locator('.conversation-panel a')).toHaveCount(1);
+  await expect(page.locator('.conversation-panel a')).toContainText('requested-report.csv');
+  await page.getByRole('button', { name: 'Close outputs and sources', exact: true }).click();
   await page.locator('.activity > summary').first().click();
   const firstQuery = page.locator('details.tool').filter({ hasText: 'Run SQL query' }).first();
   await firstQuery.locator('summary').click();

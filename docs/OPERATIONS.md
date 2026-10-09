@@ -14,7 +14,7 @@ Endpoint tokens stay server-side. An empty password input in model settings pres
 
 ## Data and execution
 
-Frame permits one active task per project and two across projects. Tasks have a 30-minute limit, including time waiting for approval. Each task uses a fresh SDK worker to resume the authoritative Pi session; interrupted tasks are not automatically replayed.
+Frame permits one active task per project and two across projects. Tasks have a 60-minute execution limit. Waiting for structured question answers pauses this timer; SQL approval waits still count toward the limit. Browser refreshes preserve pending questions; restarting Frame interrupts the task without replaying it. Each task uses a fresh SDK worker to resume the authoritative Pi session; interrupted tasks are not automatically replayed.
 
 The default data directory is `./data`, excluded from Git:
 

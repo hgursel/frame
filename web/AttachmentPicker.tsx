@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { KnowledgeDocument } from '../shared/types.js';
-import { api } from './api.js';
 
 export function AttachmentPicker({
   allowUpload = true,
@@ -10,7 +9,7 @@ export function AttachmentPicker({
   disabled,
   onBusy,
   onToggle,
-  onUploaded,
+  onUploadFiles,
   onImages,
 }: {
   onImages: (files: File[]) => void;
@@ -21,7 +20,7 @@ export function AttachmentPicker({
   disabled: boolean;
   onBusy: (busy: boolean) => void;
   onToggle: (id: string) => void;
-  onUploaded: (document: KnowledgeDocument) => void;
+  onUploadFiles: (files: File[]) => Promise<void>;
 }) {
   const menu = useRef<HTMLDetailsElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -60,17 +59,7 @@ export function AttachmentPicker({
     onBusy(true);
     if (menu.current) menu.current.open = false;
     try {
-      for (const file of files) {
-        if (!alive.current) break;
-        const form = new FormData();
-        form.append('file', file);
-        const doc = await api<KnowledgeDocument>(
-          '/projects/' + projectId + '/documents',
-          'POST',
-          form,
-        );
-        if (alive.current) onUploaded(doc);
-      }
+      await onUploadFiles(files);
     } catch (e) {
       if (alive.current) setError((e as Error).message);
     } finally {
@@ -133,7 +122,7 @@ export function AttachmentPicker({
           </small>
           <small>
             {allowUpload
-              ? 'Up to 5 attachments · 10 MiB per file. Uploads are saved to this project’s knowledge.'
+              ? 'Up to 5 attachments · 10 MiB per file. Sent with your next message, only in this conversation.'
               : 'Incognito can reference existing knowledge. Uploads are disabled to avoid saving new project documents.'}
           </small>
         </div>

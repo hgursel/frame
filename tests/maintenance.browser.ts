@@ -197,7 +197,7 @@ try {
   await page.getByRole('button', { name: 'Add attachments' }).click();
   await expect(
     page.getByRole('button', { name: 'Upload from computer', exact: false }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page.getByRole('button', { name: 'Add attachments' }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Private temporary request');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();

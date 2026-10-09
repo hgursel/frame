@@ -75,6 +75,7 @@ export function deleteWorkspaceData(
   const paths = conversations.flatMap((c) => [
     path.relative(store.root, store.sessionFile(c.id)),
     `agent/${c.id}`,
+    `projects/${projectId}/uploads/${c.id}`,
   ]);
   if (conversationId) paths.push(`projects/${projectId}/outputs/${conversationId}`);
   else paths.push(`projects/${projectId}`);
@@ -99,6 +100,12 @@ export function deleteWorkspaceData(
     store.db.exec('BEGIN IMMEDIATE');
     try {
       for (const c of conversations) {
+        store.db
+          .prepare(
+            "DELETE FROM meta WHERE key IN (SELECT 'chat-file-knowledge:' || id FROM chat_documents WHERE conversationId=?)",
+          )
+          .run(c.id);
+        store.db.prepare('DELETE FROM chat_documents WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM charts WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM chart_datasets WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM mssql_operations WHERE conversationId=?').run(c.id);

@@ -5,7 +5,7 @@ Frame combines Google's [Open Knowledge Format 0.2](https://github.com/GoogleClo
 ## Everyday workflow
 
 1. In a project, open **Knowledge** and upload a source. Frame preserves the original and extracts bounded text. Source documents are read-only.
-2. Use **+** beside the chat composer, then **Attach from knowledge** or **Upload from computer**. Computer uploads are saved to the project's knowledge and attached to the next prompt. Remove a selection using its chip's remove button; this does not delete the source. Attach a source to a question, or ask Frame to search project knowledge. `search_knowledge` ranks titles, aliases, tags, descriptions, and content; `read_knowledge` reads the page with its provenance in bounded sections. These tools work without enabling host tools.
+2. Use **+** beside the chat composer, then **Attach from knowledge** or **Upload from computer**. Computer uploads stay in the current conversation and are attached to the next prompt. Open **Files → Sources → Add to project knowledge** to explicitly copy a chat file into shared knowledge. Chat uploads are never indexed as project knowledge; automatic learning skips conversations containing them. Incognito uploads are temporary and cannot be promoted. Existing project knowledge is unchanged. Remove a selection using its chip's remove button; this does not delete the source. Attach a source to a question, or ask Frame to search project knowledge. `search_knowledge` ranks titles, aliases, tags, descriptions, and content; `read_knowledge` reads the page with its provenance in bounded sections. These tools work without enabling host tools.
 3. Ask: “Synthesize this source into a reusable knowledge note. Link related pages and flag contradictions.” The model can call `propose_knowledge`, which returns a draft without saving anything.
 4. Click **Review knowledge draft**, **Useful · Save to knowledge**, or **Save useful result**. Edit the useful content, remove mistakes, and add evidence or uncertainty.
 5. Create a new page or choose an existing one. An ordinary response is appended to the current page for review; a model-proposed full revision is shown with the current page available for comparison. Save applies the complete reviewed text. A stale target revision returns a conflict instead of overwriting newer work.
@@ -34,7 +34,7 @@ The root `index.md` declares `okf_version: "0.2"` and groups sources and knowled
 | Feature         | V1 limit                                                                                  |
 | --------------- | ----------------------------------------------------------------------------------------- |
 | Upload types    | UTF-8 MD/TXT/CSV, text PDF, ordinary non-macro DOCX                                       |
-| Upload size     | 10 MiB per file; 100 files / 100 MiB per project                                          |
+| Upload size     | 10 MiB per file; 100 files / 100 MiB per project knowledge collection or conversation                                          |
 | Extraction      | 120,000 characters; PDF up to 100 pages                                                   |
 | DOCX expansion  | 64 MiB and 2,000 ZIP members                                                              |
 | Attachments     | Up to 5 per prompt; bounded total excerpt budget                                          |

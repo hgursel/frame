@@ -1,3 +1,6 @@
+import { QuestionCard } from './QuestionCard.js';
+import { ConversationPanel } from './ConversationPanel.js';
+import './workspace.css';
 import { useChatImages, ImagePreviews, type DraftImage } from './ChatImages.js';
 import { requestId } from './browser-compat.js';
 import { KnowledgeLibraryPanel, LibraryReader } from './Library.js';
@@ -178,6 +181,9 @@ function Workspace() {
   currentChat.current = chatId;
   const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
+  const [chatFiles, setChatFiles] = useState<KnowledgeDocument[]>([]);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const allDocuments = [...documents, ...chatFiles];
   const [attached, setAttached] = useState<string[]>([]);
   const [documentUploading, setUploading] = useState(false);
   const chatImages = useChatImages(`${projectId}:${chatId}`);
@@ -188,7 +194,11 @@ function Workspace() {
       const docs = await api<KnowledgeDocument[]>(`/projects/${projectId}/documents`);
       if (currentProject.current !== projectId) return;
       setDocuments(docs);
-      setAttached((ids) => ids.filter((id) => docs.some((doc) => doc.id === id)));
+      setAttached((ids) =>
+        ids.filter(
+          (id) => docs.some((doc) => doc.id === id) || chatFiles.some((doc) => doc.id === id),
+        ),
+      );
     }
   };
   useEffect(() => {
@@ -244,6 +254,28 @@ function Workspace() {
     setLoadedChatId(id);
     return true;
   };
+  useEffect(() => {
+    setChatFiles([]);
+    setAttached([]);
+    if (!chatId) return;
+    let live = true;
+    void api<KnowledgeDocument[]>(`/conversations/${chatId}/files`)
+      .then((files) => {
+        if (live)
+          setChatFiles((current) => [
+            ...files,
+            ...current.filter(
+              (d) => d.conversationId === chatId && !files.some((f) => f.id === d.id),
+            ),
+          ]);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [chatId]);
   const [artifacts, setArtifacts] = useState<{ name: string }[]>([]);
   const [settings, setSettings] = useState<PublicSettings>();
   const [pending, setPending] = useState<{
@@ -432,7 +464,7 @@ function Workspace() {
   };
   const submit = async () => {
     if (
-      (!draft.trim() && !chatImages.images.length && !pending) ||
+      (!draft.trim() && !chatImages.images.length && !attached.length && !pending) ||
       sending ||
       uploading ||
       switchingPrivacy ||
@@ -497,7 +529,7 @@ function Workspace() {
     const message =
       kind === 'projects'
         ? `Permanently delete project “${name}”? All its conversations, knowledge, uploads, and generated files will be removed. This cannot be undone.`
-        : `Permanently delete conversation “${name}” and its generated files? Shared project knowledge and uploads will be kept. This cannot be undone.`;
+        : `Permanently delete conversation “${name}” and its uploaded and generated files? Shared project knowledge will be kept. This cannot be undone.`;
     if (!window.confirm(message)) return;
     try {
       await api(`/${kind}/${id}`, 'DELETE', { confirm: true });
@@ -755,6 +787,18 @@ function Workspace() {
               </svg>
             </button>
           )}
+          {page === 'chat' && (
+            <button
+              aria-label="Outputs and sources"
+              aria-expanded={panelOpen}
+              onClick={() => setPanelOpen((v) => !v)}
+            >
+              Files
+              {artifacts.length + chatFiles.length
+                ? ` · ${artifacts.length + chatFiles.length}`
+                : ''}
+            </button>
+          )}
         </header>
         {page === 'settings' && settings ? (
           <Settings initial={settings} onSaved={refresh} />
@@ -781,285 +825,337 @@ function Workspace() {
             }}
           />
         ) : (
-          <div
-            className={`chat-layout ${!snapshot.messages.length && !snapshot.running && !sending ? 'empty-chat' : ''}`}
-          >
-            <section
-              className="conversation"
-              aria-label="Conversation"
-              ref={scrollArea}
-              onScroll={() => {
-                const el = scrollArea.current!;
-                pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-                setShowJump(!pinned.current);
-              }}
+          <div className="chat-workspace">
+            <div
+              className={`chat-layout ${!snapshot.messages.length && !snapshot.running && !sending ? 'empty-chat' : ''}`}
             >
-              <div className="conversation-inner">
-                {incognitoId === chatId && !!chatId && (
-                  <div className="incognito-notice">
-                    <strong>Incognito</strong>
-                    <span>
-                      Not saved to history or learned. Temporary tool files are removed when you
-                      leave, end this chat, or after 30 minutes without a heartbeat. Host tools are
-                      disabled.
-                    </span>
-                    <button
-                      onClick={() => {
-                        setChatId('');
-                        setIncognitoId('');
-                      }}
-                    >
-                      End chat
-                    </button>
-                  </div>
-                )}
-                {!snapshot.messages.length && !snapshot.running && (
-                  <div className="welcome">
-                    <h1>
-                      Your knowledge.
-                      <br />
-                      <em>Your infrastructure.</em>
-                    </h1>
-                    {!settings?.modelId && (
-                      <button className="setup-link" onClick={() => setPage('settings')}>
-                        Connect your llama.cpp endpoint →
-                      </button>
-                    )}
-                    {!projectId && (
-                      <button className="setup-link" onClick={() => setPage('project')}>
-                        Create your first project →
-                      </button>
-                    )}
-                  </div>
-                )}
-                <ConversationMessages
-                  key={chatId}
-                  snapshot={snapshot}
-                  chatId={chatId}
-                  connected={connected}
-                  stopping={stoppingChat === chatId}
-                  onSave={setSaveIndex}
-                  canSave={!incognitoId || incognitoId !== chatId}
-                />
-                {snapshot.sqlApproval && (
-                  <SqlApprovalCard
-                    key={snapshot.sqlApproval.id}
-                    approval={snapshot.sqlApproval}
-                    chatId={chatId}
-                  />
-                )}
-                {!!artifacts.length && (
-                  <div className="artifacts">
-                    {artifacts.map((a) => (
-                      <a
-                        key={a.name}
-                        download={a.name}
-                        href={`/api/conversations/${chatId}/artifacts/${encodeURIComponent(a.name)}`}
-                      >
-                        ↓ {a.name}
-                      </a>
-                    ))}
-                  </div>
-                )}
-                {snapshot.error && (
-                  <>
-                    <p className="error" role="alert">
-                      {snapshot.error}
-                    </p>
-                    {lastSubmitted?.chatId === chatId && (
-                      <button
-                        className="restore-draft"
-                        onClick={() => {
-                          setDraft(lastSubmitted.text);
-                          setAttached(lastSubmitted.documentIds);
-                          chatImages.setImages(lastSubmitted.images);
-                          setPending(undefined);
-                        }}
-                      >
-                        Restore last message to draft
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            </section>
-            <div className="composer-area">
-              {showJump && (
-                <button
-                  className="jump-latest"
-                  onClick={() => {
-                    pinned.current = true;
-                    setShowJump(false);
-                    scrollArea.current?.scrollTo({
-                      top: scrollArea.current.scrollHeight,
-                      behavior: 'instant',
-                    });
-                  }}
-                >
-                  ↓ Latest message
-                </button>
-              )}
-              {error && (
-                <p className="error" role="alert">
-                  {error}
-                </p>
-              )}
-              {skillPicker.element}
-              <form
-                className="composer"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void submit();
+              <section
+                className="conversation"
+                aria-label="Conversation"
+                ref={scrollArea}
+                onScroll={() => {
+                  const el = scrollArea.current!;
+                  pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+                  setShowJump(!pinned.current);
                 }}
               >
-                {!!(pending?.images || chatImages.images).length && (
-                  <ImagePreviews
-                    images={pending?.images || chatImages.images}
-                    disabled={snapshot.running || !!pending || uploading || sending}
-                    onRemove={(index) =>
-                      chatImages.setImages((images) => images.filter((_, i) => i !== index))
-                    }
-                  />
-                )}
-                {!!attached.length && (
-                  <div className="composer-attachments">
-                    {attached.map((id) => (
-                      <span key={id}>
-                        <span>{documents.find((d) => d.id === id)?.name || 'Document'}</span>
-                        <button
-                          type="button"
-                          aria-label={`Remove attachment ${documents.find((d) => d.id === id)?.name || 'document'}`}
-                          disabled={snapshot.running || !!pending || uploading}
-                          onClick={() => setAttached((ids) => ids.filter((value) => value !== id))}
-                        >
-                          ×
-                        </button>
+                <div className="conversation-inner">
+                  {incognitoId === chatId && !!chatId && (
+                    <div className="incognito-notice">
+                      <strong>Incognito</strong>
+                      <span>
+                        Not saved to history or learned. Temporary tool files are removed when you
+                        leave, end this chat, or after 30 minutes without a heartbeat. Host tools
+                        are disabled.
                       </span>
-                    ))}
-                  </div>
-                )}
-                <textarea
-                  aria-label="Message Frame"
-                  placeholder="Ask Frame anything about your work…"
-                  value={draft}
-                  maxLength={32000}
-                  onChange={(e) => {
-                    setDraft(e.target.value);
-                    if (pending) {
-                      chatImages.setImages(pending.images);
-                      setPending(undefined);
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const files = [...e.clipboardData.items]
-                      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
-                      .map((item) => item.getAsFile())
-                      .filter((file): file is File => !!file);
-                    if (!files.length) return;
-                    e.preventDefault();
-                    if (
-                      !projectId ||
-                      snapshot.running ||
-                      pending ||
-                      sending ||
-                      uploading ||
-                      switchingPrivacy
-                    )
-                      return;
-                    void chatImages.add(files).catch((e) => setError(e.message));
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.nativeEvent.isComposing || skillPicker.onKeyDown(e)) return;
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (!snapshot.running) void submit();
-                    }
-                  }}
-                />
-                <div className="composer-footer">
-                  <AttachmentPicker
-                    key={`${projectId}:${chatId}`}
-                    onImages={(files) => {
-                      void chatImages.add(files).catch((e) => setError(e.message));
-                    }}
-                    projectId={projectId}
-                    allowUpload={!incognitoId || incognitoId !== chatId}
-                    documents={documents}
-                    attached={attached}
-                    disabled={
-                      !projectId ||
-                      snapshot.running ||
-                      !!pending ||
-                      sending ||
-                      switchingPrivacy ||
-                      uploading
-                    }
-                    onBusy={setUploading}
-                    onToggle={(id) =>
-                      setAttached((ids) =>
-                        ids.includes(id)
-                          ? ids.filter((value) => value !== id)
-                          : [...ids, id].slice(0, 5),
-                      )
-                    }
-                    onUploaded={(doc) => {
-                      setDocuments((docs) => [doc, ...docs.filter((d) => d.id !== doc.id)]);
-                      setAttached((ids) => [...new Set([...ids, doc.id])].slice(0, 5));
-                    }}
+                      <button
+                        onClick={() => {
+                          setChatId('');
+                          setIncognitoId('');
+                        }}
+                      >
+                        End chat
+                      </button>
+                    </div>
+                  )}
+                  {!snapshot.messages.length && !snapshot.running && (
+                    <div className="welcome">
+                      <h1>
+                        Your knowledge.
+                        <br />
+                        <em>Your infrastructure.</em>
+                      </h1>
+                      {!settings?.modelId && (
+                        <button className="setup-link" onClick={() => setPage('settings')}>
+                          Connect your llama.cpp endpoint →
+                        </button>
+                      )}
+                      {!projectId && (
+                        <button className="setup-link" onClick={() => setPage('project')}>
+                          Create your first project →
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <ConversationMessages
+                    key={chatId}
+                    snapshot={snapshot}
+                    chatId={chatId}
+                    connected={connected}
+                    stopping={stoppingChat === chatId}
+                    onSave={setSaveIndex}
+                    canSave={!incognitoId || incognitoId !== chatId}
                   />
-                  {snapshot.running ? (
-                    <button
-                      type="button"
-                      className="send"
-                      aria-label="Stop generation"
-                      disabled={stoppingChat === chatId || snapshot.status === 'Stopping'}
-                      title="Stop generation"
-                      onClick={() => void stop()}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                        <rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor" />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button
-                      className="send"
-                      disabled={
-                        sending ||
-                        uploading ||
-                        switchingPrivacy ||
-                        (!draft.trim() && !chatImages.images.length && !pending) ||
-                        !projectId ||
-                        !settings?.modelId
-                      }
-                      aria-label="Send message"
-                    >
-                      {sending ? '…' : '↑'}
-                    </button>
+                  {snapshot.sqlApproval && (
+                    <SqlApprovalCard
+                      key={snapshot.sqlApproval.id}
+                      approval={snapshot.sqlApproval}
+                      chatId={chatId}
+                    />
+                  )}
+                  {snapshot.question && (
+                    <QuestionCard
+                      key={snapshot.question.id}
+                      request={snapshot.question}
+                      chatId={chatId}
+                    />
+                  )}
+                  {snapshot.error && (
+                    <>
+                      <p className="error" role="alert">
+                        {snapshot.error}
+                      </p>
+                      {lastSubmitted?.chatId === chatId && (
+                        <button
+                          className="restore-draft"
+                          onClick={() => {
+                            setDraft(lastSubmitted.text);
+                            setAttached(lastSubmitted.documentIds);
+                            chatImages.setImages(lastSubmitted.images);
+                            setPending(undefined);
+                          }}
+                        >
+                          Restore last message to draft
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
-              </form>
-              <div className="composer-metrics">
-                <ContextPanel
-                  metrics={snapshot.metrics}
-                  settings={settings}
-                  running={snapshot.running || compacting}
-                  canCompact={
-                    !!chatId &&
-                    snapshot.messages.some((m) => m.role === 'assistant') &&
-                    !!settings?.modelId
-                  }
-                  onCompact={() => void compact()}
-                  onSettings={() => setPage('settings')}
-                />
-                <Throughput
-                  metrics={snapshot.metrics}
-                  running={snapshot.running && ['Responding', 'Thinking'].includes(snapshot.status)}
-                />
+              </section>
+              <div className="composer-area">
+                {showJump && (
+                  <button
+                    className="jump-latest"
+                    onClick={() => {
+                      pinned.current = true;
+                      setShowJump(false);
+                      scrollArea.current?.scrollTo({
+                        top: scrollArea.current.scrollHeight,
+                        behavior: 'instant',
+                      });
+                    }}
+                  >
+                    ↓ Latest message
+                  </button>
+                )}
+                {error && (
+                  <p className="error" role="alert">
+                    {error}
+                  </p>
+                )}
+                {skillPicker.element}
+                <form
+                  className="composer"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submit();
+                  }}
+                >
+                  {!!(pending?.images || chatImages.images).length && (
+                    <ImagePreviews
+                      images={pending?.images || chatImages.images}
+                      disabled={snapshot.running || !!pending || uploading || sending}
+                      onRemove={(index) =>
+                        chatImages.setImages((images) => images.filter((_, i) => i !== index))
+                      }
+                    />
+                  )}
+                  {!!attached.length && (
+                    <div className="composer-attachments">
+                      {attached.map((id) => (
+                        <span key={id}>
+                          <span>{allDocuments.find((d) => d.id === id)?.name || 'Document'}</span>
+                          <button
+                            type="button"
+                            aria-label={`Remove attachment ${allDocuments.find((d) => d.id === id)?.name || 'document'}`}
+                            disabled={snapshot.running || !!pending || uploading}
+                            onClick={() =>
+                              setAttached((ids) => ids.filter((value) => value !== id))
+                            }
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <textarea
+                    aria-label="Message Frame"
+                    placeholder="Ask Frame anything about your work…"
+                    value={draft}
+                    maxLength={32000}
+                    onChange={(e) => {
+                      setDraft(e.target.value);
+                      if (pending) {
+                        chatImages.setImages(pending.images);
+                        setPending(undefined);
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const files = [...e.clipboardData.items]
+                        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+                        .map((item) => item.getAsFile())
+                        .filter((file): file is File => !!file);
+                      if (!files.length) return;
+                      e.preventDefault();
+                      if (
+                        !projectId ||
+                        snapshot.running ||
+                        pending ||
+                        sending ||
+                        uploading ||
+                        switchingPrivacy
+                      )
+                        return;
+                      void chatImages.add(files).catch((e) => setError(e.message));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.nativeEvent.isComposing || skillPicker.onKeyDown(e)) return;
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!snapshot.running) void submit();
+                      }
+                    }}
+                  />
+                  <div className="composer-footer">
+                    <AttachmentPicker
+                      key={projectId}
+                      onImages={(files) => {
+                        void chatImages.add(files).catch((e) => setError(e.message));
+                      }}
+                      projectId={projectId}
+                      allowUpload={true}
+                      documents={documents}
+                      attached={attached}
+                      disabled={
+                        !projectId ||
+                        snapshot.running ||
+                        !!pending ||
+                        sending ||
+                        switchingPrivacy ||
+                        uploading
+                      }
+                      onBusy={setUploading}
+                      onToggle={(id) =>
+                        setAttached((ids) =>
+                          ids.includes(id)
+                            ? ids.filter((value) => value !== id)
+                            : [...ids, id].slice(0, 5),
+                        )
+                      }
+                      onUploadFiles={async (files) => {
+                        const id = chatId || (await newChat());
+                        if (!id) throw new Error('Choose a project first.');
+                        try {
+                          for (const file of files) {
+                            const form = new FormData();
+                            form.append('file', file);
+                            const doc = await api<KnowledgeDocument>(
+                              `/conversations/${id}/files`,
+                              'POST',
+                              form,
+                            );
+                            if (currentChat.current === id) {
+                              setChatFiles((docs) => [doc, ...docs.filter((d) => d.id !== doc.id)]);
+                              setAttached((ids) => [...new Set([...ids, doc.id])].slice(0, 5));
+                            }
+                          }
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                    />
+                    {snapshot.running ? (
+                      <button
+                        type="button"
+                        className="send"
+                        aria-label="Stop generation"
+                        disabled={stoppingChat === chatId || snapshot.status === 'Stopping'}
+                        title="Stop generation"
+                        onClick={() => void stop()}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                          <rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <button
+                        className="send"
+                        disabled={
+                          sending ||
+                          uploading ||
+                          switchingPrivacy ||
+                          (!draft.trim() &&
+                            !chatImages.images.length &&
+                            !attached.length &&
+                            !pending) ||
+                          !projectId ||
+                          !settings?.modelId
+                        }
+                        aria-label="Send message"
+                      >
+                        {sending ? '…' : '↑'}
+                      </button>
+                    )}
+                  </div>
+                </form>
+                <div className="composer-metrics">
+                  <ContextPanel
+                    metrics={snapshot.metrics}
+                    settings={settings}
+                    running={snapshot.running || compacting}
+                    canCompact={
+                      !!chatId &&
+                      snapshot.messages.some((m) => m.role === 'assistant') &&
+                      !!settings?.modelId
+                    }
+                    onCompact={() => void compact()}
+                    onSettings={() => setPage('settings')}
+                  />
+                  <Throughput
+                    metrics={snapshot.metrics}
+                    running={
+                      snapshot.running && ['Responding', 'Thinking'].includes(snapshot.status)
+                    }
+                  />
+                </div>
+                <p className="footnote">
+                  Frame can make mistakes. Review important answers and tool actions.
+                </p>
               </div>
-              <p className="footnote">
-                Frame can make mistakes. Review important answers and tool actions.
-              </p>
             </div>
+            {panelOpen && (
+              <>
+                <button
+                  className="panel-backdrop"
+                  aria-label="Dismiss files panel"
+                  onClick={() => setPanelOpen(false)}
+                />
+                <ConversationPanel
+                  key={chatId}
+                  chatId={chatId}
+                  projectId={projectId}
+                  snapshot={snapshot}
+                  files={chatFiles}
+                  documents={documents}
+                  artifacts={artifacts}
+                  attached={attached}
+                  incognito={isIncognito}
+                  onClose={() => setPanelOpen(false)}
+                  onSaved={(fileId, knowledgeId) => {
+                    setChatFiles((files) =>
+                      files.map((f) => (f.id === fileId ? { ...f, knowledgeId } : f)),
+                    );
+                    void refreshDocuments();
+                  }}
+                  onAttach={(id) =>
+                    setAttached((ids) =>
+                      ids.includes(id) ? ids.filter((v) => v !== id) : [...ids, id].slice(0, 5),
+                    )
+                  }
+                />
+              </>
+            )}
           </div>
         )}
       </main>

@@ -166,6 +166,14 @@ try {
     buffer: Buffer.from('# Maintenance\n\nMaintenance starts at 02:00 UTC.'),
   });
   await expect(page.locator('.composer-attachments')).toContainText('maintenance.md');
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
+  await page.getByRole('button', { name: 'Add to project knowledge', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Added to knowledge ✓', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Close outputs and sources', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove attachment maintenance.md', exact: true }).click();
+
   await page.getByRole('button', { name: 'Add attachments', exact: true }).click();
   await page.getByRole('button', { name: 'Attach from knowledge', exact: false }).click();
   await expect(page.getByRole('dialog', { name: 'Attach from knowledge' })).toBeVisible();
@@ -173,13 +181,13 @@ try {
   const selectedFile = page
     .getByRole('dialog', { name: 'Attach from knowledge' })
     .getByRole('checkbox');
+  await selectedFile.check();
   await selectedFile.uncheck();
   await selectedFile.check();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   assert.equal(await page.locator('.model-pill, .suggestions, .composer-hint').count(), 0);
   await expect(page.locator('.empty-chat .composer')).toBeVisible();
   await expect(page.locator('.composer-metrics .context-control')).toBeVisible();
-  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('textbox', { name: 'Message Frame' }).fill('Review our migration plan.');
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({ path: process.env.FRAME_SCREENSHOT, fullPage: true });

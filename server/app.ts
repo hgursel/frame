@@ -1,3 +1,4 @@
+import { chatFilesApi } from './chat-files-api.js';
 import { imagesSchema } from './images.js';
 import { KnowledgeLibrary, libraryApi } from './library/service.js';
 import { Skills, skillsApi } from './skills.js';
@@ -102,7 +103,7 @@ export async function createApp(options: {
   // Private Tools was removed in favor of Skills; drop its stored registrations once.
   store.db.prepare("DELETE FROM meta WHERE key='private-tools:settings'").run();
   store.db.prepare("DELETE FROM project_plugins WHERE plugin='private-tools'").run();
-  const runner = new Runner(store, mssql, charts, reports, skills);
+  const runner = new Runner(store, mssql, charts, reports, skills, knowledge);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
@@ -338,19 +339,36 @@ export async function createApp(options: {
           documentIds: z.array(uuid).max(5).default([]),
         })
         .refine(
-          (value) => !!value.text || value.images.length > 0,
-          'Enter a message or attach an image.',
+          (value) => !!value.text || value.images.length > 0 || value.documentIds.length > 0,
+          'Enter a message or attach a file or image.',
         )
         .parse(request.body);
       if (store.db.prepare('SELECT id FROM runs WHERE id=?').get(requestId))
         return reply.code(202).send(runner.start(id, requestId, text));
       const project = store.project(store.conversation(id)!.projectId)!;
       return knowledge.write(project.id, async () => {
-        const documents = await knowledge.context(
-          project.id,
-          documentIds,
-          store.settings().contextWindow,
-        );
+        const chatFiles = knowledge.forConversation(id);
+        const localIds = new Set(chatFiles.list(project.id).map((d) => d.id));
+        if (new Set(documentIds).size !== documentIds.length)
+          throw Object.assign(new Error('Attach distinct files.'), { statusCode: 400 });
+        const documents = [];
+        let documentBudget = Math.min(24000, Math.floor(store.settings().contextWindow / 2));
+        for (const documentId of documentIds) {
+          const source = localIds.has(documentId) ? chatFiles : knowledge;
+          const doc = await source.read(project.id, documentId);
+          const limit = Math.floor(documentBudget / (documentIds.length - documents.length));
+          const text = doc.text.slice(0, limit);
+          documentBudget -= text.length;
+          documents.push({
+            id: doc.id,
+            name: doc.name,
+            text:
+              text +
+              (text.length < doc.text.length || doc.truncated
+                ? '\n[Excerpt truncated. Use read_chat_file for later sections of a chat upload.]'
+                : ''),
+          });
+        }
         const runtime = project.toolsEnabled ? await python.status() : undefined;
         const catalog = [...(await wiki.catalog(project.id)), ...library.catalog(project.id)];
         const recent =
@@ -370,7 +388,10 @@ export async function createApp(options: {
         const started = runner.start(
           id,
           requestId,
-          text || 'Please describe the attached image(s).',
+          text ||
+            (documentIds.length
+              ? 'Please review the attached file(s).'
+              : 'Please describe the attached image(s).'),
           documents,
           runtime?.state === 'ready' ? python.executable : undefined,
           recalled.catalog,
@@ -398,6 +419,15 @@ export async function createApp(options: {
         .type(image.mimeType)
         .send(Buffer.from(image.data, 'base64'));
     },
+  );
+  app.post<{ Params: { id: string; questionId: string } }>(
+    '/api/conversations/:id/questions/:questionId',
+    async (request) =>
+      runner.questions.answer(
+        conversationId(request.params.id),
+        uuid.parse(request.params.questionId),
+        request.body,
+      ),
   );
   app.post<{ Params: { id: string } }>('/api/conversations/:id/stop', async (request) => {
     const { runId } = z.object({ runId: uuid.optional() }).parse(request.body || {});
@@ -495,6 +525,7 @@ export async function createApp(options: {
     },
   );
   maintenanceApi(app, maintenance);
+  chatFilesApi(app, knowledge, wiki, runner);
   knowledgeApi(app, knowledge, wiki, runner);
   libraryApi(app, library, runner, knowledge);
   mssqlApi(app, mssql, runner);

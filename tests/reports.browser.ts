@@ -184,7 +184,8 @@ try {
   await expect(page.getByText('Your branded PDF is ready.', { exact: true })).toBeVisible({
     timeout: 45000,
   });
-  const file = page.locator('.artifacts a').filter({ hasText: /report-.*\.pdf/ });
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
+  const file = page.locator('.conversation-panel a').filter({ hasText: /report-.*\.pdf/ });
   await expect(file).toHaveCount(1, { timeout: 15000 });
   const response = await page.request.get(
     new URL((await file.getAttribute('href'))!, page.url()).href,
@@ -195,6 +196,7 @@ try {
   const reportDownload = page.waitForEvent('download');
   await file.click();
   await reportDownload;
+  await page.getByRole('button', { name: 'Close outputs and sources', exact: true }).click();
   // Simulate a download/proxy leaving an apparently healthy SSE connection buffered.
   await page.evaluate(() => {
     (window as any).holdChatEvents = true;
@@ -217,9 +219,11 @@ try {
   await expect(
     page.getByText('Next, review the report recommendations.', { exact: true }),
   ).toHaveCount(2, { timeout: 15000 });
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
   await expect(file).toHaveCount(1);
   await page.reload();
   await page.getByRole('button', { name: 'Create a PDF service report', exact: true }).click();
+  await page.getByRole('button', { name: 'Outputs and sources', exact: true }).click();
   await expect(file).toHaveCount(1);
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);
