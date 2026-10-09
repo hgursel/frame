@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { Questions } from '../server/questions.js';
 import { RunDeadline } from '../server/run-deadline.js';
@@ -17,6 +17,126 @@ const spec = {
     },
   ],
 };
+
+test('attachment readers label sources, handle legacy knowledge attachments, and reject private file IDs', async () => {
+  const requests: any[] = [];
+  let target = '';
+  const model = createServer(async (req, res) => {
+    let raw = '';
+    for await (const chunk of req) raw += chunk;
+    const body = JSON.parse(raw);
+    requests.push(body);
+    const chunk = (delta: object, finish: string) =>
+      `data: ${JSON.stringify({ id: 'read', object: 'chat.completion.chunk', model: 'local', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    res.end(
+      (requests.length % 2
+        ? chunk(
+            {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: `read-${requests.length}`,
+                  type: 'function',
+                  function: {
+                    name: 'read_chat_file',
+                    arguments: JSON.stringify({ id: target, offset: 0, length: 100 }),
+                  },
+                },
+              ],
+            },
+            'tool_calls',
+          )
+        : chunk({ content: 'Done.' }, 'stop')) + 'data: [DONE]\n\n',
+    );
+  });
+  await new Promise<void>((r) => model.listen(0, '127.0.0.1', r));
+  const f = await appFixture('attachment-readers');
+  try {
+    await f.signIn();
+    f.store.saveSettings({
+      ...f.store.settings(),
+      modelId: 'local',
+      baseUrl: `http://127.0.0.1:${(model.address() as any).port}/v1`,
+    });
+    const p = f.store.createProject({ name: 'Readers', instructions: '', toolsEnabled: false });
+    const c = f.store.createConversation(p.id);
+    const upload = await f.knowledge
+      .forConversation(c.id)
+      .add(p.id, 'private.md', Buffer.from('private cobalt'));
+    const knowledge = await f.knowledge.add(
+      p.id,
+      'reference.md',
+      Buffer.from('project amber '.repeat(4000)),
+    );
+    await f.wiki.record(p.id, knowledge.id);
+    const other = f.store.createConversation(p.id);
+    const foreign = await f.knowledge
+      .forConversation(other.id)
+      .add(p.id, 'other.md', Buffer.from('foreign secret'));
+    const unattached = await f.knowledge.add(p.id, 'unattached.md', Buffer.from('not attached'));
+    const run = async (id: string, documentIds: string[] = []) => {
+      target = id;
+      assert.equal(
+        (
+          await f.auth(`/conversations/${c.id}/messages`, 'POST', {
+            requestId: randomUUID(),
+            text: 'Read the selected file',
+            documentIds,
+          })
+        ).statusCode,
+        202,
+      );
+      await waitUntil(() => !f.runner.snapshot(c.id).running);
+      assert.equal(f.runner.snapshot(c.id).error, undefined);
+      return f.runner
+        .snapshot(c.id)
+        .messages.filter((m) => m.role === 'tool')
+        .at(-1)!;
+    };
+    assert.equal((await run(upload.id, [upload.id, knowledge.id])).failed, false);
+    const prompt = JSON.stringify(requests[0].messages.filter((m: any) => m.role !== 'system'));
+    assert(prompt.includes('chat_upload'));
+    assert(prompt.includes('project_knowledge'));
+    assert(prompt.includes('Use read_knowledge with this ID for later sections'));
+    assert.equal((await run(upload.id)).failed, false, 'Chat uploads remain readable on follow-up');
+    // Simulate a stored pre-fix attachment: no source label or reader hint.
+    const sessionFile = f.store.sessionFile(c.id);
+    const entries = (await readFile(sessionFile, 'utf8'))
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    for (const entry of entries) {
+      if (entry.type === 'custom_message' && entry.customType === 'frame_documents') {
+        entry.content = `User-selected document excerpts: ${JSON.stringify([{ id: knowledge.id, filename: knowledge.name, excerpt: 'project amber' }])}`;
+        entry.details = { documents: [{ id: knowledge.id, name: knowledge.name }] };
+      }
+    }
+    await writeFile(sessionFile, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+    const legacy = await run(knowledge.id);
+    assert.equal(legacy.failed, false);
+    assert(legacy.text.includes('project amber'));
+    assert(legacy.text.includes('read_knowledge'));
+    assert.equal((await run(foreign.id)).failed, true);
+    assert.equal((await run(unattached.id)).failed, true);
+    const otherProject = f.store.createProject({
+      name: 'Other',
+      instructions: '',
+      toolsEnabled: false,
+    });
+    const otherKnowledge = await f.knowledge.add(
+      otherProject.id,
+      'other.md',
+      Buffer.from('other project secret'),
+    );
+    assert.equal((await run(otherKnowledge.id)).failed, true);
+    assert(!JSON.stringify(requests).includes('foreign secret'));
+  } finally {
+    await f.cleanup();
+    model.closeAllConnections();
+    await new Promise<void>((r) => model.close(() => r()));
+  }
+});
 
 test('question answers validate scope, choices, duplicate delivery and cancellation', async () => {
   const service = new Questions();

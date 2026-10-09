@@ -293,17 +293,29 @@ export class Runner extends EventEmitter {
               ];
               if (!attached.some((d) => d.id === args.id) || !this.uploads)
                 throw new Error('File was not attached to this conversation.');
-              return this.uploads
-                .forConversation(id)
-                .read(project.id, args.id)
-                .then((doc) => ({
-                  id: doc.id,
-                  name: doc.name,
-                  text: doc.text.slice(args.offset, args.offset + args.length),
-                  nextOffset:
-                    args.offset + args.length < doc.text.length ? args.offset + args.length : null,
-                  truncated: doc.truncated,
-                }));
+              const chatFiles = this.uploads.forConversation(id);
+              // Legacy attachments did not distinguish uploads from knowledge.
+              // Only allow this compatibility path for explicitly attached IDs;
+              // never search other conversations or projects.
+              const source = chatFiles.list(project.id).some((d) => d.id === args.id)
+                ? chatFiles
+                : this.uploads.list(project.id).some((d) => d.id === args.id)
+                  ? this.uploads
+                  : undefined;
+              if (!source)
+                throw new Error(
+                  'Attached file is no longer available in this conversation or project.',
+                );
+              return source.read(project.id, args.id).then((doc) => ({
+                id: doc.id,
+                name: doc.name,
+                source: source === chatFiles ? 'chat_upload' : 'project_knowledge',
+                readTool: source === chatFiles ? 'read_chat_file' : 'read_knowledge',
+                text: doc.text.slice(args.offset, args.offset + args.length),
+                nextOffset:
+                  args.offset + args.length < doc.text.length ? args.offset + args.length : null,
+                truncated: doc.truncated,
+              }));
             }
             if (event.action === 'knowledge_search')
               return searchKnowledge(active.knowledge, event.args);

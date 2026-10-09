@@ -362,10 +362,13 @@ export async function createApp(options: {
           documents.push({
             id: doc.id,
             name: doc.name,
+            source: localIds.has(documentId)
+              ? ('chat_upload' as const)
+              : ('project_knowledge' as const),
             text:
               text +
               (text.length < doc.text.length || doc.truncated
-                ? '\n[Excerpt truncated. Use read_chat_file for later sections of a chat upload.]'
+                ? `\n[Excerpt truncated. Use ${localIds.has(documentId) ? 'read_chat_file' : 'read_knowledge'} with this ID for later sections.]`
                 : ''),
           });
         }

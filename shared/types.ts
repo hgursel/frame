@@ -118,7 +118,12 @@ export interface WorkerInput {
   project: Project;
   prompt: string;
   images?: ChatImage[];
-  documents?: { id: string; name: string; text: string }[];
+  documents?: {
+    id: string;
+    name: string;
+    text: string;
+    source?: 'chat_upload' | 'project_knowledge';
+  }[];
   pythonPath?: string;
   knowledge?: {
     id: string;
