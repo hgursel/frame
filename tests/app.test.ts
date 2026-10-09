@@ -173,7 +173,6 @@ test('authentication, origin checks, settings secrecy, and project boundaries', 
   }
 });
 
-
 test(
   'SDK compaction checkpoints preserve history, resume once, expose usage and throughput, and survive failure/cancellation',
   { timeout: 60000 },
@@ -438,7 +437,8 @@ test(
       const cancelledFollowup = seed(6900);
       const beforeCancel = requests.length;
       await f.auth(`/conversations/${cancelledFollowup.id}/messages`, 'POST', {
-        requestId: randomUUID(), text: 'Never submit this follow-up after Stop',
+        requestId: randomUUID(),
+        text: 'Never submit this follow-up after Stop',
       });
       await waitUntil(() => requests.length > beforeCancel);
       await f.auth(`/conversations/${cancelledFollowup.id}/stop`, 'POST', {
@@ -446,7 +446,11 @@ test(
       });
       await waitUntil(() => !f.runner.active.has(cancelledFollowup.id));
       assert.equal(f.runner.snapshot(cancelledFollowup.id).status, 'stopped');
-      assert.equal(requests.length, beforeCancel + 1, 'Cancellation must not launch the queued prompt');
+      assert.equal(
+        requests.length,
+        beforeCancel + 1,
+        'Cancellation must not launch the queued prompt',
+      );
     } finally {
       await f.cleanup();
       mock.closeAllConnections();
@@ -570,7 +574,9 @@ test(
       );
       assert.equal(requests[0].model, 'frame-test-model');
       assert.deepEqual(requests[0].tools.map((t: any) => t.function.name).sort(), [
+        'ask_user_question',
         'propose_knowledge',
+        'read_chat_file',
         'read_knowledge',
         'search_knowledge',
       ]);
@@ -730,10 +736,20 @@ test(
       const observed = f.runner.snapshot(stopChat.id);
       assert.equal(observed.runId, stopRun);
       assert(f.runner.snapshot(stopChat.id).revision! > observed.revision!);
-      assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: randomUUID() })).statusCode, 409);
+      assert.equal(
+        (await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: randomUUID() }))
+          .statusCode,
+        409,
+      );
       assert.equal(f.runner.active.get(stopChat.id)?.stopRequested, false);
-      assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 200);
-      assert.equal((await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode, 200);
+      assert.equal(
+        (await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode,
+        200,
+      );
+      assert.equal(
+        (await f.auth(`/conversations/${stopChat.id}/stop`, 'POST', { runId: stopRun })).statusCode,
+        200,
+      );
       await waitUntil(() => !f.runner.active.has(stopChat.id));
       assert.equal(f.runner.snapshot(stopChat.id).status, 'stopped');
       for (const mode of ['error', 'redirect'] as const) {
@@ -1158,12 +1174,29 @@ test('server restart preserves metadata/history and marks unfinished tasks inter
 test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and rollback', async () => {
   const f = await fixture();
   try {
-    const p = f.store.createProject({ name: 'Deletion test', instructions: '', toolsEnabled: false });
+    const p = f.store.createProject({
+      name: 'Deletion test',
+      instructions: '',
+      toolsEnabled: false,
+    });
     const other = f.store.createProject({ name: 'Other', instructions: '', toolsEnabled: false });
-    const create = async (name: string) => (await f.auth('/projects/' + p.id + '/wiki', 'POST', { name, text: '# Source\n\nA retained fact.' })).json();
+    const create = async (name: string) =>
+      (
+        await f.auth('/projects/' + p.id + '/wiki', 'POST', {
+          name,
+          text: '# Source\n\nA retained fact.',
+        })
+      ).json();
     const doc = await create('Temporary page');
     const endpoint = '/projects/' + p.id + '/documents/' + doc.id;
-    assert.equal((await f.auth('/projects/' + other.id + '/documents/' + doc.id, 'DELETE', { revision: doc.revision })).statusCode, 404);
+    assert.equal(
+      (
+        await f.auth('/projects/' + other.id + '/documents/' + doc.id, 'DELETE', {
+          revision: doc.revision,
+        })
+      ).statusCode,
+      404,
+    );
     assert.equal((await f.auth(endpoint, 'DELETE', { revision: '0'.repeat(64) })).statusCode, 409);
     f.knowledge.locks.add(p.id);
     assert.equal((await f.auth(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 409);
@@ -1172,10 +1205,16 @@ test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and ro
     assert.equal((await f.auth(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 409);
     f.runner.active.delete('test-lock');
     const sync = f.wiki.sync;
-    f.wiki.sync = async () => { throw new Error('Simulated index write failure'); };
+    f.wiki.sync = async () => {
+      throw new Error('Simulated index write failure');
+    };
     assert.equal((await f.auth(endpoint, 'DELETE', { revision: doc.revision })).statusCode, 500);
     f.wiki.sync = sync;
-    assert.equal((await f.auth(endpoint)).statusCode, 200, 'Failed index update must restore the source');
+    assert.equal(
+      (await f.auth(endpoint)).statusCode,
+      200,
+      'Failed index update must restore the source',
+    );
     assert(f.wiki.revisions(p.id, doc.id).length > 0);
     const result = await f.auth(endpoint, 'DELETE', { revision: doc.revision });
     assert.equal(result.statusCode, 200, result.body);
@@ -1183,15 +1222,27 @@ test('knowledge deletion checks scope, revisions, locks, catalog cleanup, and ro
     assert.equal((await f.auth(endpoint + '/download')).statusCode, 404);
     assert.equal((await f.auth(endpoint + '/revisions')).statusCode, 404);
     assert(!(await f.wiki.catalog(p.id)).some((entry) => entry.id === doc.id));
-    await assert.rejects(readFile(path.join(f.knowledge.directory(doc), 'source.md')), { code: 'ENOENT' });
-    await assert.rejects(readFile(path.join(f.store.projectPath(p.id), 'knowledge', 'wiki', doc.id + '.md')), { code: 'ENOENT' });
+    await assert.rejects(readFile(path.join(f.knowledge.directory(doc), 'source.md')), {
+      code: 'ENOENT',
+    });
+    await assert.rejects(
+      readFile(path.join(f.store.projectPath(p.id), 'knowledge', 'wiki', doc.id + '.md')),
+      { code: 'ENOENT' },
+    );
     const archive = unzipSync(await f.wiki.export(p.id));
     assert(!Object.keys(archive).some((key) => key.includes(doc.id)));
     assert(!strFromU8(archive['wiki/index.md']!).includes(doc.id));
     assert(!strFromU8(archive['wiki/log.md']!).includes(doc.id));
     const upload = await f.knowledge.add(p.id, 'source.txt', Buffer.from('Uploaded source'));
     await f.wiki.record(p.id, upload.id);
-    assert.equal((await f.auth('/projects/' + p.id + '/documents/' + upload.id, 'DELETE', { revision: upload.revision })).statusCode, 200);
+    assert.equal(
+      (
+        await f.auth('/projects/' + p.id + '/documents/' + upload.id, 'DELETE', {
+          revision: upload.revision,
+        })
+      ).statusCode,
+      200,
+    );
     assert.equal(f.knowledge.list(p.id).length, 0);
   } finally {
     f.runner.active.delete('test-lock');

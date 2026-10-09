@@ -39,12 +39,29 @@ export class ChartSources {
     readonly store: Store,
     readonly knowledge: Knowledge,
   ) {}
+  branch(conversationId: string) {
+    return this.store.conversation(conversationId)?.incognito
+      ? this.store.ephemeralBranch?.(conversationId) || []
+      : readSessionBranch(this.store.sessionFile(conversationId));
+  }
   messages(conversationId: string) {
-    return (
-      this.store.conversation(conversationId)?.incognito
-        ? this.store.ephemeralBranch?.(conversationId) || []
-        : readSessionBranch(this.store.sessionFile(conversationId))
-    ).filter((e) => e.type === 'message' && ['user', 'assistant'].includes(e.message?.role));
+    return this.branch(conversationId).filter(
+      (e) => e.type === 'message' && ['user', 'assistant'].includes(e.message?.role),
+    );
+  }
+  uploaded(conversationId: string) {
+    const selected = new Set(
+      this.branch(conversationId).flatMap((e) =>
+        e.type === 'custom_message' && e.customType === 'frame_documents'
+          ? (e.details?.documents || []).map((d: any) => d.id)
+          : [],
+      ),
+    );
+    const c = this.store.conversation(conversationId)!;
+    return this.knowledge
+      .forConversation(conversationId)
+      .list(c.projectId)
+      .filter((d) => selected.has(d.id));
   }
   async list(conversationId: string, args: unknown) {
     const spec = sourceQuery.parse(args);
@@ -52,7 +69,10 @@ export class ChartSources {
     const sources: { kind: string; id: string; name: string; tables?: number; bytes?: number }[] =
       [];
     if (!spec.kind || spec.kind === 'document')
-      for (const doc of this.knowledge.list(conversation.projectId)) {
+      for (const doc of [
+        ...this.knowledge.list(conversation.projectId),
+        ...this.uploaded(conversationId),
+      ]) {
         if (['.csv', '.md'].includes(doc.extension))
           sources.push({ kind: 'document', id: doc.id, name: doc.name, bytes: doc.bytes });
       }
@@ -101,10 +121,13 @@ export class ChartSources {
     } else {
       let root: string, filename: string;
       if (spec.kind === 'document') {
-        const doc = this.knowledge.get(conversation.projectId, spec.id);
+        const knowledge = this.uploaded(conversationId).some((d) => d.id === spec.id)
+          ? this.knowledge.forConversation(conversationId)
+          : this.knowledge;
+        const doc = knowledge.get(conversation.projectId, spec.id);
         if (!['.csv', '.md'].includes(doc.extension))
           throw fail('Choose a CSV or Markdown source.');
-        root = await this.knowledge.checkedDirectory(doc);
+        root = await knowledge.checkedDirectory(doc);
         // Chart original uploads, not the shortened knowledge/context preview.
         filename = doc.kind === 'wiki' ? 'content.md' : `source${doc.extension}`;
         name = doc.name;

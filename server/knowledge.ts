@@ -12,11 +12,31 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 const MAX_FILE = 10 * 1024 * 1024;
 const MAX_TEXT = 120_000;
 export class Knowledge {
-  readonly locks = new Set<string>();
+  readonly locks: Set<string>;
+  private get table() {
+    return this.conversationId ? 'chat_documents' : 'documents';
+  }
   constructor(
     readonly store: Store,
     readonly python: PythonRuntime,
-  ) {}
+    readonly conversationId?: string,
+    locks = new Set<string>(),
+  ) {
+    this.locks = locks;
+  }
+  forConversation(id: string) {
+    if (!this.store.conversation(id)) throw fail('Conversation not found.', 404);
+    return new Knowledge(this.store, this.python, id, this.locks);
+  }
+  private scope(projectId: string) {
+    if (
+      this.conversationId &&
+      this.store.conversation(this.conversationId)?.projectId !== projectId
+    )
+      throw fail('Conversation not found in this project.', 404);
+    return this.conversationId ? [projectId, this.conversationId] : [projectId];
+  }
+
   async write<T>(projectId: string, action: () => Promise<T>): Promise<T> {
     if (this.locks.has(projectId))
       throw fail('Another file operation is in progress in this project.', 409);
@@ -30,25 +50,36 @@ export class Knowledge {
   list(projectId: string): KnowledgeDocument[] {
     return (
       this.store.db
-        .prepare('SELECT * FROM documents WHERE projectId=? ORDER BY updatedAt DESC')
-        .all(projectId) as unknown as KnowledgeDocument[]
+        .prepare(
+          `SELECT * FROM ${this.table} WHERE projectId=? ${this.conversationId ? 'AND conversationId=?' : ''} ORDER BY updatedAt DESC`,
+        )
+        .all(...this.scope(projectId)) as unknown as KnowledgeDocument[]
     ).map((d) => ({ ...d, truncated: !!d.truncated }));
   }
   get(projectId: string, id: string): KnowledgeDocument {
     const doc = this.store.db
-      .prepare('SELECT * FROM documents WHERE projectId=? AND id=?')
-      .get(projectId, id) as unknown as KnowledgeDocument | undefined;
+      .prepare(
+        `SELECT * FROM ${this.table} WHERE projectId=? ${this.conversationId ? 'AND conversationId=?' : ''} AND id=?`,
+      )
+      .get(...this.scope(projectId), id) as unknown as KnowledgeDocument | undefined;
     if (!doc) throw fail('Document not found in this project.', 404);
     return { ...doc, truncated: !!doc.truncated };
   }
   directory(doc: Pick<KnowledgeDocument, 'projectId' | 'id'>) {
-    return path.join(this.store.projectPath(doc.projectId), 'knowledge', doc.id);
+    return path.join(
+      this.store.projectPath(doc.projectId),
+      ...(this.conversationId ? ['uploads', this.conversationId] : ['knowledge']),
+      doc.id,
+    );
   }
   async folder(projectId: string, ...parts: string[]) {
     let directory = this.store.projectPath(projectId);
     if ((await realpath(directory)) !== directory)
       throw fail('Project directory has been replaced.', 409);
-    for (const part of ['knowledge', ...parts]) {
+    for (const part of [
+      ...(this.conversationId ? ['uploads', this.conversationId] : ['knowledge']),
+      ...parts,
+    ]) {
       directory = path.join(directory, part);
       await mkdir(directory, { mode: 0o700 }).catch((e) => {
         if (e.code !== 'EEXIST') throw e;
@@ -116,12 +147,16 @@ export class Knowledge {
       existing.length >= 100 ||
       existing.reduce((sum, d) => sum + d.bytes, 0) + content.length > 100 * 1024 * 1024
     )
-      throw fail('Project knowledge limit reached (100 files / 100 MiB).', 413);
+      throw fail(
+        `${this.conversationId ? 'Conversation file' : 'Project knowledge'} limit reached (100 files / 100 MiB).`,
+        413,
+      );
     if (extension === '.pdf' && !content.subarray(0, 1024).includes(Buffer.from('%PDF-')))
       throw fail('This file is not a PDF.');
     if (extension === '.docx' && content.subarray(0, 2).toString() !== 'PK')
       throw fail('This file is not a DOCX.');
     const doc: KnowledgeDocument = {
+      ...(this.conversationId ? { conversationId: this.conversationId } : {}),
       id: reservedId || randomUUID(),
       projectId,
       name,
@@ -169,7 +204,9 @@ export class Knowledge {
       doc.revision = hash(text);
       await writeFile(path.join(directory, 'content.md'), text, { mode: 0o600, flag: 'wx' });
       this.store.db
-        .prepare('INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .prepare(
+          `INSERT INTO ${this.table} (id, projectId, name, kind, extension, bytes, revision, truncated, updatedAt${this.conversationId ? ', conversationId' : ''}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?${this.conversationId ? ', ?' : ''})`,
+        )
         .run(
           doc.id,
           projectId,
@@ -180,6 +217,7 @@ export class Knowledge {
           doc.revision,
           Number(doc.truncated),
           doc.updatedAt,
+          ...(this.conversationId ? [this.conversationId] : []),
         );
       return doc;
     } catch (error) {

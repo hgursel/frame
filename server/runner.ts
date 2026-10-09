@@ -1,3 +1,7 @@
+import type { Knowledge } from './knowledge.js';
+import { z } from 'zod';
+import { Questions } from './questions.js';
+import { RunDeadline } from './run-deadline.js';
 import { imageId } from './images.js';
 import type { ReportsPlugin } from './plugins/reports/service.js';
 import type { Skills } from './skills.js';
@@ -35,6 +39,7 @@ type ActiveRun = {
   pluginAbort: AbortController;
 };
 export class Runner extends EventEmitter {
+  readonly questions = new Questions();
   private revision = Date.now() * 1000;
   readonly ephemeral = new Map<string, { entries: unknown[]; snapshot?: ChatSnapshot }>();
   readonly active = new Map<string, ActiveRun>();
@@ -44,9 +49,11 @@ export class Runner extends EventEmitter {
     readonly charts?: ChartsPlugin,
     readonly reports?: ReportsPlugin,
     readonly skills?: Skills,
+    readonly uploads?: Knowledge,
   ) {
     super();
     this.setMaxListeners(100);
+    this.questions.on('change', (id: string) => this.emit(id));
     store.ephemeralBranch = (id) => (this.ephemeral.get(id)?.entries || []) as any[];
     mssql?.on('change', (id: string) => this.emit(id));
   }
@@ -60,7 +67,13 @@ export class Runner extends EventEmitter {
         streaming: !!live.tail,
         messagesVersion: live.messagesVersion,
         sqlApproval,
-        status: sqlApproval && !live.stopRequested ? 'Awaiting SQL approval' : live.snapshot.status,
+        question: this.questions.get(id),
+        status:
+          this.questions.get(id) && !live.stopRequested
+            ? 'Waiting for your answer'
+            : sqlApproval && !live.stopRequested
+              ? 'Awaiting SQL approval'
+              : live.snapshot.status,
         runId: live.runId,
         revision: ++this.revision,
       };
@@ -238,10 +251,10 @@ export class Runner extends EventEmitter {
     this.active.set(id, active);
     let completed = false;
     let error: string | undefined;
-    const deadline = setTimeout(() => {
-      error = 'Task reached the 30-minute limit and was stopped.';
+    const deadline = new RunDeadline(() => {
+      error = 'Task reached the 60-minute limit and was stopped.';
       this.stop(id);
-    }, 30 * 60_000);
+    });
     child.on('message', (event: WorkerOutput) => {
       if (this.active.get(id) !== active) return;
       if (event.type === 'ephemeral_session') {
@@ -254,6 +267,44 @@ export class Runner extends EventEmitter {
         void Promise.resolve()
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
+            if (event.action === 'ask_user_question') {
+              if (this.questions.get(id)) throw new Error('Answer the pending questions first.');
+              deadline.pause();
+              try {
+                return this.questions
+                  .ask(id, runId, event.args, active.pluginAbort.signal)
+                  .finally(() => deadline.resume());
+              } catch (error) {
+                deadline.resume();
+                throw error;
+              }
+            }
+            if (event.action === 'chat_file_read') {
+              const args = z
+                .object({
+                  id: z.uuid(),
+                  offset: z.number().int().min(0).default(0),
+                  length: z.number().int().min(1).max(12000).default(6000),
+                })
+                .parse(event.args);
+              const attached = [
+                ...(documents || []),
+                ...history.flatMap((m) => m.attachments || []),
+              ];
+              if (!attached.some((d) => d.id === args.id) || !this.uploads)
+                throw new Error('File was not attached to this conversation.');
+              return this.uploads
+                .forConversation(id)
+                .read(project.id, args.id)
+                .then((doc) => ({
+                  id: doc.id,
+                  name: doc.name,
+                  text: doc.text.slice(args.offset, args.offset + args.length),
+                  nextOffset:
+                    args.offset + args.length < doc.text.length ? args.offset + args.length : null,
+                  truncated: doc.truncated,
+                }));
+            }
             if (event.action === 'knowledge_search')
               return searchKnowledge(active.knowledge, event.args);
             if (event.action === 'knowledge_read')
@@ -316,7 +367,8 @@ export class Runner extends EventEmitter {
     const finish = (code: number | null, signal: NodeJS.Signals | null) => {
       if (finished) return;
       finished = true;
-      clearTimeout(deadline);
+      deadline.close();
+      this.questions.finish(runId);
       active.pluginAbort.abort();
       this.mssql?.cancelRun(runId);
       this.killGroup(child);

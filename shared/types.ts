@@ -47,6 +47,7 @@ export interface DisplayMessage {
   chart?: ChartRef;
 }
 export interface ChatSnapshot {
+  question?: import('./questions.js').QuestionRequest;
   /** Monotonic server observation order; HTTP and SSE share this sequence. */
   revision?: number;
   /** Identifies the finished-message list; a ChatUpdate applies only to the same version. */
@@ -132,6 +133,7 @@ export interface WorkerInput {
   }[];
 }
 export interface KnowledgeDocument {
+  conversationId?: string;
   id: string;
   projectId: string;
   name: string;

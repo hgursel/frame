@@ -505,6 +505,13 @@ export class Maintenance {
   private async conversation(item: Item, signal: AbortSignal) {
     const c = this.store.conversation(item.id);
     if (!c || c.incognito || this.runner.active.has(c.id)) return;
+    // Chat uploads and any answers derived from them stay out of automatic project learning.
+    if (
+      this.store.db
+        .prepare('SELECT id FROM chat_documents WHERE conversationId=? LIMIT 1')
+        .get(c.id)
+    )
+      return;
     const last = this.store.db
       .prepare(
         'SELECT status FROM runs WHERE conversationId=? ORDER BY createdAt DESC,rowid DESC LIMIT 1',

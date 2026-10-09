@@ -60,7 +60,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Sidebar project/conversation action menus with confirmed deletion and scoped file/database cleanup; conversation deletion preserves shared knowledge.
 - Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.
 - Automatic SQL CSV exports appear only through their query result’s download link; conversation file cards show other deliverables, including ordinary CSV reports. Existing exports are retained and filtered by persisted SQL operation IDs.
-- Fixed 30-minute task deadline; completed SQL knowledge jobs show completion instead of their last processing phase.
+- 60-minute task deadline (paused while awaiting structured question answers); completed SQL knowledge jobs show completion instead of their last processing phase.
 - Deferred: adjustable per-project task limits and llama.cpp prompt-processing percentages.
 
 ## Charts (implemented)
@@ -146,3 +146,9 @@ Deferred from V1 at the owner's request. V1 retains one administrator.
 - Existing bounded retrieval/search/read tools include attached sections; read-only local citation viewer and latest-turn activity references. Project files and maintenance remain separate.
 - Automated API/retrieval/browser checks use a controlled model transport. Legal content is not a comprehensive or continuously updated source; real-model answer quality and professional review remain acceptance work. See [Knowledge Library](KNOWLEDGE_LIBRARY.md).
 - Deferred: online catalog/update service, automatic legal change monitoring, pack authoring UI, and global pack removal.
+
+### Conversation workspace
+
+- Structured questions with selectable options, custom answers, cancellation, and refresh recovery.
+- Outputs and Sources in a collapsible right panel, with a drawer on smaller screens.
+- Chat uploads are conversation-scoped, sent with the next message, and promoted to project knowledge only by explicit action. Incognito uploads are removed when the chat ends. Chats with uploaded documents are excluded from automatic learning.

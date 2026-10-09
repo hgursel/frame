@@ -24,7 +24,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 
 ### Company knowledge that grows with your work
 
-- **Bring your documents.** Upload Markdown, TXT, CSV, PDF, and DOCX files. Attach sources to a conversation or ask Frame to search the project's knowledge.
+- **Bring your documents.** Upload Markdown, TXT, CSV, PDF, and DOCX files to the current conversation. They reach the model with your next message; explicitly choose **Add to project knowledge** to reuse a file elsewhere.
 - **Keep useful answers.** Use **Useful → Save to knowledge** on answers and tool results. Review a new Markdown page or an update before saving it.
 - **Maintain knowledge on your schedule.** Run nightly health checks and learn reusable procedures, calculation rules, and parameterized SQL templates from completed chats. Choose review-first or automatic publishing; SQL results never become learned knowledge.
 - **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
@@ -34,6 +34,12 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
 [Explore the knowledge workflow →](docs/KNOWLEDGE.md)
+
+### Conversation workspace
+
+- **Answer focused questions.** Frame can ask up to four questions with choices and custom answers, then continue from your response.
+- **Find files in one place.** Open **Files** for conversation Sources and generated Outputs in a separate panel.
+- **Give longer tasks time.** Runs allow 60 minutes of execution, pausing the timer while waiting for question answers.
 
 ### SQL analysis with explicit controls
 
