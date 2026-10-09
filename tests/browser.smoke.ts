@@ -1,5 +1,5 @@
 import { chromium, expect } from '@playwright/test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir, networkInterfaces } from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -105,7 +105,7 @@ if (lan && !lanHost)
   throw new Error('LAN browser regression needs a private IPv4 network interface.');
 const browserHost = lan ? lanHost! : '127.0.0.1';
 const browserOrigin = `http://${browserHost}:${port}`;
-const { app } = await createApp({
+const { app, store } = await createApp({
   dataDir: root,
   origin: browserOrigin,
   setupToken: 'browser-test-bootstrap',
@@ -346,7 +346,35 @@ try {
   await page.getByRole('status').filter({ hasText: 'Settings saved' }).waitFor();
   await page.getByRole('tab', { name: 'Documents', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Document tools', exact: true })).toBeVisible();
-  await page.reload();
+  // Reopen a native session beyond both former display limits, without compaction.
+  const longChat = store.createConversation(store.projects()[0]!.id);
+  store.db
+    .prepare('UPDATE conversations SET title=? WHERE id=?')
+    .run('Long history regression', longChat.id);
+  const longMessages = Array.from({ length: 55 }, (_, i) => [
+    { role: 'user', content: `History question ${i}` },
+    { role: 'assistant', content: `History answer ${i}. ${'Evidence. '.repeat(950)}` },
+  ]).flat();
+  await writeFile(
+    store.sessionFile(longChat.id),
+    longMessages
+      .map((message, i) =>
+        JSON.stringify({
+          type: 'message',
+          id: `history-${i}`,
+          parentId: i ? `history-${i - 1}` : null,
+          message,
+        }),
+      )
+      .join('\n') + '\n',
+  );
+  for (let reopen = 0; reopen < 2; reopen++) {
+    await page.reload();
+    await page.getByRole('button', { name: 'Long history regression', exact: true }).click();
+    await expect(page.getByText('History question 0', { exact: true })).toBeVisible();
+    await expect(page.getByText('History question 54', { exact: true })).toBeVisible();
+    await expect(page.locator('.response-turn')).toHaveCount(55);
+  }
   await page.getByRole('button', { name: 'Review our migration plan.', exact: true }).click();
   await page.getByText('Your local workspace is ready.', { exact: true }).waitFor();
   assert.equal(
@@ -491,9 +519,10 @@ try {
   await menus.first().click();
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Delete conversation', exact: true }).click();
-  await expect(menus).toHaveCount(beforeDelete - 1);
   // The portal menu closes mobile navigation after selecting an action.
+  // Reopen it before counting accessible buttons when other chats remain.
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await expect(menus).toHaveCount(beforeDelete - 1);
   await page.getByLabel('Project menu: Infrastructure').click();
   page.once('dialog', (dialog) => void dialog.dismiss());
   await page.getByRole('button', { name: 'Delete project', exact: true }).click();
