@@ -519,9 +519,10 @@ try {
   await menus.first().click();
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Delete conversation', exact: true }).click();
-  await expect(menus).toHaveCount(beforeDelete - 1);
   // The portal menu closes mobile navigation after selecting an action.
+  // Reopen it before counting accessible buttons when other chats remain.
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await expect(menus).toHaveCount(beforeDelete - 1);
   await page.getByLabel('Project menu: Infrastructure').click();
   page.once('dialog', (dialog) => void dialog.dismiss());
   await page.getByRole('button', { name: 'Delete project', exact: true }).click();
