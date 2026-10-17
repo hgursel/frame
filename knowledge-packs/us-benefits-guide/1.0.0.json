@@ -1,0 +1,76 @@
+{
+  "id": "us-benefits-guide",
+  "title": "Federal Employee Benefits & Plan Administration",
+  "description": "Practical retirement and health-plan oversight, participant communications, and continuation-coverage coordination.",
+  "pages": [
+    {
+      "id": "retirement-oversight",
+      "title": "Retirement Plans, Contributions & Vendor Oversight",
+      "tags": [
+        "ERISA",
+        "401k",
+        "retirement",
+        "fiduciary",
+        "benefits",
+        "contributions"
+      ],
+      "applicability": "Private-sector employer plans; governmental, church, and other exceptions require separate analysis.",
+      "text": "## Framework and limits\nERISA responsibilities depend on the plan and the function performed. Sponsoring a plan, exercising discretionary administration, controlling assets, and providing services are not interchangeable roles. A third-party administrator does not automatically take over every employer responsibility. Determine coverage before applying an ERISA checklist to governmental, church, or other potentially excluded arrangements.\n\nPlan documents, participant disclosures, payroll operations, and vendor procedures should describe a consistent arrangement. Questions about eligibility, vesting, investments, fees, distributions, and claims may involve different decision makers. A benefits conversation with an employee is not permission to offer individualized investment or tax advice.\n\n## Practical review\nCreate a responsibility register naming the plan administrator, fiduciaries, payroll owner, recordkeeper, adviser, custodian, and reporting contacts. For each function, identify the governing document and evidence of performance. Reconcile payroll deductions with actual receipt by the plan and investigate delays promptly. Do not treat the latest possible regulatory deadline as permission to delay money that could have been deposited sooner.\n\nEvaluate providers through documented comparisons of services, compensation, conflicts, security, and performance. Review direct and indirect fees and understand which costs may properly be charged to the plan. Record decisions and follow-up issues rather than collecting brochures without analysis. Monitor access to participant data and the process for changing bank information or approving distributions.\n\n## Example\nA growing design firm changes payroll providers and discovers that deductions appeared on employee pay statements but were not transferred on several cycles. The first task is to reconcile the dates and amounts, preserve transfer logs, and involve the plan administrator and qualified advisers. Frame can organize a discrepancy schedule; it should not decide that a later lump-sum payment cures every issue or invent a correction formula.\n\n## Counsel questions and next steps\nAsk whether a correction program is appropriate, what lost-earnings or reporting issues arise, and how participants should be informed. Establish a recurring reconciliation with independent review and a named escalation contact. Before changing plan design or providers, assess required amendments, notices, blackout periods, and operational transition risks under current rules. Use the plan's claims procedure for benefit disputes and preserve appeal materials. The aim is a traceable administration process that exposes exceptions early, not a generic annual statement that the plan is compliant.",
+      "sources": [
+        {
+          "title": "DOL: Retirement Responsibilities for Small Employers",
+          "url": "https://www.dol.gov/agencies/ebsa/employers-and-advisers/small-business-owners/understanding-your-responsibilities",
+          "locator": "ERISA sponsorship, administration, prudent oversight, expenses, disclosure, and reporting."
+        },
+        {
+          "title": "DOL: Retirement Plans and ERISA FAQs",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/faqs/retirement-plans-and-erisa",
+          "locator": "Plan documents, participant rights, contributions, and fiduciary responsibilities."
+        }
+      ],
+      "description": "Retirement Plans, Contributions & Vendor Oversight: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "health-and-continuation",
+      "title": "Health Plans, Coverage Changes & COBRA",
+      "tags": [
+        "health plan",
+        "COBRA",
+        "ERISA",
+        "benefits",
+        "termination",
+        "coverage"
+      ],
+      "applicability": "Employer health-plan administration; plan type, employer coverage, and state continuation rules must be checked.",
+      "text": "## Framework and limits\nAn employer's health-benefit role can include plan sponsorship, fiduciary administration, payroll deductions, and transmission of enrollment information. These functions remain distinct even when one vendor supports all of them. Determine whether the arrangement is insured or self-funded, who administers claims, and which federal and state requirements apply. A summary supplied by a broker is not a substitute for the controlling documents.\n\nCOBRA can require continuation opportunities after specified qualifying events for covered plans and qualified beneficiaries. Employer-size rules, exceptions, event type, loss of coverage, and notice responsibilities all matter. Do not assume every separation follows the same timeline or that a general termination letter serves as a compliant election notice. State continuation provisions may be relevant when federal COBRA does not apply.\n\n## Practical review\nBuild an event workflow for hiring, changes in hours, leave, separation, family changes, and plan termination. Record the event date separately from the date coverage ends and the date each administrator learns of it. Identify who must notify whom, who sends the election materials, and how delivery and follow-up are documented. Review unusual cases promptly rather than forcing them into a routine payroll template.\n\nReconcile enrollment files, premiums, payroll deductions, and carrier acknowledgments. For denied claims or disputed eligibility, collect the applicable plan language, notices, dates, and appeal instructions without promising payment. Protect health information and separate routine employment records from information obtained through plan administration. Review vendor contracts for data access, audit support, incident reporting, and service failures.\n\n## Example\nAn employee moves to a reduced schedule while on an extended absence. Payroll stops deductions, but the carrier still lists coverage and the continuation administrator has received no event. Frame should help map the actual dates and responsibilities, including leave-related benefit obligations, rather than selecting a coverage-end date from assumptions. The employer needs a coordinated determination before sending inconsistent notices or collecting retroactive premiums.\n\n## Counsel questions and next steps\nAsk which continuation and leave rules apply, whether notices or premiums need correction, and whether affected dependents have separate rights. Clarify what the employer can communicate about alternatives without giving individualized insurance advice. Keep a documented escalation route for missed vendor handoffs and a periodic sample review of completed events. Current plan terms, governing rules, and qualified benefits advice should control the final determination; this workflow is designed to expose gaps and preserve the facts needed to resolve them.",
+      "sources": [
+        {
+          "title": "DOL: Group Health Plan Fiduciary Responsibilities",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/understanding-your-fiduciary-responsibilities-under-a-group-health-plan",
+          "locator": "ERISA fiduciary functions, vendor selection, monitoring, plan assets, and participant information."
+        },
+        {
+          "title": "DOL: Employer Guide to COBRA",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/an-employers-guide-to-group-health-continuation-coverage-under-cobra",
+          "locator": "Covered plans, qualifying events, beneficiaries, notice responsibilities, and continuation procedures."
+        },
+        {
+          "title": "DOL: FMLA Employer Guide",
+          "url": "https://www.dol.gov/agencies/whd/fmla/employer-guide",
+          "locator": "Employer coverage, employee eligibility, certification, notices, and restoration; 29 CFR Part 825."
+        }
+      ],
+      "description": "Health Plans, Coverage Changes & COBRA: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

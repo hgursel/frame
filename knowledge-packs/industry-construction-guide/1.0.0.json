@@ -1,0 +1,81 @@
+{
+  "id": "industry-construction-guide",
+  "title": "Construction, Renovation & Shared-Site Operations",
+  "description": "Pre-job responsibility mapping, changing site hazards, renovation scope, and lead-related documentation.",
+  "pages": [
+    {
+      "id": "shared-site-planning",
+      "title": "Pre-Job Planning, Subcontractors & Changing Conditions",
+      "tags": [
+        "construction",
+        "OSHA",
+        "subcontractor",
+        "safety",
+        "jobsite",
+        "change orders"
+      ],
+      "applicability": "Construction operations under the applicable OSHA jurisdiction; licensing, payment, lien, and contract rules remain state-specific.",
+      "text": "## Framework and limits\nConstruction risk follows the work actually performed and site conditions, not just the project description. Falls, excavation, electrical work, equipment movement, hazardous materials, and changing access need appropriate specialist review. Standards can specify competent or qualified persons and task-specific procedures. A general orientation does not establish competence for every operation.\n\nShared sites require coordination among owners, general contractors, subcontractors, staffing firms, and other participants. OSHA's multi-employer framework can involve more than the direct employer of an exposed worker. Contract language assigning safety responsibility should be reviewed alongside actual authority and practice. State-plan rules can differ from federal requirements.\n\n## Practical review\nBefore mobilization, prepare a responsibility matrix for site control, hazard identification, equipment, permits, training, emergency response, inspections, and stop-work decisions. Identify the qualified people for specialized activities. Exchange information about existing conditions and planned work sequences. Confirm how adjacent operations and occupied areas will be protected.\n\nUse a change process that treats schedule, methods, staffing, materials, and access changes as potential safety changes as well as commercial changes. Record who approved the revised work and what assessment occurred. Preserve daily reports, site photographs, instructions, inspections, and correction records. A change order may address price without resolving the safety or permit consequences of the new work.\n\n## Example\nA subcontractor is asked to accelerate installation while another trade removes a barrier nearby. The foreman assumes the general contractor approved the new sequence. Frame should help reconstruct the instructions, exposed workers, responsible parties, and controls that were actually in place. It should not infer safety approval from a scheduling email or propose that workers continue while responsibility is debated.\n\n## Counsel questions and next steps\nAsk which parties have relevant duties, whether work should pause pending qualified assessment, and what notifications or documentation are required. Review contract notice provisions for changed conditions without treating them as substitutes for protecting people. Track corrective actions to verified closure and communicate the revised plan to every affected crew. Local licensing, building permits, lien rights, prevailing-wage coverage, and payment disputes require additional advice. Frame can organize job records and decision points, but engineering judgments and task-specific safety plans must come from competent professionals responsible for the work.",
+      "sources": [
+        {
+          "title": "OSHA: Construction Compliance Quick Start",
+          "url": "https://www.osha.gov/complianceassistance/quickstarts/construction",
+          "locator": "Construction hazards, applicable standards, training, and multi-employer responsibility review."
+        },
+        {
+          "title": "OSHA: Host Employer and Contractor Coordination",
+          "url": "https://www.osha.gov/safety-management/communication",
+          "locator": "Recommended communication and responsibility allocation at shared workplaces and staffing assignments."
+        },
+        {
+          "title": "OSHA: Employer Responsibilities",
+          "url": "https://www.osha.gov/workers/employer-responsibilities",
+          "locator": "Workplace hazards, standards, training, records, reporting, and protection against retaliation."
+        }
+      ],
+      "description": "Pre-Job Planning, Subcontractors & Changing Conditions: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "renovation-scope",
+      "title": "Older Buildings, Lead Work & Renovation Records",
+      "tags": [
+        "construction",
+        "renovation",
+        "lead",
+        "RRP",
+        "EPA",
+        "contractors"
+      ],
+      "applicability": "Potentially covered renovation of older housing and child-occupied facilities; verify scope, exemptions, and state programs.",
+      "text": "## Framework and limits\nEPA's Renovation, Repair and Painting program addresses covered work disturbing painted surfaces in specified older housing and child-occupied facilities. Applicability depends on facts such as building age, use, work, and relevant exclusions or testing. Certification, training, work practices, information distribution, and recordkeeping can be involved. A small invoice or a customer's willingness to accept dust does not decide coverage.\n\nRenovation, lead abatement, demolition, and ordinary maintenance should not be casually treated as the same activity. Worker protection, occupant protection, waste handling, and local building requirements may operate under different rules. State-authorized programs can administer requirements, and other hazards such as asbestos need separate assessment.\n\n## Practical review\nDocument building age and occupancy, work scope, surfaces affected, testing or exemption basis, responsible firm, certified personnel where required, and planned protections. Verify credentials before work and clarify subcontractor responsibilities. Plan access, containment, cleaning, waste handling, and communications for occupied spaces with qualified personnel.\n\nUse a pre-job record that distinguishes established facts from assumptions. If the scope expands, reassess before disturbing additional surfaces. Preserve notices, acknowledgments, test results, work-practice records, photographs, and completion documentation appropriate to the rule. Keep the customer informed about changes without promising that ordinary cleaning proves the absence of a hazard.\n\n## Example\nA contractor is hired to replace cabinets in an older apartment and discovers that adjacent painted walls must also be disturbed. The original quote described only carpentry. Frame should flag the changed scope and request the building, surface, and certification facts needed for an RRP assessment. It should not propose avoiding the rule by splitting invoices or treating the tenant's consent as a waiver.\n\n## Counsel questions and next steps\nAsk which program governs, whether the work qualifies for an exemption, what testing and documentation are acceptable, and whether the project needs different qualified personnel. Confirm how change-order terms allocate cost and delay while preserving regulatory responsibilities. Review insurance coverage and required notices with appropriate advisers. If work already occurred without the expected controls, preserve evidence and seek prompt guidance on corrective steps rather than reconstructing paperwork after the fact. Frame should provide a factual checklist and handoff record; it should not issue a clearance result, certify a site, or substitute for required training.",
+      "sources": [
+        {
+          "title": "EPA: Renovation, Repair and Painting — Contractors",
+          "url": "https://www.epa.gov/lead/renovation-repair-and-painting-program-contractors",
+          "locator": "Lead RRP requirements for covered renovations, certifications, practices, and exemptions."
+        },
+        {
+          "title": "EPA: Small Entity Guide to Renovate Right",
+          "url": "https://www.epa.gov/lead/small-entity-compliance-guide-renovate-right",
+          "locator": "March 2026 guide to the RRP rule; scope, work practices, documentation, and compliance planning."
+        },
+        {
+          "title": "OSHA: Construction Compliance Quick Start",
+          "url": "https://www.osha.gov/complianceassistance/quickstarts/construction",
+          "locator": "Construction hazards, applicable standards, training, and multi-employer responsibility review."
+        }
+      ],
+      "description": "Older Buildings, Lead Work & Renovation Records: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

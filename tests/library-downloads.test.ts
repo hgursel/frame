@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { detailedPacks } from '../knowledge-packs/src/index.js';
+import { detailedPacks, federalPacks, sectorPacks } from '../knowledge-packs/src/index.js';
 import { appFixture } from './helpers.js';
 import { knowledgeContext, readKnowledge, searchKnowledge } from '../server/knowledge-discovery.js';
 
@@ -14,7 +14,12 @@ test('published packs match checksums, import without attachment, and keep exist
     const catalog = JSON.parse(
       await readFile(new URL('../knowledge-packs/catalog.json', import.meta.url), 'utf8'),
     );
-    assert.equal(catalog.packs.filter((p: any) => p.type === 'detailed-guide').length, 12);
+    assert.equal(
+      catalog.packs.filter((p: any) => p.type === 'detailed-guide').length,
+      detailedPacks.length,
+    );
+    assert.equal(catalog.packs.filter((p: any) => p.collection === 'Federal core').length, 7);
+    assert.equal(catalog.packs.filter((p: any) => p.collection === 'Industry guides').length, 9);
     for (const entry of catalog.packs) {
       assert.match(entry.file, /^[a-z0-9-]+\/\d+\.\d+\.\d+\.json$/);
       const bytes = await readFile(new URL(`../knowledge-packs/${entry.file}`, import.meta.url));
@@ -49,6 +54,55 @@ test('published packs match checksums, import without attachment, and keep exist
       [],
       'Reference imports never become company documents',
     );
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('every federal and industry section remains available through scoped paged knowledge reads', async () => {
+  const f = await appFixture('industry-guides');
+  try {
+    const p = f.store.createProject({
+      name: 'Industry review',
+      instructions: '',
+      toolsEnabled: false,
+    });
+    const other = f.store.createProject({
+      name: 'Unattached',
+      instructions: '',
+      toolsEnabled: false,
+    });
+    for (const guide of [...federalPacks, ...sectorPacks]) {
+      assert(guide.jurisdiction[0]!.includes('federal'));
+      assert(!guide.jurisdiction.includes('California'));
+      f.library.install(guide);
+      f.library.attach(p.id, guide.id, guide.version, null);
+      const pages = f.library.catalog(p.id);
+      assert.equal(pages.length, guide.pages.length);
+      for (const section of guide.pages) {
+        const result = searchKnowledge(pages, { query: section.title });
+        const selected = result.pages.find((item) => item.id.endsWith(`:${section.id}`));
+        assert(selected, `${guide.id}/${section.id} must be discoverable`);
+        let offset = 0;
+        let restored = '';
+        while (true) {
+          const part = readKnowledge(pages, { id: selected.id, offset, length: 500 }, 200000);
+          restored += part.text;
+          if (part.nextOffset === null) break;
+          assert(part.nextOffset > offset);
+          offset = part.nextOffset;
+        }
+        assert.equal(restored, pages.find((item) => item.id === selected.id)!.text);
+        assert(restored.includes(section.text), 'Full authored analysis survives retrieval');
+        assert.throws(
+          () => readKnowledge(f.library.catalog(other.id), { id: selected.id }, 200000),
+          /not found/,
+        );
+      }
+      const context = knowledgeContext(pages, guide.pages[0]!.title, 200000);
+      assert(Buffer.byteLength(JSON.stringify(context)) <= 12000);
+      f.library.attach(p.id, guide.id, null, guide.version);
+    }
   } finally {
     await f.cleanup();
   }

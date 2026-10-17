@@ -404,9 +404,9 @@ export function KnowledgeLibraryPanel({
       {!projectId && (
         <p className="muted small library-footnote">
           Works locally after installation. Packs contain authored summaries and workflows, not
-          complete statutes or government-approved forms. Detailed California and guild guides are
-          available through Download more packs. Publisher links open external websites. Updates
-          arrive with Frame releases or explicit file imports.
+          complete statutes or government-approved forms. Detailed federal, industry, California,
+          and guild guides are available through Download more packs. Publisher links open external
+          websites. Updates arrive with Frame releases or explicit file imports.
         </p>
       )}
     </section>

@@ -1,0 +1,86 @@
+{
+  "id": "industry-nonprofit-guide",
+  "title": "Nonprofits, Associations & Charitable Operations",
+  "description": "Exempt-status distinctions, board decisions, conflicts, earned revenue, and restricted-fund controls.",
+  "pages": [
+    {
+      "id": "status-and-governance",
+      "title": "Exempt Status, Board Decisions & Conflicts",
+      "tags": [
+        "nonprofit",
+        "association",
+        "charity",
+        "501c3",
+        "governance",
+        "conflicts"
+      ],
+      "applicability": "Nonprofit and association operations; federal exemption category and state organizational law must be identified.",
+      "text": "## Framework and limits\nNonprofit incorporation and federal tax exemption are different questions. A charity under section 501(c)(3), a trade association, a labor organization, and another exempt entity can have materially different rules. Identify the entity's actual determination, purposes, governing documents, and activities before applying charity-specific restrictions. A name containing foundation or association is not evidence of tax classification.\n\nFederal tax requirements interact with state rules governing directors, charitable assets, registrations, and fiduciary duties. IRS conflict-policy guidance encourages a documented process; it should not be presented as a universal federal command that every organization adopt an identical policy. Related-party transactions require analysis of the actual relationship, value, approval, and applicable law.\n\n## Practical review\nCreate a governance file with governing documents, exemption records, board roster, delegated authority, minutes, filings, and material agreements. For major decisions, record the proposal, organizational purpose, alternatives, financial impact, disclosed interests, and who participated. Confirm quorum and approval requirements from the actual documents and law. Do not retroactively rewrite minutes to conceal disagreement or a missed approval.\n\nUse a conflict register that covers current transactions as well as annual disclosures. Identify family, ownership, compensation, and vendor relationships that could affect judgment. Establish who reviews a conflict, how an interested person participates or recuses, and what evidence supports the final decision. Keep organizational and personal expenses separate, with independent review of sensitive payments.\n\n## Example\nAn association considers a software contract with a board member's company. The price appears competitive, but the member helped write the requirements and is participating in selection. Frame should help document the relationship, comparable options, procurement history, and approval process. The existence of a signed annual disclosure does not by itself resolve the transaction, and a conflict does not automatically prove the contract is prohibited.\n\n## Counsel questions and next steps\nAsk which exemption and state-law rules govern, whether additional approvals or disclosure are needed, and whether the transaction threatens exempt purposes or creates an excess-benefit concern. Distinguish recommendations for better governance from legal mandates. Give the board a concise decision record with unresolved questions rather than a blanket compliance certification. Review delegation and oversight as the organization grows, especially when staff, volunteers, and related entities share resources.",
+      "sources": [
+        {
+          "title": "IRS: Charitable Organizations",
+          "url": "https://www.irs.gov/charities-non-profits/charitable-organizations",
+          "locator": "Section 501(c)(3) requirements, exempt purposes, reporting, and political campaign restrictions."
+        },
+        {
+          "title": "IRS: Other Nonprofits",
+          "url": "https://www.irs.gov/charities-non-profits/other-nonprofits",
+          "locator": "Different exempt organization categories; do not apply charity rules indiscriminately to associations."
+        },
+        {
+          "title": "IRS: Purpose of a Conflict of Interest Policy",
+          "url": "https://www.irs.gov/charities-non-profits/form-1023-purpose-of-conflict-of-interest-policy",
+          "locator": "Recommended disclosure and decision processes for actual or potential conflicts in charities."
+        }
+      ],
+      "description": "Exempt Status, Board Decisions & Conflicts: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "revenue-and-funds",
+      "title": "Earned Revenue, Fund Restrictions & Advocacy",
+      "tags": [
+        "nonprofit",
+        "UBIT",
+        "donations",
+        "sponsorship",
+        "fundraising",
+        "advocacy"
+      ],
+      "applicability": "Exempt organizations with earned revenue or restricted support; tax category and transaction facts control.",
+      "text": "## Framework and limits\nTax-exempt status does not make every revenue stream exempt. The IRS describes unrelated business income using the trade-or-business, regularly-carried-on, and substantially-unrelated tests, with exceptions and exclusions. Applying profits to a good purpose does not by itself establish that the activity generating them is related. Conversely, earned revenue is not automatically taxable merely because customers pay a fee.\n\nRestrictions on political activity and lobbying depend on exemption category and activity. Section 501(c)(3) political campaign restrictions should not be indiscriminately applied to every association, and issue advocacy, lobbying, and campaign intervention should not be treated as synonyms. Donor restrictions, grant conditions, and state charitable-asset rules also require separate review.\n\n## Practical review\nMaintain a revenue register separating dues, donations, grants, program fees, sales, advertising, sponsorship, rentals, and investment income. For each stream, identify who pays, what they receive, how often the activity occurs, its connection to exempt purposes, and applicable restrictions. Keep contracts and promotional materials so the tax adviser can evaluate substance rather than relying only on an accounting label.\n\nTrack restricted funds from receipt through authorized use. Record the source of the restriction, eligible costs, allocation approach, reporting dates, and approval for changes. Reconcile shared-cost allocations and related-entity transfers. Do not assume a board vote can remove a donor restriction or that a cash shortage authorizes temporary diversion.\n\n## Example\nA charity sells sponsorship packages that include logos, promotional statements, and preferred placement at events. Frame should separate simple acknowledgment from advertising benefits and identify the facts needed for tax review. It should not classify the entire package as a donation because the invoice says sponsor, or assume that every logo placement creates taxable income. A separate worksheet can track any restricted use of the resulting funds.\n\n## Counsel and tax-adviser questions\nAsk whether an income stream is related, whether an exception applies, what filings are required, and how shared expenses should be allocated. Review advocacy plans before committing organizational resources, especially when several related exempt entities are involved. Preserve approvals, public messages, and expenditure records. Frame can prepare a revenue-and-restrictions matrix and identify missing support, while qualified advisers determine tax treatment and permissible activity under the organization's actual legal structure.",
+      "sources": [
+        {
+          "title": "IRS: Unrelated Business Income Defined",
+          "url": "https://www.irs.gov/charities-non-profits/unrelated-business-income-defined",
+          "locator": "Trade/business, regularly carried on, and not substantially related to exempt purpose."
+        },
+        {
+          "title": "IRS: UBIT Exceptions and Exclusions",
+          "url": "https://www.irs.gov/charities-non-profits/charitable-organizations/unrelated-business-income-tax-exceptions-and-exclusions",
+          "locator": "Activity-specific exclusions and exceptions; avoid assuming all earned revenue is exempt or taxable."
+        },
+        {
+          "title": "IRS: Charitable Organizations",
+          "url": "https://www.irs.gov/charities-non-profits/charitable-organizations",
+          "locator": "Section 501(c)(3) requirements, exempt purposes, reporting, and political campaign restrictions."
+        },
+        {
+          "title": "IRS: Other Nonprofits",
+          "url": "https://www.irs.gov/charities-non-profits/other-nonprofits",
+          "locator": "Different exempt organization categories; do not apply charity rules indiscriminately to associations."
+        }
+      ],
+      "description": "Earned Revenue, Fund Restrictions & Advocacy: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

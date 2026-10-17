@@ -1,0 +1,111 @@
+{
+  "id": "us-employment-guide",
+  "title": "Federal Employment: Fair Decisions, Pay & Leave",
+  "description": "A federal baseline for discrimination, retaliation, wage classification, leave, and accommodation across industries.",
+  "pages": [
+    {
+      "id": "fair-decisions",
+      "title": "Coverage, Consistent Decisions & Retaliation",
+      "tags": [
+        "federal",
+        "employment",
+        "Title VII",
+        "ADEA",
+        "EEOC",
+        "retaliation",
+        "hiring"
+      ],
+      "applicability": "Private-employer decisions; coverage tests differ by law and employer type. Add applicable state and local protections.",
+      "text": "## Framework and limits\nTitle VII, the ADA, the ADEA, and other federal employment laws have different coverage and substantive tests. EEOC guidance describes the usual private-employer thresholds as 15 employees for several discrimination laws and 20 for age discrimination, with counting periods and other conditions. A small workforce is not a general exemption from employment law. State protections, equal-pay requirements, and special rules for agencies or labor organizations need separate consideration.\n\nSeparate three questions: was a decision discriminatory, was an accommodation required, and did the employer retaliate against protected activity? A complaint that is ultimately unsubstantiated does not automatically eliminate retaliation protection. An apparently neutral selection rule also deserves review for discriminatory effects; a manager's good intentions are not the complete analysis.\n\n## Practical review\nPrepare a decision file before approving hiring, promotion, discipline, or termination. Identify the actual employing entity, work location, relevant dates, decision makers, and criteria used. Retain the original criteria and evaluation records, including inconvenient comparisons. Record when each decision maker learned of a complaint or request. Compare similarly situated employees while explaining material differences in duties, history, and performance.\n\nFor a complaint, appoint an impartial reviewer, define the allegations, preserve messages and scheduling records, and offer reporting routes outside the supervisor involved. Interim measures should address risk without automatically burdening the reporting employee. Limit information to those who need it, but do not promise absolute confidentiality. Track subsequent hours, assignments, references, and advancement as well as formal discipline.\n\n## Example\nA consulting firm removes an analyst from a client account shortly after she reports discriminatory remarks. The partner says the customer requested it. Frame should ask for the customer's actual communications, the timeline, alternative assignments, and how other complaints were handled. It should not conclude that customer preference excuses discrimination or that timing alone proves retaliation. A useful output is a chronology with competing explanations and missing evidence.\n\n## Counsel questions and next steps\nAsk counsel which entities and statutes are covered, whether an investigation needs independent leadership, and what immediate protection or preservation steps are appropriate. Flag any agency charge or demand on receipt; internal review does not pause external deadlines. Maintain a decision log linking each factual conclusion to evidence and identifying what would change the proposed response. Treat this as preparation for a defensible decision, not a score that automatically authorizes termination.",
+      "sources": [
+        {
+          "title": "EEOC: Coverage of Business/Private Employers",
+          "url": "https://www.eeoc.gov/employers/coverage-businessprivate-employers",
+          "locator": "Private-employer coverage and different employee-count tests; state law can cover smaller employers."
+        },
+        {
+          "title": "EEOC: Small Business Retaliation Guidance",
+          "url": "https://www.eeoc.gov/laws/guidance/small-business-fact-sheet-retaliation-and-related-issues",
+          "locator": "Protected activity, materially adverse actions, and independent review of employment decisions."
+        }
+      ],
+      "description": "Coverage, Consistent Decisions & Retaliation: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "pay-and-classification",
+      "title": "Exemptions, Hours & Payroll Review",
+      "tags": [
+        "FLSA",
+        "overtime",
+        "exempt",
+        "classification",
+        "payroll",
+        "remote work"
+      ],
+      "applicability": "Federal wage-and-hour triage for covered employment; sector exemptions and state law require separate review.",
+      "text": "## Framework and limits\nThe FLSA establishes federal minimum-wage, overtime, recordkeeping, and youth-employment requirements for covered workers. For covered nonexempt employees, overtime generally turns on hours over 40 in a workweek, not a two-week payroll average. State law may add daily overtime, meal rules, higher wages, or stricter exemptions. A salary, job title, professional appearance, or employee agreement does not by itself establish exempt status.\n\nThe executive, administrative, professional, computer, and outside-sales exemptions have distinct tests. Actual duties matter, and some exemptions have salary conditions while others operate differently. Use the current DOL materials and controlling law for the relevant pay period; salary thresholds and enforcement positions can change. Contractor classification is a separate question, and federal tax treatment does not resolve FLSA status.\n\n## Practical review\nBuild a role inventory showing duties actually performed, decision authority, supervisor responsibilities, compensation structure, and work location. Sample employees rather than assuming everyone with the same title performs the same work. For nonexempt staff, map the entire workday: opening systems, mandatory meetings, messages after shifts, travel between assignments, and interrupted unpaid periods. Refer disputed compensability questions to counsel instead of deleting short intervals as immaterial.\n\nReconcile payroll with time edits, schedules, approved overtime, incentive payments, and employee reports. A rule against unauthorized overtime can be enforced through appropriate management processes; it should not be used to erase compensable work already performed. Review which payments belong in the regular-rate calculation. Document corrections transparently and preserve original records, access history, and calculation assumptions.\n\n## Example\nA software support team is salaried and described as technical professionals. Most daily work follows scripts, and staff answer weekend tickets. The review should compare actual work with the specific exemption tests and examine recorded hours and incentive pay. Being employed by a technology company does not itself make everyone a computer professional. Model potential exposure under clearly stated assumptions rather than presenting an estimate as a legal finding.\n\n## Counsel questions and next steps\nAsk which exemptions genuinely fit, whether staffing arrangements create shared obligations, what lookback period and records are appropriate, and how corrections should be communicated. Have payroll verify calculations independently. For changing laws or disputed exemptions, identify the governing date and authority rather than treating the newest agency announcement as retroactive. Frame can produce a sampling plan and evidence checklist; it should not invent hours or characterize a payment as a complete release.",
+      "sources": [
+        {
+          "title": "DOL: Wages and the Fair Labor Standards Act",
+          "url": "https://www.dol.gov/agencies/whd/flsa",
+          "locator": "Federal minimum wage, overtime, recordkeeping, and youth employment; coverage and exemptions matter."
+        },
+        {
+          "title": "DOL: Fact Sheet 17A — Overtime Exemptions",
+          "url": "https://www.dol.gov/agencies/whd/fact-sheets/17a-overtime",
+          "locator": "Executive, administrative, professional, computer, and outside-sales exemptions; verify current salary rules."
+        },
+        {
+          "title": "IRS: Independent Contractor vs. Employee",
+          "url": "https://www.irs.gov/taxtopics/tc762",
+          "locator": "Federal common-law employment tax classification; distinct from FLSA and state tests."
+        }
+      ],
+      "description": "Exemptions, Hours & Payroll Review: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "leave-and-accommodation",
+      "title": "Leave, Disability, Pregnancy & Religious Accommodation",
+      "tags": [
+        "FMLA",
+        "ADA",
+        "PWFA",
+        "religion",
+        "accommodation",
+        "leave"
+      ],
+      "applicability": "Employer and employee eligibility must be evaluated separately; concurrent state leave and benefit rules may apply.",
+      "text": "## Framework and limits\nFMLA coverage does not automatically make every employee eligible. Evaluate employer coverage, service, hours, location rules, and the qualifying reason using the DOL guide. Job protection, wage replacement, and health-benefit continuation are separate questions. Paid leave or disability insurance may fund an absence without determining its legal protection.\n\nAccommodation can remain relevant when FMLA is unavailable or exhausted. The ADA addresses disability-related barriers; the PWFA addresses qualifying known limitations related to pregnancy, childbirth, or related medical conditions. Religious accommodation arises under a different framework. Do not use one universal hardship test: the applicable statute and current case law matter. An accommodation request need not arrive with the correct legal label.\n\n## Practical review\nCreate an intake record describing the work barrier, essential duties, requested adjustment, expected timing, and any immediate safety concern. Separate medical information from routine personnel files. Seek only documentation appropriate to the applicable rule and actual uncertainty; do not demand full medical histories as a default. Discuss effective alternatives, including schedule changes, equipment, task adjustments, and leave where appropriate.\n\nMaintain a notice calendar that distinguishes eligibility, certification, designation, recertification, return-to-work, and benefits responsibilities. Document who sends each communication and how delivery is confirmed. For overlapping laws, record which entitlement is running and why; do not simply subtract every absence from every available bank. Escalate disagreements about essential functions or hardship with evidence of actual operational impact and alternatives considered.\n\n## Example\nA small medical office receives a request from a newly hired employee for temporary lifting changes during pregnancy. The employee may not meet FMLA service requirements. That does not finish the analysis: assess PWFA coverage, the limitation, potential accommodations, and any state protections. Compare task rotation or equipment with leave, and avoid deciding that forced leave is automatically the safest option. Capture the employee's input and the rationale for the effective arrangement selected.\n\n## Counsel questions and next steps\nAsk which law governs each adjustment, what documentation is permissible, whether the proposed hardship evidence is sufficient, and what current litigation affects the issue. Before a leave-related separation, review all applicable protections and notice history. Set a realistic review date for temporary arrangements without treating it as an automatic termination date. Frame should help prepare the timeline and alternatives; medical judgments and individualized legal conclusions belong with qualified professionals.",
+      "sources": [
+        {
+          "title": "DOL: FMLA Employer Guide",
+          "url": "https://www.dol.gov/agencies/whd/fmla/employer-guide",
+          "locator": "Employer coverage, employee eligibility, certification, notices, and restoration; 29 CFR Part 825."
+        },
+        {
+          "title": "EEOC: Reasonable Accommodation Policy Tips",
+          "url": "https://www.eeoc.gov/employers/small-business/reasonable-accommodation-policy-tips",
+          "locator": "Disability and religious accommodation; updated religious undue-hardship discussion after Groff."
+        },
+        {
+          "title": "EEOC: Pregnant Workers Fairness Act",
+          "url": "https://www.eeoc.gov/wysk/what-you-should-know-about-pregnant-workers-fairness-act",
+          "locator": "Known limitations, reasonable accommodation, and undue hardship; check current regulations and litigation."
+        }
+      ],
+      "description": "Leave, Disability, Pregnancy & Religious Accommodation: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}
