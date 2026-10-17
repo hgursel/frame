@@ -1,0 +1,355 @@
+{
+  "id": "california-hr",
+  "version": "1.1.0",
+  "title": "California HR Essentials",
+  "description": "California HR references for hiring, job descriptions, offer letters, pay transparency, fair chance hiring, wages, leave, complaints, and departures.",
+  "jurisdiction": [
+    "US",
+    "US-CA"
+  ],
+  "reviewedAt": "2026-09-26",
+  "rights": "Original Frame-authored briefs and workflows distributed with Frame. Linked agency publications are not reproduced or bundled. Sources are not endorsements. Source-check date is not a legal effective date or a certification of completeness.",
+  "pages": [
+    {
+      "id": "handbook-review",
+      "title": "Handbook Review and Applicability",
+      "description": "Start a California HR or employee handbook review; identify missing facts and select relevant topics.",
+      "tags": [
+        "hr",
+        "handbook",
+        "policy",
+        "policies",
+        "employment",
+        "california",
+        "review"
+      ],
+      "applicability": "California employer reviews. Coverage varies by law, employer, worker, location, industry, date, and collective bargaining agreement.",
+      "text": "## Intake\nIdentify the employer entity and type, employee work locations (including remote work), headcount, industry, bargaining agreements, policy effective date, and the specific question. Do not assume headquarters determines every worker’s applicable rules.\n\n## Review workflow\nInventory the supplied handbook and amendments. Review hiring, classification, pay and hours, meals/rest, sick leave, other leave, accommodations, complaints, and departures separately. Retrieve the matching library topic before drawing a legal conclusion. Record missing policies as missing, not as violations. Distinguish a company benefit from a legal minimum. Do not resolve a conflict by automatically preferring the handbook or the newest uploaded file.\n\n## Output\nUse columns: handbook section; observed wording; relevant reference and date; potential gap; missing facts; suggested review action. Cite the actual handbook heading/page and the library section. Do not invent page numbers. Prioritize actionable gaps over a generic compliance score. State when source currency or a local rule needs verification. Refer legal decisions to qualified HR/counsel; do not label a handbook compliant.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "hiring",
+      "title": "Hiring and Onboarding",
+      "description": "Prepare a hiring and onboarding checklist with discrimination, notices, and employment-verification reference links.",
+      "tags": [
+        "hiring",
+        "onboarding",
+        "interview",
+        "recruitment",
+        "employee",
+        "notices"
+      ],
+      "applicability": "US and California employers; individual requirements have different coverage tests.",
+      "text": "## Reference brief\nEEOC’s small-business resources explain federal employment discrimination responsibilities and provide employer assistance. Coverage is law-specific; do not use one headcount threshold for every protection.\nCalifornia DIR’s workplace-posting directory identifies required notices and the employers to which each applies. A digital knowledge pack does not satisfy a workplace posting or employee-delivery requirement.\n\n## Review workflow\nGather role, work location, start date, employer size, employee/contractor classification, and approved offer terms. Review job-related interview criteria, accommodation contact, wage/benefit communications, required notices, policy acknowledgments, and onboarding ownership. Check current official employment-verification instructions separately; this pack does not reproduce Form I-9 or determine an individual’s work authorization. Avoid requesting sensitive identity documents in ordinary chat.\n\n## Output\nChecklist with item, owner, timing to verify, source, and completion evidence. Distinguish optional organizational steps from legal requirements.",
+      "sources": [
+        {
+          "title": "EEOC Small Business Resource Center",
+          "url": "https://www.eeoc.gov/employers/small-business",
+          "locator": "Employer responsibilities and coverage resources"
+        },
+        {
+          "title": "California Workplace Postings",
+          "url": "https://www.dir.ca.gov/wpnodb.html",
+          "locator": "Notice table and employer applicability"
+        },
+        {
+          "title": "USCIS Handbook for Employers M-274",
+          "url": "https://www.uscis.gov/i-9-central/form-i-9-resources/handbook-for-employers-m-274",
+          "locator": "Current Form I-9 completion guidance; verify current form and updates"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "pay-hours",
+      "title": "Pay and Overtime",
+      "description": "Review California overtime policies and identify inputs needed for a wage calculation.",
+      "tags": [
+        "pay",
+        "wages",
+        "salary",
+        "overtime",
+        "hours",
+        "exempt",
+        "payroll",
+        "compensation"
+      ],
+      "applicability": "California wage/hour review; exemptions, wage orders, industry exceptions, and alternative schedules require separate assessment.",
+      "text": "## Reference brief\nDIR describes daily and weekly overtime rules for covered nonexempt employees, including premium tiers and seventh-day rules. Salary alone does not establish exempt status. The regular rate can differ from the stated hourly rate, and applicable exceptions must be checked.\n\n## Review workflow\nObtain the applicable wage order, duties/classification, defined workday and workweek, time records, pay components, and any alternative workweek arrangement. Separate actual work from assumptions. Check daily, weekly, and seventh-day treatment without double-counting the same premium entitlement. Identify bonuses or other compensation that may affect the regular rate. Do not use a fixed statewide minimum wage from memory; the rate depends on date, location, and potentially industry.\n\n## Output\nShow inputs, formula, assumptions, unresolved exceptions, and cited reference. If records are missing, produce a missing-input checklist instead of fabricated payroll totals.",
+      "sources": [
+        {
+          "title": "DIR Overtime FAQ",
+          "url": "https://www.dir.ca.gov/dlse/faq_overtime.htm",
+          "locator": "General rule, exemptions/exceptions, and regular-rate questions"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "meal-rest",
+      "title": "Meal and Rest Periods",
+      "description": "Review meal and rest policies against California guidance while preserving exceptions.",
+      "tags": [
+        "meal",
+        "lunch",
+        "rest",
+        "break",
+        "breaks",
+        "shift",
+        "hours"
+      ],
+      "applicability": "Covered California employees; wage orders, industry-specific rules, waivers, and exceptions matter.",
+      "text": "## Reference brief\nDIR’s general meal-period guidance describes a meal of at least 30 minutes for a work period exceeding five hours, with limited waiver conditions. A second meal generally applies beyond ten hours. Motion-picture rules differ; do not apply the general schedule to every industry. Duty-free status and timing matter, not merely whether time was deducted.\nDIR’s rest-period guidance generally describes paid ten-minute rest periods per four hours or major fraction, with an exception for workdays shorter than three and one-half hours.\n\n## Review workflow\nCollect shift lengths, actual break timing, interruptions, applicable wage order, and any waiver terms. Review meals and paid rests separately. Do not treat a signed waiver or automatic time deduction as proof that a practice is lawful. Identify possible missed-break issues for HR review rather than assuming liability or calculating penalties without full facts.",
+      "sources": [
+        {
+          "title": "DIR Meal Periods",
+          "url": "https://www.dir.ca.gov/dlse/faq_mealperiods.htm",
+          "locator": "General rule; Questions 1–5 and industry exceptions"
+        },
+        {
+          "title": "DIR Rest Periods",
+          "url": "https://www.dir.ca.gov/dlse/FAQ_RestPeriods.htm",
+          "locator": "General entitlement and exceptions"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "sick-leave",
+      "title": "Paid Sick Leave",
+      "description": "Review California sick leave eligibility, use, accrual/frontloading, and local-rule questions.",
+      "tags": [
+        "sick",
+        "leave",
+        "pto",
+        "time",
+        "off",
+        "accrual",
+        "frontload"
+      ],
+      "applicability": "California employees subject to the sick-leave law; full/partial exclusions and qualifying collective bargaining agreements require review.",
+      "text": "## Reference brief\nDIR explains a general annual use minimum of 40 hours or five days, whichever is greater, beginning January 1, 2024. That is not a universal accrual cap. Eligibility generally involves 30 days with the same employer in California within a year; use generally follows a 90-day employment period. Accrual and upfront plans have different requirements. Local ordinances may require additional benefits, while specified topics are state-preempted. Qualifying collective bargaining arrangements can change coverage.\n\n## Review workflow\nIdentify work location, schedule length, employment dates, plan year, accrual/frontload method, carryover, use limit, eligible reasons, and bargaining coverage. Read current source provisions before resolving special cases. Distinguish accrual, balance, permitted use, and payment. Never equate five days with 40 hours for every schedule.\n\n## Output\nCompare each policy provision with the relevant FAQ question and flag missing facts or current local-law checks.",
+      "sources": [
+        {
+          "title": "California Paid Sick Leave FAQ",
+          "url": "https://www.dir.ca.gov/dlse/paid_sick_leave.htm",
+          "locator": "Questions 1–6, qualification, plan methods, and permitted uses"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "protected-leave",
+      "title": "Protected Leave and Accommodations",
+      "description": "Separate job protection, paid benefits, pregnancy disability, family care, and workplace accommodations.",
+      "tags": [
+        "leave",
+        "family",
+        "medical",
+        "pregnancy",
+        "disability",
+        "accommodation",
+        "cfra",
+        "fmla",
+        "bereavement"
+      ],
+      "applicability": "Eligibility and employer coverage differ among California leave protections, federal law, and accommodation duties.",
+      "text": "## Reference brief\nCalifornia CRD’s leave resource covers family/medical leave, pregnancy disability, reproductive loss, bereavement, and qualifying acts of violence. These are different protections; one leave balance does not resolve them all. CRD’s employment guidance also addresses disability and pregnancy accommodation responsibilities.\n\n## Review workflow\nAsk for employer size, work location, tenure/hours where relevant, reason category, requested dates, and prior leave. Gather only information needed for the review; avoid putting medical detail into reusable knowledge. Evaluate job protection separately from wage-replacement benefits and company-paid leave. Do not assume California and federal leave always run together. Do not infer a denial from an exhausted paid-time-off balance. Use the linked agency guides for eligibility and interaction questions; a federal FMLA determination needs the applicable federal source as well.\n\n## Output\nA matrix of possible protection, eligibility facts still needed, pay source, notice/documentation questions, and HR review owner. No automatic approval or denial.",
+      "sources": [
+        {
+          "title": "DOL FMLA Employer Guide",
+          "url": "https://www.dol.gov/agencies/whd/fmla/employer-guide",
+          "locator": "Employer coverage, employee eligibility, notices, and leave administration"
+        },
+        {
+          "title": "CRD Job-Protected Leave",
+          "url": "https://calcivilrights.ca.gov/family-medical-pregnancy-leave/",
+          "locator": "Leave types and linked quick-reference guides"
+        },
+        {
+          "title": "CRD Employment",
+          "url": "https://calcivilrights.ca.gov/employment/",
+          "locator": "Disability, pregnancy, and accommodation guidance"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "fair-workplace",
+      "title": "Fair Workplace and Complaints",
+      "description": "Review harassment, discrimination, retaliation, and complaint-handling policies.",
+      "tags": [
+        "harassment",
+        "discrimination",
+        "retaliation",
+        "complaint",
+        "investigation",
+        "training",
+        "conduct"
+      ],
+      "applicability": "California workplace protections; employer thresholds and covered conduct vary. This workflow is not an investigation finding.",
+      "text": "## Reference brief\nCRD provides guidance on prohibited employment discrimination, harassment, retaliation, and employer responsibilities. Evaluate the applicable protection rather than assuming all duties use the same coverage threshold.\n\n## Review workflow\nCheck that the policy identifies reporting channels, alternatives when a supervisor is involved, nonretaliation, a response owner, and a fair review process. Record allegations separately from established facts; retain relevant evidence. Do not promise absolute confidentiality or reach credibility findings from an incomplete chat. Identify potential conflicts of interest and escalation needs. Verify applicable training requirements using current official resources.\n\n## Output\nA neutral intake summary, missing evidence list, and process checklist. Keep names, allegations, and sensitive facts out of reusable learned methods. Do not recommend adverse action without an appropriate human review.",
+      "sources": [
+        {
+          "title": "CRD Employment",
+          "url": "https://calcivilrights.ca.gov/employment/",
+          "locator": "Discrimination, harassment, retaliation, and employer responsibilities"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "departures",
+      "title": "Departures and Final Pay",
+      "description": "Prepare resignation/termination review and distinguish final wages from vacation and other benefits.",
+      "tags": [
+        "departure",
+        "termination",
+        "resignation",
+        "final",
+        "pay",
+        "vacation",
+        "offboarding",
+        "quit"
+      ],
+      "applicability": "California separations; special industry rules, contracts, and bargaining terms require checking.",
+      "text": "## Reference brief\nDIR’s general guidance says discharged employees are due earned unpaid wages, including accrued vacation, at termination, subject to specified exceptions. For employees without a definite-term written contract who resign, at least 72 hours’ notice generally makes final pay due at quitting; without that notice, the general deadline is within 72 hours. Special industry rules exist.\nDIR explains that earned vacation is treated as wages and generally cannot be forfeited. Vacation/PTO and standalone sick leave require different treatment.\n\n## Review workflow\nConfirm separation type/date, notice given, industry, contract, hours, outstanding commissions/expenses, and vacation/PTO records. Confirm payment method, applicable benefit notices, and handoff owners. Do not delay wages simply to obtain returned company property. Have payroll/HR verify calculations, deadlines, and exceptions before acting.\n\n## Output\nItemized checklist with source, required facts, responsible person, and deadlines marked unverified until the case facts are confirmed.",
+      "sources": [
+        {
+          "title": "DIR Paydays and Final Wages",
+          "url": "https://www.dir.ca.gov/dlse/faq_paydays.htm",
+          "locator": "Final-pay paragraphs and industry exceptions"
+        },
+        {
+          "title": "DIR Vacation FAQ",
+          "url": "https://www.dir.ca.gov/dlse/faq_vacation.htm",
+          "locator": "Vesting and termination payout"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "contractors",
+      "title": "Independent Contractor Classification",
+      "description": "Identify classification facts before reviewing a California contractor arrangement.",
+      "tags": [
+        "contractor",
+        "classification",
+        "freelancer",
+        "1099",
+        "employee",
+        "abc"
+      ],
+      "applicability": "California employment classification; exceptions and different legal purposes can change the applicable test.",
+      "text": "## Reference brief\nDIR describes the ABC test: the hiring entity generally must establish freedom from control, work outside its usual business, and an independently established business of the same nature. A contractual label or Form 1099 does not determine classification. Some occupations or relationships use another test, sometimes only after additional conditions are satisfied.\n\n## Review workflow\nCollect actual duties, control over work, business activities, other clients, industry/occupation, and the proposed exception if any. Compare actual practice with the contract; avoid deciding from wording alone. Identify the legal purpose of the classification inquiry. Do not conflate contractor status with overtime exemption.\n\n## Output\nFacts supporting or undermining each relevant condition, unresolved exception requirements, and questions for counsel. Do not automatically classify or approve the arrangement.",
+      "sources": [
+        {
+          "title": "DIR Independent Contractor FAQ",
+          "url": "https://www.dir.ca.gov/dlse/faq_independentcontractor.htm",
+          "locator": "Questions 1–5 and 9"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "job-descriptions-offers",
+      "title": "Job Descriptions & Offer Letters",
+      "description": "Draft and review job descriptions and offer letters against actual role requirements and company-approved terms.",
+      "tags": [
+        "job",
+        "description",
+        "descriptions",
+        "offer",
+        "letter",
+        "letters",
+        "hiring",
+        "role",
+        "duties"
+      ],
+      "applicability": "US and California hiring; job-specific duties, employer coverage, work location, and approved terms must be identified.",
+      "text": "## Reference brief\nEEOC describes essential functions as the fundamental job duties a person must perform with or without reasonable accommodation. Its employer guidance identifies written job descriptions prepared before recruitment as relevant evidence, alongside the actual work. A title alone does not establish the duties or exemption classification.\n\n## Job description workflow\nAsk for role purpose, reporting relationship, actual responsibilities, essential versus marginal tasks, work location/schedule, and genuinely job-related qualifications. Describe the needed outcome without automatically prescribing one physical way to achieve it. Flag unsupported experience, degree, travel, or lifting requirements for human review. Do not invent an approved salary range or rank candidates by protected characteristics.\n\n## Offer letter workflow\nUse the approved company template. Confirm legal employer, role, manager, location, start date, compensation basis, variable-pay references, benefit-plan references, and authorized conditions. Compare the offer with the posting and compensation approval. Do not insert at-will, arbitration, restrictive covenants, immigration promises, or guaranteed benefits without supplied approved wording and legal review. A conditional offer is not a completed screening decision.\n\n## Output\nProvide a marked draft with placeholders for missing terms, a differences table against the approved template, and an approval checklist. Label suggested language as a draft; do not send or sign it.",
+      "sources": [
+        {
+          "title": "EEOC ADA Employer Responsibilities",
+          "url": "https://www.eeoc.gov/publications/ada-your-responsibilities-employer",
+          "locator": "How essential functions are determined; written job descriptions"
+        }
+      ],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "pay-transparency",
+      "title": "Pay Transparency & Equal Pay",
+      "description": "Review California job-posting pay scales, salary-history practices, and evidence needed for an equal-pay review.",
+      "tags": [
+        "pay",
+        "transparency",
+        "equal",
+        "equity",
+        "salary",
+        "range",
+        "posting",
+        "compensation"
+      ],
+      "applicability": "California employers and covered postings; confirm employee count, work location, applicable date, and current DIR guidance.",
+      "text": "## Reference brief\nDIR distinguishes pay transparency from equal-pay obligations. Its guidance addresses required pay-scale disclosures, salary-history restrictions, and wage-discussion protections. California’s equal-pay comparison concerns substantially similar work assessed through skill, effort, responsibility, and working conditions, not identical titles. Justifications for disparities require the applicable legal conditions; a possible explanation is not proof. Prior salary does not justify a prohibited disparity.\n\n## Posting review\nIdentify the employer, headcount, possible work locations, posting date, approved pay scale, and recruiting channels. Use current DIR guidance to determine coverage and the required scale definition. Compare third-party postings with approved wording. Do not copy an old range or confuse benefits/bonuses with the stated salary or hourly range.\n\n## Compensation review\nUse authorized records and documented job content. Separate missing data, comparable-job questions, observed differences, and claimed explanations. Avoid declaring discrimination—or its absence—from an average alone. Do not infer protected traits from names or other proxies. Keep employee-level data and SQL result values out of learned knowledge.\n\n## Output\nPosting checklist or comparison table with source, observation, missing evidence, and HR/counsel review question. No automatic pay changes or compliance certification.",
+      "sources": [
+        {
+          "title": "DIR California Equal Pay Act and Pay Transparency",
+          "url": "https://www.dir.ca.gov/dlse/california_equal_pay_act.htm",
+          "locator": "Equal Pay Act questions and Pay Transparency Law questions"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    },
+    {
+      "id": "fair-chance",
+      "title": "Background Checks & Fair Chance Hiring",
+      "description": "Organize California fair-chance review and distinguish it from federal consumer-report requirements.",
+      "tags": [
+        "background",
+        "check",
+        "checks",
+        "fair",
+        "chance",
+        "criminal",
+        "screening",
+        "hiring",
+        "adverse"
+      ],
+      "applicability": "California applicants/employees where the Fair Chance Act applies; exceptions, local rules, and federal/state reporting laws require separate checks.",
+      "text": "## Reference brief\nCRD provides a staged process and sample forms for conditional offers, individual assessment, preliminary withdrawal notices, reassessment, and final notices. Do not replace that process with a blanket criminal-record exclusion.\nFTC/EEOC guidance separately addresses employment consumer reports: disclosure and authorization before obtaining a report, and required steps before and after adverse action. The federal consumer-report process and California fair-chance process are not interchangeable.\n\n## Workflow\nGather employer size, role, work location, conditional-offer status, report provider/type, screening authorization, and any claimed statutory exception. Identify what information may be considered before discussing its effect. Build a chronology of assessments, notices, delivery, response opportunities, disputes, and reassessment. Use current official sources to verify deadlines and notice content rather than assuming one waiting period covers all laws. Request the candidate’s response through the authorized human process; do not infer guilt or decide suitability from incomplete records.\n\n## Output\nA process checklist and neutral evidence summary distinguishing disputed, corrected, and unverified information. Draft correspondence only against an approved template. Do not automatically reject an applicant, send notices, request a background report, or save criminal-history details to reusable knowledge.",
+      "sources": [
+        {
+          "title": "CRD Fair Chance Act",
+          "url": "https://calcivilrights.ca.gov/fair-chance-act/",
+          "locator": "Coverage, exceptions, and applicant/employer resources"
+        },
+        {
+          "title": "CRD Sample Form Guide",
+          "url": "https://calcivilrights.ca.gov/fair-chance-act/fca-forms/",
+          "locator": "Conditional offer, assessments, and preliminary/final notices"
+        },
+        {
+          "title": "FTC Background Checks: What Employers Need to Know",
+          "url": "https://www.ftc.gov/business-guidance/resources/background-checks-what-employers-need-know",
+          "locator": "Before obtaining a report; before and after adverse action"
+        }
+      ],
+      "kind": "reference-brief",
+      "effectiveDate": null
+    }
+  ]
+}

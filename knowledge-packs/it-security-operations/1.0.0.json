@@ -1,0 +1,122 @@
+{
+  "id": "it-security-operations",
+  "title": "IT Security Operations",
+  "description": "Selected CISA guidance with practical workflows for account security, logging, vulnerability management, and incident preparation.",
+  "pages": [
+    {
+      "id": "account-security",
+      "title": "Account Security and Access Review",
+      "description": "Review MFA coverage, privileged access, service accounts and account lifecycle evidence with the IT team.",
+      "tags": [
+        "account",
+        "accounts",
+        "access",
+        "mfa",
+        "authentication",
+        "privileged",
+        "identity",
+        "offboarding"
+      ],
+      "text": "## Reference brief\nCISA recommends MFA for business systems such as email, file storage and remote access. MFA methods differ in strength; deployment and recovery paths deserve review, not just an enabled/disabled label.\n\n## Original Frame workflow\nAsk for the identity provider, authentication methods, remote-access paths, administrative roles, application exceptions and account owners. Work from authorized, redacted exports. Separate human, service and emergency accounts. Review joiner/mover/leaver handoffs, role approvals, stale accounts, privileged-role use, recovery verification and exception expiry. Identify phishing-resistant MFA options supported by the actual systems; do not assume SMS and security keys give equivalent protection.\n\n## Output\nSystem/account class | current access/MFA evidence | gap | proposed action | owner | validation | rollback. Draft a rollout plan that tests recovery and emergency access before broad enforcement. Never disable accounts, rotate credentials, change policies or execute a bulk action merely because this reference suggests reviewing them. Get separate authorization through the configured tools and change process. Keep credentials and individual account data out of reusable knowledge.",
+      "sources": [
+        {
+          "title": "CISA Require Multifactor Authentication",
+          "url": "https://www.cisa.gov/audiences/small-and-medium-businesses/secure-your-business/require-multifactor-authentication",
+          "locator": "Business MFA coverage and authentication method strength"
+        }
+      ],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "logging-detection",
+      "title": "Logging and Detection Readiness",
+      "description": "Build a logging coverage matrix and test whether important events reach the people responsible for responding.",
+      "tags": [
+        "logging",
+        "logs",
+        "detection",
+        "monitoring",
+        "siem",
+        "alerts",
+        "retention",
+        "events"
+      ],
+      "text": "## Reference brief\nJoint guidance from ASD ACSC, CISA and partners emphasizes an approved logging policy, useful security events, centralized collection/correlation, and protection of logs. Event selection, retention and monitoring should reflect the environment and its risks; a large log volume alone does not establish useful detection.\n\n## Original Frame workflow\nAsk which systems, identity services, endpoints, network devices and applications are in scope. Build a matrix: source | event/use case | collection path | timestamp/time zone | retention basis | access/integrity controls | alert owner | last test | known blind spot. Separate an enabled log setting from evidence of successful forwarding and an actionable alert.\nChoose an authorized, non-disruptive test event and trace it from generation to the analyst's ticket. Record dropped sources, ingestion delay, time discrepancies and after-hours handoff. Set retention using organizational needs and applicable obligations, not an invented universal duration. Minimize personal data and secrets in collected events.\n\n## Output\nCoverage matrix, top missing signals and a proposed validation checklist. Do not install agents, change retention, run detections against production, or upload logs to an external service without separate authorization.",
+      "sources": [
+        {
+          "title": "ASD ACSC / CISA / Partners: Best Practices for Event Logging and Threat Detection",
+          "url": "https://www.cyber.gov.au/business-government/detecting-responding-to-threats/event-logging/best-practices-for-event-logging-and-threat-detection",
+          "locator": "Joint publisher copy: logging policy, event quality, centralized collection and secure storage"
+        },
+        {
+          "title": "CISA Use Logging on Business Systems",
+          "url": "https://www.cisa.gov/audiences/small-and-medium-businesses/secure-your-business/use-logging-on-business-systems",
+          "locator": "Business logging guidance and supporting resources"
+        }
+      ],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "vulnerability-triage",
+      "title": "Vulnerability Triage and Remediation",
+      "description": "Prioritize verified findings using affected assets, exposure, business impact and current CISA KEV information.",
+      "tags": [
+        "vulnerability",
+        "vulnerabilities",
+        "patch",
+        "patching",
+        "remediation",
+        "kev",
+        "cve",
+        "triage"
+      ],
+      "text": "## Reference brief\nCISA's Known Exploited Vulnerabilities (KEV) catalog records vulnerabilities exploited in the wild and is an input to vulnerability prioritization. This static pack does not contain a live CVE feed or current remediation deadlines.\n\n## Original Frame workflow\nUse dated inventory and scan evidence. Confirm product, affected version and asset owner; a name match alone is insufficient. When current KEV/vendor evidence is unavailable, mark exploitation and fix status Unknown and request an authorized current source. Consider internet exposure, critical business services, reachable attack paths, existing mitigations and recovery options alongside severity. Absence from KEV is not proof of safety.\n\n## Remediation worksheet\nAsset group | CVE/finding | version evidence | exploitation source/date | exposure | business consequence | recommended fix/mitigation | owner | agreed due date | change/rollback plan | verification evidence | exception expiry.\nDistinguish a proposed patch, installed patch and verified resolution. Retest against the relevant finding. Federal directive deadlines are not automatically company-wide legal deadlines; verify the organization's actual obligations. Do not hard-code old KEV dates, run scans, or apply patches from this reference alone.",
+      "sources": [
+        {
+          "title": "CISA Known Exploited Vulnerabilities Catalog",
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "locator": "Catalog purpose and vulnerability-prioritization guidance; retrieve current entries separately"
+        }
+      ],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "incident-checklist",
+      "title": "Incident Response Preparation Checklist",
+      "description": "Create an incident-response checklist for our IT team, including contacts, evidence, containment authority and recovery validation.",
+      "tags": [
+        "incident",
+        "response",
+        "checklist",
+        "preparation",
+        "ransomware",
+        "containment",
+        "tabletop",
+        "recovery"
+      ],
+      "text": "## Reference brief\nCISA published incident and vulnerability response playbooks for federal civilian agencies and encourages other organizations to use them to benchmark their practices. Federal reporting routes and procedures need adaptation; they do not automatically bind a private business.\n\n## Original Frame preparation checklist\n- Confirm services, incident lead and backup, severity criteria and who may authorize containment.\n- Verify an out-of-band contact tree for IT, leadership, legal/privacy, communications and relevant providers. Use placeholders until contacts are confirmed.\n- Identify evidence sources, access permissions, preservation procedures and a restricted incident record.\n- Document decision points for isolating hosts, disabling access and restoring service, including dependencies and operational consequences.\n- Verify restoration prerequisites and acceptance tests; record who approves return to service.\n- Exercise a scoped scenario, assign improvement owners and schedule a human-led review.\n\n## When drafting an incident-specific checklist\nStart with confirmed facts, timestamps/time zones, affected services and unknowns. Separate proposed actions from completed actions. Preserve evidence according to the incident lead's process; do not advise indiscriminate deletion or reimaging. Route notification/deadline questions to the authorized legal/privacy team with current applicable sources. Return step | owner | trigger | evidence | approval | status. Never invent contacts, report an incident externally, or run containment commands based on this pack alone.",
+      "sources": [
+        {
+          "title": "CISA Federal Government Cybersecurity Incident and Vulnerability Response Playbooks",
+          "url": "https://www.cisa.gov/news-events/news/new-federal-government-cybersecurity-incident-and-vulnerability-response-playbooks",
+          "locator": "2021 publication and private-sector benchmarking scope; verify current applicable procedures"
+        }
+      ],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "US"
+  ],
+  "reviewedAt": "2026-09-29",
+  "rights": "Original Frame-authored briefs, questions, templates and workflows. Official publications are linked, not reproduced or bundled. No agency endorsement. The source-check date is not a legal effective date, continuous update service, or assurance of completeness. Templates are not official NIST or CISA forms."
+}

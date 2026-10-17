@@ -1,0 +1,86 @@
+{
+  "id": "guild-member-services-guide",
+  "title": "Guild Member Services & Statutory Rights",
+  "description": "Member intake, representation boundaries, conflicts, protected workplace activity, and referral workflows. No bargaining agreement provisions or grievance deadlines are supplied.",
+  "pages": [
+    {
+      "id": "member-intake",
+      "title": "Member Intake, Conflicts, and Fair Representation",
+      "tags": [
+        "member services",
+        "representation",
+        "conflict",
+        "intake",
+        "referral"
+      ],
+      "applicability": "Private-sector labor-organization inquiries; establish whether a statutory representation duty applies. Internal governance and independent legal claims may differ.",
+      "text": "## Legal framework\nThe NLRB describes a duty of fair representation in matters within a union’s role as statutory representative. It also explains limits: the duty does not ordinarily cover rights workers enforce independently or all internal union affairs. Identify the actual role before announcing that the guild must pursue a matter or has no responsibility. This pack deliberately contains no agreement language, bargaining analysis, or contractual deadlines; those must come from authorized matter-specific material and counsel.\n\n## Intake record\nRecord the person’s contact preference, employer/entity, work dates and location, issue, immediate consequences, prior communications, documents available, and deadlines the person has actually received. Ask what help they seek and what authority they grant to contact others. Do not promise representation before the appropriate conflict and eligibility review. A staff member taking an intake is not necessarily the person authorized to decide the matter.\n\n## Conflicts and scope\nIdentify competing member interests, allegations involving guild employees or officers, the organization’s own potential exposure, and any overlapping counsel roles. Explain the limits of the service accurately and route conflicts to an independent decision-maker. Separate the member’s individual claim from organizational interests and do not assume that counsel for the guild is also counsel for the member. Protect sensitive information from unnecessary sharing with another member or employer.\n\n## Decision record and follow-through\nTrack facts reviewed, evidence sought, applicable decision authority, missing information, reasons, communications, and review routes. Apply criteria consistently while recognizing relevant factual differences. A decision not to proceed should be made by an authorized human and explained accurately; Frame must not rank members’ worthiness or infer motives. A referral is not complete until the member understands what has and has not been undertaken.\n\n## Example and counsel handoff\nTwo members make incompatible allegations about a workplace incident, and each requests the same representative. Preserve separate intake records, identify who can review the conflict, and avoid distributing one member’s confidential account to the other. Ask counsel which statutory duties apply, whether separate representation is needed, how to communicate limits, and what urgent rights need protection. Deliver a role map, chronology, documents list, and unresolved questions; do not invent a contractual remedy or assure anyone that an internal review tolls an external deadline.",
+      "sources": [
+        {
+          "title": "NLRB: Right to Fair Representation",
+          "url": "https://www.nlrb.gov/about-nlrb/rights-we-protect/the-law/employees/right-to-fair-representation",
+          "locator": "Fair representation and limits of that duty; distinguish statutory representation from internal union affairs."
+        },
+        {
+          "title": "OLMS: Union Member Rights and Officer Responsibilities",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/publications/union-member-rights-and-officer-responsibilities-under-the-lmrda",
+          "locator": "LMRDA rights, financial reporting, fiduciary responsibilities, and restrictions on office."
+        },
+        {
+          "title": "CRD: Complaint Process",
+          "url": "https://calcivilrights.ca.gov/ComplaintProcess/",
+          "locator": "Intake, supporting documents, investigation, and case-closure procedures."
+        }
+      ],
+      "description": "Member Intake, Conflicts, and Fair Representation: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "workplace-rights-referrals",
+      "title": "Protected Activity, Interviews, and Agency Referrals",
+      "tags": [
+        "protected activity",
+        "Weingarten",
+        "interview",
+        "NLRB",
+        "complaint",
+        "referral"
+      ],
+      "applicability": "Potential NLRA-covered workplace activity; coverage, employee status, interview purpose, and applicable forum require case-specific review.",
+      "text": "## Legal framework\nNLRB guidance describes protected concerted activity concerning workplace conditions and, for union-represented employees in qualifying circumstances, a right to request representation at an investigatory interview reasonably believed to risk discipline. Not every conversation, individual complaint, worker category, or employer is covered. These statutory concepts are distinct from any additional contractual protections, which are outside this pack.\n\n## Interview triage\nAsk who requested the meeting, what purpose was stated, whether facts are being investigated, whether discipline could reasonably follow, who will attend, and whether representation was requested. Preserve the notice and exact communications. Do not instruct a person to refuse every meeting or promise an unconditional right in all settings. Escalate promptly to a qualified representative or counsel when a meeting is imminent.\n\n## Protected-activity analysis\nDocument what people did, whose workplace interests were involved, who knew, employer responses, and potential exceptions or exclusions. Separate a protected-activity question from harassment, threats, disclosure of confidential records, or other conduct needing its own analysis. A social-media post or group message should be reviewed in context, not classified from a single keyword. Preserve the full relevant thread with appropriate privacy controls.\n\n## Referral design\nMap the concern to possible forums: NLRB, CRD, Labor Commissioner, workplace-safety authorities, benefit-plan procedures, or courts. More than one route may be relevant, and each has its own coverage, deadlines, and remedies. Record dates of actual acts, notices, and receipt; ask counsel to calendar applicable deadlines. Do not tell someone to wait for a guild decision before obtaining time-sensitive legal advice or filing assistance.\n\n## Example and output\nA worker is invited to a meeting described as routine but is asked detailed questions about alleged misconduct. Prepare the facts about meeting purpose, reasonable expectations, requests made, and responses. Ask counsel or the authorized representative what protection applies and what immediate communication is appropriate. Produce a concise referral brief with source-linked statutory issues and missing facts. Avoid promising reinstatement, a particular remedy, or automatic agency acceptance of a complaint.",
+      "sources": [
+        {
+          "title": "NLRB: Your Rights",
+          "url": "https://www.nlrb.gov/about-nlrb/rights-we-protect/your-rights",
+          "locator": "Protected concerted activity and representation during qualifying investigatory interviews."
+        },
+        {
+          "title": "NLRB: Right to Fair Representation",
+          "url": "https://www.nlrb.gov/about-nlrb/rights-we-protect/the-law/employees/right-to-fair-representation",
+          "locator": "Fair representation and limits of that duty; distinguish statutory representation from internal union affairs."
+        },
+        {
+          "title": "DIR: Retaliation Complaint Investigation Unit",
+          "url": "https://www.dir.ca.gov/dlse/dlseretaliation.html",
+          "locator": "Labor Commissioner retaliation jurisdiction and links to filing procedures."
+        },
+        {
+          "title": "CRD: Complaint Process",
+          "url": "https://calcivilrights.ca.gov/ComplaintProcess/",
+          "locator": "Intake, supporting documents, investigation, and case-closure procedures."
+        }
+      ],
+      "description": "Protected Activity, Interviews, and Agency Referrals: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

@@ -1,0 +1,82 @@
+{
+  "id": "outside-counsel-matter-guide",
+  "title": "Outside Counsel: Matter Preparation & Dispute Support",
+  "description": "Practical legal intake, evidence preservation, contract issue review, and decision briefs that make outside counsel engagement more focused. No claim of AI-created privilege.",
+  "pages": [
+    {
+      "id": "matter-intake-preservation",
+      "title": "Matter Intake, Preservation, and Counsel Handoff",
+      "tags": [
+        "counsel",
+        "litigation",
+        "legal hold",
+        "subpoena",
+        "evidence",
+        "privilege"
+      ],
+      "applicability": "Organizational legal matters and member referrals; counsel determines representation, privilege, legal-hold scope, procedural duties, and deadlines.",
+      "text": "## Legal and process framework\nCalifornia Courts describes discovery tools for parties and subpoenas for information or testimony from others. A demand letter, informal request, agency inquiry, and subpoena are different events. Record the actual document and service facts before deciding how to respond. This is an original preparation workflow, not a statement that a particular preservation duty or privilege applies. Marking a document confidential or using a local model does not create attorney-client privilege.\n\n## Open the matter\nIdentify the legal entities, people, relationships, requested outcome, known adverse parties, potential conflicts, and who can authorize counsel. Confirm whom counsel represents: the guild, a plan, an individual, or another entity. Preserve the received document unchanged, including attachments, envelope or service information, and exact receipt time. Flag asserted deadlines immediately for counsel to verify; do not calculate extensions from a generic template.\n\n## Evidence preservation plan\nInventory likely custodians and systems: email, chat, member-service records, HR, payroll, shared drives, backups, devices, recordings, and vendor systems. Ask counsel and IT to define appropriate hold scope and suspend relevant deletion through authorized procedures. Preserve originals and metadata; use working copies for analysis. Do not ask custodians to curate only favorable records. Log collection methods, gaps, access, and transfers, and avoid overwriting originals with AI summaries.\n\n## Factual brief\nSeparate confirmed facts, allegations, disputed interpretations, and unknowns. Use a dated chronology with a source reference for each material event. Include adverse facts, missing evidence, and alternative explanations. State the organization’s operational objectives without converting them into legal conclusions. Restrict sensitive data and legal communications to an approved matter location rather than adding them automatically to shared project knowledge.\n\n## Example and deliverable\nA subpoena seeks member communications held partly by a vendor. Collect the actual subpoena, service record, custodians, retention schedules, vendor contract, and data locations; notify counsel promptly. Ask about objections, privacy, privilege, preservation, vendor coordination, and response format. Deliver a one-page issue brief plus indexed evidence and a decision log. Frame should not send responses, waive objections, claim documents are privileged, or instruct deletion; counsel directs those legal decisions.",
+      "sources": [
+        {
+          "title": "California Courts: Discovery in Civil Cases",
+          "url": "https://selfhelp.courts.ca.gov/discovery-civil",
+          "locator": "Discovery methods and distinction between party discovery and third-party subpoenas."
+        },
+        {
+          "title": "California Courts: Subpoenas",
+          "url": "https://www.selfhelp.courts.ca.gov/subpoena",
+          "locator": "Document and testimony demands; determine the type of subpoena and appropriate response with counsel."
+        },
+        {
+          "title": "CRD: Complaint Process",
+          "url": "https://calcivilrights.ca.gov/ComplaintProcess/",
+          "locator": "Intake, supporting documents, investigation, and case-closure procedures."
+        }
+      ],
+      "description": "Matter Intake, Preservation, and Counsel Handoff: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "contract-and-decision-brief",
+      "title": "Contract Issues, Options, and Counsel Decision Briefs",
+      "tags": [
+        "contract",
+        "indemnity",
+        "liability",
+        "SOW",
+        "renewal",
+        "counsel"
+      ],
+      "applicability": "Commercial vendor, event, service, and organizational agreements. Excludes collective bargaining agreements and does not supply jurisdiction-specific enforceability conclusions.",
+      "text": "## Framework and document authority\nStart with the executed agreement, amendments, incorporated policies, statements of work, and order-of-precedence language. Distinguish a draft, proposal, purchase order, and signed version. Contract review is not a keyword exercise: an attractive clause can be narrowed by definitions, exclusions, schedules, or another controlling document. The linked sources support specific copyright, privacy, or fiduciary issues; this original workflow is not a complete contract-law treatise.\n\n## Analyze obligations and dependencies\nBuild a table for deliverables, acceptance, dates, fees, expenses, change control, service levels, confidentiality, data use, intellectual property, warranties, indemnity, liability limits, insurance, renewal, termination, and dispute terms. For each record the clause citation, who must act, trigger, dependency, consequence, and unresolved question. Separate a business preference from a legal requirement. Do not label missing text a breach before confirming the full agreement and actual performance.\n\n## Compare risk allocations\nRead indemnity together with liability caps, defense control, exclusions, notice, and insurance. Ask whether a cap applies to the relevant claim and whether insurance actually covers the proposed obligation. Compare ownership with licenses needed to use deliverables and existing materials. Examine permitted data uses, subprocessors, security, incident notice, export, and deletion on termination. A general promise of compliance should not replace operationally specific obligations.\n\n## Prepare options for counsel\nFor each material issue, propose a preferred business position, an alternative, and the consequence of leaving the term unchanged. Label proposed wording as a draft and state assumptions. Do not quietly replace negotiated language with a generic template. Identify decision authority, budget, implementation owner, and practical feasibility; an obligation that no team can perform is not solved by signing it.\n\n## Example and final brief\nA platform agreement permits broad reuse of member data, caps all liability at one month’s fees, and renews automatically while the export process is unspecified. Provide the exact clauses, data categories, operational needs, renewal dates, and available alternatives. Ask counsel to assess enforceability and appropriate protections, while leadership decides commercial tolerance. The final brief should contain the decision requested, relevant facts, source-linked issue analysis, alternatives, unresolved legal questions, and next actions. Do not certify the agreement safe or complete.",
+      "sources": [
+        {
+          "title": "US Copyright Office: Works Made for Hire",
+          "url": "https://www.copyright.gov/circs/circ30.pdf",
+          "locator": "Employee works and eligible specially commissioned works; signed writing and classification facts."
+        },
+        {
+          "title": "California Attorney General: CCPA",
+          "url": "https://oag.ca.gov/privacy/ccpa",
+          "locator": "Privacy coverage and rights; apply to the actual entity and processing relationship."
+        },
+        {
+          "title": "DOL EBSA: Meeting Your Fiduciary Responsibilities",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/meeting-your-fiduciary-responsibilities",
+          "locator": "Functional fiduciary roles, prudence, service providers, prohibited transactions, and cybersecurity review."
+        }
+      ],
+      "description": "Contract Issues, Options, and Counsel Decision Briefs: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

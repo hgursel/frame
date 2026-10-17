@@ -1,0 +1,115 @@
+{
+  "id": "guild-governance-guide",
+  "title": "Guild Governance, Elections & Financial Stewardship",
+  "description": "LMRDA issue guides for member rights, elections, financial controls, conflicts, and reporting. Does not reproduce or interpret collective bargaining agreements.",
+  "pages": [
+    {
+      "id": "member-rights-elections",
+      "title": "Member Rights and Officer Elections",
+      "tags": [
+        "guild",
+        "LMRDA",
+        "elections",
+        "member rights",
+        "bylaws"
+      ],
+      "applicability": "Labor organizations potentially covered by the LMRDA. Identify national, intermediate, or local structure and the applicable governing documents.",
+      "text": "## Legal framework\nOLMS explains that the LMRDA protects member rights and establishes standards for officer elections and organizational accountability. Coverage and requirements differ by organizational level and type. Internal officer elections are different from NLRB representation elections. The union’s constitution and bylaws matter, but should not be assumed to override statutory protections. Public-sector-only organizations can involve a different legal framework; this pack does not resolve that coverage question.\n\n## Establish the governing record\nCollect the current and historical constitution/bylaws relevant to the event, amendment approvals, election rules, office descriptions, eligibility criteria, notice records, and prior decisions. Record the version and effective date used for each decision. Identify who has authority to interpret the rules and conflicts of interest among organizers and candidates. Ask counsel to review unusual restrictions before applying them, rather than defending an exclusion after ballots are sent.\n\n## Election operations\nMap nominations, eligibility checks, notices, candidate access, ballot distribution, secrecy, observers, counting, challenges, and records. Assign roles so that a candidate does not control disputed eligibility or the only copy of results. For electronic systems, ask how secrecy, authentication, duplicate prevention, accessibility, auditability, and retention are demonstrated; a vendor’s claim of security is not proof that statutory election requirements are satisfied.\n\n## Complaints and member participation\nLog complaints without retaliatory commentary, preserve relevant notices and records, and route them to the authorized process. Distinguish a request for records from an election protest or disciplinary appeal. Do not invent an exhaustion requirement or filing deadline. Ask counsel about internal remedies, external review, and preservation promptly. Avoid sharing membership lists or ballot-level information beyond authorized purposes.\n\n## Example and counsel deliverable\nA disputed member is excluded from an election because a database marks dues as unpaid, while bank records suggest a payment-processing delay. Preserve both records and the applicable eligibility rule. Prepare a neutral chronology, list of similarly situated cases, authority for the decision, and options that protect election integrity pending review. Frame should identify the legal and factual questions rather than determine eligibility, adjudicate a protest, or declare an election valid.",
+      "sources": [
+        {
+          "title": "OLMS: Union Member Rights and Officer Responsibilities",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/publications/union-member-rights-and-officer-responsibilities-under-the-lmrda",
+          "locator": "LMRDA rights, financial reporting, fiduciary responsibilities, and restrictions on office."
+        },
+        {
+          "title": "OLMS: Conducting Local Union Officer Elections",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/publications/guide-for-conducting-local-union-officer-elections",
+          "locator": "Election planning, nominations, eligibility, notices, ballots, observers, and records."
+        }
+      ],
+      "description": "Member Rights and Officer Elections: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "funds-and-conflicts",
+      "title": "Union Funds, Conflicts, and Internal Controls",
+      "tags": [
+        "guild",
+        "fiduciary",
+        "conflict",
+        "expenses",
+        "audit",
+        "procurement"
+      ],
+      "applicability": "Union funds and organizational decisions; distinguish union officer duties from separate benefit-plan fiduciary obligations.",
+      "text": "## Legal framework\nOLMS describes fiduciary responsibilities concerning union money and property and provides practical internal-control and audit guidance. A disclosure filing is not approval of an underlying transaction. The governing documents, authorized purpose, conflicts, supporting evidence, and actual decision process all matter. Fiduciary duties of a benefit-plan trustee are a separate analysis even when the same person also holds guild office.\n\n## Transaction review\nIdentify the payer, payee, beneficial relationships, purpose, amount, budget authority, approval chain, and supporting records. Separate a legitimate expense with missing documentation from an allegation of intentional misuse. Document the relationship and potential benefit before deciding how the conflict should be handled. Use appropriate recusal and independent review processes; a generic disclosure at the beginning of the year may not address a particular transaction.\n\n## Practical controls\nDesign separation between authorization, payment preparation, payment release, and reconciliation where feasible. For a small staff, identify compensating independent review rather than pretending roles are separated. Require support for reimbursements, credit-card charges, travel, vendor changes, and unusual transfers. Inspect actual bank/payment-platform permissions; a policy requiring two approvals is ineffective if one person can bypass it in the system. Retain evidence of approvals and follow up on exceptions.\n\n## Audit preparation\nReconcile receipts and disbursements, compare budgets with actual spending, verify asset records, review outstanding obligations, and sample supporting documents. Track questions to resolution without rewriting historical explanations. Distinguish an internal review from an independent audit or legal opinion. Protect reporter confidentiality as appropriate and preserve evidence if misconduct is suspected; do not permit an implicated person to curate the only available records.\n\n## Example and counsel questions\nA vendor owned by an officer’s relative receives a contract after an informal email approval. Obtain competing bids or the reason none were sought, relationship disclosures, decision authority, service evidence, and payment records. Ask counsel about the conflict, permissible process, reporting, recovery options, and whether independent investigation is appropriate. Deliver a transaction chronology and controls-gap table, not an accusation of embezzlement or a claim that a fair price alone cures every conflict.",
+      "sources": [
+        {
+          "title": "OLMS: Internal Financial Controls",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/tips/internal-financial-controls",
+          "locator": "Documented authorization, segregation of duties, supporting records, and payment controls."
+        },
+        {
+          "title": "OLMS: Conducting Audits in Unions",
+          "url": "https://www.dol.gov/agencies/olms/regs/compliance/union-audit-guide",
+          "locator": "Trustee review, receipts/disbursements, assets, liabilities, and reconciliation."
+        },
+        {
+          "title": "OLMS: Union Member Rights and Officer Responsibilities",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/publications/union-member-rights-and-officer-responsibilities-under-the-lmrda",
+          "locator": "LMRDA rights, financial reporting, fiduciary responsibilities, and restrictions on office."
+        },
+        {
+          "title": "OLMS: Officer and Employee Reporting",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/labor-organization-officer-employee-reporting",
+          "locator": "LM-30 and related disclosure resources; reporting is distinct from permissibility."
+        }
+      ],
+      "description": "Union Funds, Conflicts, and Internal Controls: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "reporting-records",
+      "title": "Reporting, Records, and Organizational Accountability",
+      "tags": [
+        "LM-2",
+        "LM-30",
+        "records",
+        "reporting",
+        "guild",
+        "retention"
+      ],
+      "applicability": "Potential LMRDA filings and union records; determine actual organization/officer obligations and current form instructions.",
+      "text": "## Legal framework\nOLMS administers financial reporting and disclosure requirements for covered unions and certain officers or employees. Different forms address different filers and transactions. An organization’s annual report does not automatically satisfy an officer’s personal reporting obligation. A transaction can require reporting without being unlawful, and disclosure does not make a prohibited transaction lawful. Verify current thresholds, exceptions, filing methods, and instructions rather than embedding changing figures in a generic pack.\n\n## Reporting inventory\nList the organization and affiliates, fiscal year, entity type, prior filings, receipts, activities, related-party arrangements, and responsible preparers. Separately identify officers or employees who need advice about personal disclosure. Map each possible filing to its source authority, required records, owner, review process, and confirmed due date. Do not automatically include outside counsel’s privileged advice in a public report or assume it can be withheld when reporting is legally required.\n\n## Supporting records\nMaintain a traceable relationship between ledger entries, authorizations, invoices, receipts, payroll, asset records, and report classifications. Document the basis for judgmental classifications and changes from prior years. Record unresolved discrepancies and escalation rather than rounding them away. Ensure an authorized reviewer can reproduce reported totals from retained records. When records are incomplete, ask counsel and accounting advisers about correction procedures before reconstructing or amending a filing.\n\n## Retention and requests\nSet retention by record category and controlling duty, including legal holds and election-related records. Do not apply one generic retention period to everything. Distinguish public filings, member inspection rights, confidential personnel data, legal advice, and internal working papers. Route requests to a responsible reviewer; a request from a member is neither automatic permission to disclose every record nor grounds for blanket refusal.\n\n## Example and handoff\nA new treasurer discovers expense classifications that differ from the prior annual report and missing receipts for several reimbursements. Preserve the original ledger and report, obtain the underlying transactions, and build a reconciliation with explanations and unresolved items. Ask whether a correction, additional disclosure, or independent review is needed. Frame can draft a workpaper and records-request list; it should not certify a filing, determine criminal intent, or send a regulator response without authorized review.",
+      "sources": [
+        {
+          "title": "OLMS: Officer and Employee Reporting",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/labor-organization-officer-employee-reporting",
+          "locator": "LM-30 and related disclosure resources; reporting is distinct from permissibility."
+        },
+        {
+          "title": "OLMS: Conducting Audits in Unions",
+          "url": "https://www.dol.gov/agencies/olms/regs/compliance/union-audit-guide",
+          "locator": "Trustee review, receipts/disbursements, assets, liabilities, and reconciliation."
+        },
+        {
+          "title": "OLMS: Union Member Rights and Officer Responsibilities",
+          "url": "https://www.dol.gov/agencies/olms/compliance-assistance/publications/union-member-rights-and-officer-responsibilities-under-the-lmrda",
+          "locator": "LMRDA rights, financial reporting, fiduciary responsibilities, and restrictions on office."
+        }
+      ],
+      "description": "Reporting, Records, and Organizational Accountability: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

@@ -1,0 +1,85 @@
+{
+  "id": "ca-hiring-separation-guide",
+  "title": "California Hiring, Pay Equity & Departures",
+  "description": "Deeper review of recruiting criteria, background checks, automated hiring, pay equity, disciplined decision records, and separation planning.",
+  "pages": [
+    {
+      "id": "hiring-screening",
+      "title": "Hiring Criteria, Background Checks, and AI Screening",
+      "tags": [
+        "hiring",
+        "fair chance",
+        "background check",
+        "AI",
+        "recruitment"
+      ],
+      "applicability": "California staff hiring or review of a member’s hiring concern. Determine employer size, location, occupation, and any statutory exception.",
+      "text": "## Legal framework\nThe Fair Chance Act generally restricts conviction-history inquiries before a conditional offer for covered employers and requires an individualized process before disqualifying a person based on conviction history. Specific exceptions and other background-check laws require separate review. CRD’s approved employment AI regulations address discriminatory use of automated-decision systems; calling a tool advisory does not remove the need to examine its effect on employment decisions. Earlier proposals should not be used in place of final text.\n\n## Design a job-related process\nDocument essential functions and distinguish required qualifications from preferences. Ask which evidence actually demonstrates ability to do the work. Review selection rubrics, interview prompts, accessibility, and accommodation channels before using them. Do not have Frame infer protected traits, score personality from a photograph, or decide whom to hire. Keep a human decision owner and a documented reason tied to verified criteria.\n\n## Screening and adverse information\nRecord the timing of the conditional offer, disclosures and authorizations, source of the report, possible inaccuracies, individual assessment, notices, and response opportunity. A vendor’s label is not a final legal assessment. Ask counsel about federal consumer-reporting requirements, California laws, and local ordinances; do not reuse a generic rejection template for every background-check issue. Preserve corrections and the person’s explanation with appropriate access limits.\n\n## Automated systems\nInventory resume ranking, assessments, video tools, scheduling filters, and vendor recommendations that influence access to opportunities. Ask vendors what data they use, how accessibility is handled, whether disparate effects have been tested, what records can be exported, and how a human can review an error. Treat assurances of compliance as claims to verify. Capture tool version, relevant criteria, human review, and changes without collecting unnecessary sensitive data.\n\n## Example and counsel questions\nA screening vendor rejects a candidate based on an old conviction and a low automated suitability score. Separate the two grounds, confirm the stage of hiring, inspect the actual job duties, and preserve both the report and model/vendor version. Ask which restrictions apply, what notices and response periods are required, and whether the scoring method is defensible. Deliver a process map and evidence gaps, not a final rejection letter or an invented deadline.",
+      "sources": [
+        {
+          "title": "CRD: Fair Chance Act",
+          "url": "https://calcivilrights.ca.gov/fair-chance-act/",
+          "locator": "Conditional offers, individualized assessment, notices, and response opportunities."
+        },
+        {
+          "title": "CRD: Approved Employment AI Regulations",
+          "url": "https://calcivilrights.ca.gov/2025/06/30/civil-rights-council-secures-approval-for-regulations-to-protect-against-employment-discrimination-related-to-artificial-intelligence/",
+          "locator": "Approval announcement; employment decisions and automated-decision records. Consult linked final regulations, not earlier proposals."
+        },
+        {
+          "title": "CRD: Employment",
+          "url": "https://calcivilrights.ca.gov/Employment/",
+          "locator": "FEHA coverage, protected categories, harassment, retaliation, and complaint information."
+        }
+      ],
+      "description": "Hiring Criteria, Background Checks, and AI Screening: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "equity-and-departure-review",
+      "title": "Pay Equity and Defensible Departure Decisions",
+      "tags": [
+        "pay equity",
+        "salary history",
+        "severance",
+        "termination",
+        "performance"
+      ],
+      "applicability": "California compensation and separation review; distinguish factual analysis from a legal conclusion and use approved decision-makers.",
+      "text": "## Legal framework\nCalifornia equal-pay analysis concerns substantially similar work under the statutory factors, not merely identical job titles. DIR explains pay-transparency and salary-history requirements separately from equal-pay obligations. A pay difference needs fact-specific justification rather than a generalized claim about market forces. Departure decisions may also intersect with protected leave, accommodation, retaliation, and final-pay rules. At-will terminology does not resolve those separate duties.\n\n## Compensation review\nBuild a documented comparison of actual duties, skill, effort, responsibility, working conditions, pay components, relevant periods, and claimed explanatory factors. Avoid publishing identifiable employee salary tables in a shared project unnecessarily. Use aggregation where feasible, but do not imply that an aggregate analysis proves individual compliance. Check whether criteria were documented and applied consistently; do not create a retrospective justification after seeing a disparity. Confirm current posting and pay-scale rules against the source.\n\n## Departure fact record\nBefore a planned separation, reconcile the stated reason with performance records, prior communications, decision timing, comparators, and any recent protected activity. Separate misconduct, performance, restructuring, and job elimination; they raise different questions. Record missing evidence and whether accommodation or leave issues remain open. Do not let a generated memo convert allegations into established facts.\n\n## Operational and agreement tracks\nCoordinate payroll, benefits contacts, access changes, property return, preservation, and respectful communications. Keep final wage processing distinct from negotiations over severance or releases. Counsel should review any age-related waiver, confidentiality, nondisparagement, noncompete, release, or arbitration provision and the actual applicable law. Do not generate enforceability assurances or make payment of earned wages contingent on signing.\n\n## Example and deliverable\nA department proposes eliminating a role shortly after a medical-leave request. Provide the earlier restructuring records, alternatives considered, selection criteria, affected positions, and who knew of the request. Ask counsel whether additional review or a different sequence is needed. The output should include a factual chronology, compensation questions, open legal issues, an operational checklist, and drafts clearly labeled for review. Legal deadlines and statutory waiver language should be checked against current authority for the specific case.",
+      "sources": [
+        {
+          "title": "DIR: Equal Pay and Pay Transparency",
+          "url": "https://www.dir.ca.gov/dlse/california_equal_pay_act.htm",
+          "locator": "Labor Code 432.3 and 1197.5; salary history, pay scales, and substantially similar work."
+        },
+        {
+          "title": "DIR: Paydays and Final Wages",
+          "url": "https://www.dir.ca.gov/dlse/FAQ_Paydays.htm",
+          "locator": "Discharge, resignation, undisputed wages, and the special motion-picture final-pay discussion referencing Labor Code 201.5."
+        },
+        {
+          "title": "CRD: Reasonable Accommodation",
+          "url": "https://calcivilrights.ca.gov/accommodation/",
+          "locator": "Interactive process, essential functions, disability accommodation, and undue hardship."
+        },
+        {
+          "title": "CRD: Employment",
+          "url": "https://calcivilrights.ca.gov/Employment/",
+          "locator": "FEHA coverage, protected categories, harassment, retaliation, and complaint information."
+        }
+      ],
+      "description": "Pay Equity and Defensible Departure Decisions: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

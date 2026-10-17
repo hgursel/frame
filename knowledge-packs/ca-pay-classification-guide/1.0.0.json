@@ -1,0 +1,125 @@
+{
+  "id": "ca-pay-classification-guide",
+  "title": "California Pay, Classification & Production Work",
+  "description": "Detailed issue guides for employee classification, office versus production wage rules, time records, and final pay. No bargaining agreement interpretation.",
+  "pages": [
+    {
+      "id": "worker-classification",
+      "title": "Employee, Contractor, and Exempt Status",
+      "tags": [
+        "classification",
+        "contractor",
+        "freelance",
+        "exempt",
+        "payroll",
+        "loan-out"
+      ],
+      "applicability": "California engagements by a guild or production-related business. Test each legal entity, role, period, and applicable law separately.",
+      "text": "## Legal framework\nCalifornia contractor analysis often begins with the ABC test: freedom from control, work outside the hiring entity’s usual course of business, and an independently established business. DIR describes exceptions that may instead require the multifactor Borello analysis. An exception from ABC is not an automatic finding of contractor status. Wage-order exemptions are a separate inquiry: salary, job title, a 1099, or a loan-out corporation does not by itself establish that no employee protections apply. Federal tax, workers’ compensation, and wage-law classifications can involve different tests.\n\n## Build the analysis\nCreate one row per engagement, not per person. Identify the contracting entity, the entity directing daily work, who can terminate, who supplies equipment, whether work is integral to the business, whether the person markets services independently, and who bears economic risk. Ask counsel to identify any occupation-specific or business-to-business exception and its conditions before comparing the facts to it. Record unresolved conditions explicitly. For an asserted overtime exemption, separately list actual duties, decision authority, proportion of time spent, pay method, and the threshold applicable during the period.\n\n## Evidence to collect\nPreserve signed agreements, statements of work, invoices, schedules, actual work samples, supervision messages, outside-client information voluntarily supplied for review, and payroll records. Compare what the agreement says with what happened. A written right to decline assignments is weak evidence if managers actually require attendance and discipline refusal. Conversely, an office badge alone does not settle the legal test. Do not request a worker’s unrelated private client records without a justified need.\n\n## Discussion example and alternatives\nA freelance researcher works a recurring schedule under a staff supervisor using the guild’s systems. The invoice label supports neither a safe classification nor an automatic violation. Develop an employee-treatment option, a genuinely separate vendor-service option if legally supportable, and a pause-for-counsel option. Identify prospective operational changes separately from historical exposure; rewriting the agreement does not erase past facts.\n\n## Questions and deliverable for counsel\nWhich test controls this claim? Does an exception actually fit, including every condition? Which entities may be employers? Are prior payroll, benefit, or tax corrections indicated? Deliver an element-by-element evidence table with contrary facts, missing records, time periods, and the decision owner. Do not calculate penalties or declare a person exempt before coverage and the governing test are resolved.",
+      "sources": [
+        {
+          "title": "DIR: Independent Contractors",
+          "url": "https://dir.ca.gov/dlse/faq_independentcontractor.htm",
+          "locator": "ABC test, exemptions, and relationship to the Borello test; identify the applicable statutory exception before relying on it."
+        },
+        {
+          "title": "IWC Wage Order 4: Professional and Clerical Occupations",
+          "url": "https://dir.ca.gov/t8/11040.html",
+          "locator": "Scope and occupational coverage; compare office work with industry-specific orders."
+        },
+        {
+          "title": "IWC Wage Order 12: Motion Picture Industry",
+          "url": "https://www.dir.ca.gov/t8/11120.html",
+          "locator": "Sections 1–3 (scope, definitions, hours), 7 (records), 11–12 (meals/rest); verify current amendments."
+        }
+      ],
+      "description": "Employee, Contractor, and Exempt Status: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "hours-and-meals",
+      "title": "Office and Production Hours, Meals, and Time Records",
+      "tags": [
+        "overtime",
+        "meal",
+        "rest",
+        "production",
+        "travel",
+        "wages"
+      ],
+      "applicability": "Nonexempt California work; confirm wage-order coverage and exemptions. A guild office is not automatically part of motion-picture production.",
+      "text": "## Legal framework\nDIR’s general overtime guidance describes time-and-a-half after eight hours in a workday or forty in a workweek and double-time rules for longer workdays and certain seventh-day work. The regular rate may include more than the base hourly wage. Identify the correct wage order and exceptions before calculating. Wage Order 12 governs covered motion-picture work; office duties may call for a different coverage analysis. DIR’s meal guidance distinguishes the usual five-hour threshold from the six-hour threshold for covered motion-picture workers. An industry name in the employer’s branding does not select the rule.\n\n## Reconstruct actual working time\nCollect the defined workday and workweek, daily start/stop records, meal punches, edits, call sheets where relevant, travel instructions, required preparation, training, and after-hours messages. Separate time worked, time recorded, time paid, and time disputed. Ask how edits are approved and whether managers can see original entries. For travel and on-call arrangements, document restrictions, locations, transportation, and actual duties rather than assuming all travel is unpaid. Do not stack daily and weekly overtime mechanically without checking the calculation rules.\n\n## Meals and rest analysis\nIdentify when a meal began, its duration, whether duties were relieved, interruptions, and any claimed waiver or on-duty arrangement. Rest periods require their own analysis; a meal is not a substitute. A missing punch is an investigative signal, not conclusive proof of what occurred. Compare the written policy, scheduling practice, supervisor instructions, and worker account. Preserve records that support the employer’s explanation as well as those supporting the complaint.\n\n## Locality and practical options\nFor remote or traveling staff, map actual work locations and dates. Los Angeles city, unincorporated county, and nearby cities are different jurisdictions. Check current official rates and notices for the pay period rather than retaining a static dollar amount in this pack. Possible process changes include accurate time capture, manager training on off-the-clock requests, schedule coverage for breaks, and documented correction procedures. Present them as proposals pending review.\n\n## Example and counsel handoff\nA guild-office payroll policy uses the production meal threshold for every employee. Before applying it, identify the office staff’s duties and the relevant wage-order scope; an organization’s industry affiliation does not establish coverage for every role. Compare a proposed office schedule and a production schedule separately, stating the assumptions and missing facts.\n\nProvide a daily ledger with source citations, rate components, break facts, and uncertainty ranges. Ask which order and exceptions apply, whether records are reliable, and whether a sample can fairly be extrapolated. Escalate systemic missed breaks or edits promptly. No bargaining agreement rates or interpretations are supplied here.",
+      "sources": [
+        {
+          "title": "DIR: Overtime",
+          "url": "https://dir.ca.gov/dlse/FAQ_Overtime.htm",
+          "locator": "General daily/weekly overtime, regular rate, and exceptions."
+        },
+        {
+          "title": "DIR: Meal Periods",
+          "url": "https://dir.ca.gov/dlse/FAQ_MealPeriods.html",
+          "locator": "General five-hour rule, motion-picture exception, waivers, and on-duty meals."
+        },
+        {
+          "title": "IWC Wage Order 12: Motion Picture Industry",
+          "url": "https://www.dir.ca.gov/t8/11120.html",
+          "locator": "Sections 1–3 (scope, definitions, hours), 7 (records), 11–12 (meals/rest); verify current amendments."
+        },
+        {
+          "title": "IWC Wage Order 4: Professional and Clerical Occupations",
+          "url": "https://dir.ca.gov/t8/11040.html",
+          "locator": "Scope and occupational coverage; compare office work with industry-specific orders."
+        },
+        {
+          "title": "Los Angeles Office of Wage Standards",
+          "url": "https://wagesla.lacity.gov/",
+          "locator": "City boundaries, current local wage and sick-leave notices; distinguish city from county and neighboring cities."
+        }
+      ],
+      "description": "Office and Production Hours, Meals, and Time Records: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "final-pay-and-corrections",
+      "title": "Final Pay, Payroll Corrections, and Disputed Amounts",
+      "tags": [
+        "termination",
+        "resignation",
+        "final pay",
+        "wages",
+        "payroll"
+      ],
+      "applicability": "California departures and payroll disputes; confirm ordinary rules versus a statutory industry exception for the actual employment.",
+      "text": "## Legal framework\nDIR distinguishes discharge, resignation with advance notice, and resignation without it. The ordinary rules can require immediate payment or payment within a short statutory period; accrued vacation and other earned amounts need analysis. DIR separately identifies motion-picture final-pay rules tied to Labor Code 201.5. Do not extend an industry exception to guild office staff merely because their employer represents entertainment workers. Undisputed earned wages should not be held hostage to a release or a dispute over another amount.\n\n## Intake and timeline\nRecord the last day worked, who ended employment, when notice was given and received, whether employment continued through a stated date, and the applicable pay period. Preserve the original notice, termination authorization, payroll instructions, and delivery records. Identify whether a later correction relates to previously earned wages, a commission condition, a bonus, an expense reimbursement, vacation, or a disputed damages claim. Each category may have different rules and evidence.\n\n## Reconciliation workflow\nBuild a line-item ledger: amount claimed; basis; work period; source; amount already paid; remaining difference; disputed reason; proposed next action. Reconcile payroll exports against bank/check delivery information without assuming that a generated check was received or negotiable. Keep sensitive bank details out of the model’s discussion copy. Document missing information and how payroll estimated undisputed amounts. Ask counsel about the legal effect of late corrections rather than announcing that a correction eliminates liability.\n\n## Departures and communication\nUse neutral factual language with the departing person. Return of equipment, deletion of credentials, reimbursement requests, and final wage payment are separate workstreams. Do not invent a right to deduct an unreturned laptop or condition payment on an exit interview. For disputed commissions or incentives, obtain the actual plan version and relevant triggering events. Any settlement, release, confidentiality, or nondisparagement term needs counsel review and is outside automatic payroll processing.\n\n## Example and questions for counsel\nA production-related organization proposes paying a terminated office employee on the next regular payday. First verify the person’s duties and the asserted statutory exception; do not accept the employer’s sector as sufficient. Ask what undisputed amount must be paid now, which delivery method is permitted, and what evidence supports any claimed good-faith dispute. Provide a dated chronology and proposed correction plan; do not present waiting-time penalties as certain or calculate a limitation period from memory.",
+      "sources": [
+        {
+          "title": "DIR: Paydays and Final Wages",
+          "url": "https://www.dir.ca.gov/dlse/FAQ_Paydays.htm",
+          "locator": "Discharge, resignation, undisputed wages, and the special motion-picture final-pay discussion referencing Labor Code 201.5."
+        },
+        {
+          "title": "IWC Wage Order 12: Motion Picture Industry",
+          "url": "https://www.dir.ca.gov/t8/11120.html",
+          "locator": "Sections 1–3 (scope, definitions, hours), 7 (records), 11–12 (meals/rest); verify current amendments."
+        },
+        {
+          "title": "DIR: Retaliation Complaint Investigation Unit",
+          "url": "https://www.dir.ca.gov/dlse/dlseretaliation.html",
+          "locator": "Labor Commissioner retaliation jurisdiction and links to filing procedures."
+        }
+      ],
+      "description": "Final Pay, Payroll Corrections, and Disputed Amounts: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

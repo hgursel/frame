@@ -1,5 +1,17 @@
 # Knowledge Library
 
+## Compact catalog and detailed downloads
+
+App and project settings use compact rows with topic search, status filters, and expandable sections instead of large cards. Search covers titles, descriptions, jurisdictions, section titles, and tags. Rows show version and installation/attachment state; expanded details show source counts, word counts, review dates, and section links. Project settings can **Install & attach** an included pack directly, or import a downloaded JSON file without leaving the project. Importing never attaches a pack automatically.
+
+The [GitHub download collection](../knowledge-packs/README.md) adds **12 optional detailed guides, 27 sections, and 48 distinct official-source URLs**, alongside JSON downloads of the eight current bundled packs. Topics include California pay/classification, leave/accommodation, investigations/retaliation, hiring/departures, safety, privacy/incidents, guild governance, member services, entertainment rights/AI, minors/talent services, outside counsel preparation, and benefits oversight. The new guides contain about 9,700 words of original discussion and workflows. No collective bargaining agreement text or interpretation is included. Existing bundled briefs are unchanged, not silently replaced by deeper content.
+
+Select **Download more packs** to open the public repository, save a JSON file, and import it. The catalog has file sizes and SHA-256 checksums; these detect accidental changes but are not independent publisher signatures. New downloads remain unverified imports. All content stays offline after import, publisher links are not automatically fetched, and updates require an explicit import and project version change. Detailed-guide source pages were consulted on October 17, 2026; no licensed-attorney review has been performed. These are issue-development resources for work with counsel, not a comprehensive current legal database.
+
+The [source register](../knowledge-packs/SOURCES.md) identifies official publications and the relevant topics. Authoring sources and deterministic export tooling live in `knowledge-packs/`; `npm run packs:check` detects artifacts that diverge from their source. Checks do not establish legal correctness.
+
+## Included briefs
+
 Frame includes eight optional, locally stored packs (37 focused sections in their current versions):
 
 | Pack | Version | Sections |
@@ -64,7 +76,7 @@ Installing a pack stores an immutable JSON snapshot in SQLite. An existing ID/ve
 
 Historical installed versions are retained so earlier citation URLs continue to resolve. There is no global pack deletion UI in this first release. Deleting a project removes only its pack attachments; other projects and the shared library are preserved. A project’s OKF export continues to contain its own documents, not copies of library packs. Export packs separately for transfer.
 
-**Export pack** downloads a JSON file. **Import pack** in Settings installs a validated file without fetching URLs or executing content. Custom packs need their own ID; IDs belonging to the bundled Frame release are reserved and accept only exact bundled content. To install a newer official pack, update Frame first. Imported material is unverified reference data. There is no public catalog service, automatic online updater, web crawler, or network fallback.
+**Export pack** downloads a JSON file. **Import pack** in Settings or Project settings installs a validated file without fetching URLs or executing content. Custom packs need their own ID; IDs belonging to the bundled Frame release are reserved and accept only exact bundled content. To install a newer bundled pack, update Frame first. Optional detailed guides use separate IDs and can be updated by importing a new version. Imported material is unverified reference data. GitHub hosts a static public download catalog, not an automatic online updater, crawler, or network fallback.
 
 The JSON schema is defined in `server/library/service.ts`, with shared types in `shared/library.ts`. It bounds IDs, semantic versions, section count, text size, sources, and HTTPS URLs; duplicate section IDs are rejected. Export a starter pack to see the format. To customize it, choose a new ID/title and accurately describe authorship, rights, sources, and dates. Give changed content a new version.
 

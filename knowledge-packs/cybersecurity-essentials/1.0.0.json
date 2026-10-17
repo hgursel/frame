@@ -1,0 +1,96 @@
+{
+  "id": "cybersecurity-essentials",
+  "title": "Cybersecurity Essentials",
+  "description": "NIST CSF 2.0 orientation, evidence-based security assessment questions, and an original risk-register template. Compare procedures with a framework and identify gaps.",
+  "pages": [
+    {
+      "id": "csf-gap-review",
+      "title": "CSF 2.0 Procedure Gap Review",
+      "description": "Compare our security procedures with this framework and identify gaps using current and target profiles.",
+      "tags": [
+        "cybersecurity",
+        "security",
+        "procedures",
+        "framework",
+        "nist",
+        "csf",
+        "gaps",
+        "assessment",
+        "profile"
+      ],
+      "text": "## Reference brief\nCSF 2.0 organizes cybersecurity outcomes into Govern, Identify, Protect, Detect, Respond and Recover. It describes desired outcomes without prescribing a single implementation. Current and Target Organizational Profiles express present and intended outcomes for a defined scope. Tiers characterize the rigor of risk governance and management; they are not a per-control pass score.\n\n## Original Frame review workflow\nAsk which business services, locations, systems and procedure versions are in scope, what evidence is available, and who approves the target. Start with one service if the request is broad. Read the supplied procedures before assessing them. Map relevant evidence to the six functions; use an exact category or subcategory identifier only after verifying it in the official Core. A missing document is an evidence gap, not proof a control is absent.\n\n## Output\nUse: function/outcome | procedure citation | observed practice | evidence status | target | gap | next action | owner. Mark evidence as documented, demonstrated, partial, unknown, or out of scope with rationale. Ask for verification of claimed practices. Prioritize a short list by business impact and exposure, not the number of headings matched. Do not invent an audit score, declare NIST certification, or silently turn suggestions into mandatory company rules.",
+      "sources": [
+        {
+          "title": "NIST Cybersecurity Framework 2.0 (CSWP 29)",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf",
+          "locator": "Sections 2–3: Core, Organizational Profiles and Tiers; Appendix A: Core outcomes"
+        },
+        {
+          "title": "NIST CSF 2.0 Small Business Quick-Start Guide (SP 1300)",
+          "url": "https://www.nist.gov/publications/nist-cybersecurity-framework-20-small-business-quick-start-guide",
+          "locator": "Getting started with cybersecurity risk management; supplement to CSF 2.0"
+        }
+      ],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "security-assessment",
+      "title": "Security Assessment Questions",
+      "description": "Conduct a practical cybersecurity evidence interview across governance, assets, protection, detection, response and recovery.",
+      "tags": [
+        "security",
+        "assessment",
+        "questions",
+        "evidence",
+        "governance",
+        "assets",
+        "backup",
+        "recovery"
+      ],
+      "text": "## Original Frame question set\nThese prompts support a scoped interview; they are not the complete NIST Core or an official questionnaire.\n\n| Area | Ask | Request evidence |\n| --- | --- | --- |\n| Govern | Who owns risk decisions and exceptions? Who reviews supplier access? | Approved responsibilities, exception record, supplier review |\n| Identify | Which services and data matter most? Who reconciles the asset inventory? | Service map, inventory owner, recent reconciliation |\n| Protect | How are access changes, privileged accounts, training and backups handled? | Redacted access-review record, training record, backup test |\n| Detect | Which events produce an alert and who responds after hours? | Detection use case and a recent test ticket |\n| Respond | Who can declare an incident and authorize containment? | Contact tree, decision authority, exercise record |\n| Recover | Who decides restoration order and validates restored service? | Restore evidence, acceptance criteria, recovery exercise |\n\n## Use\nAsk only the relevant questions, one group at a time. Accept redacted evidence; do not request passwords, tokens or unrestricted logs. Record the document/version and interview date. Distinguish policy language from a demonstrated practice. Summarize the three most consequential unanswered questions and the evidence that would resolve them. For operational checklists, retrieve the relevant IT Security Operations section if attached.",
+      "sources": [
+        {
+          "title": "NIST Cybersecurity Framework 2.0 (CSWP 29)",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf",
+          "locator": "Sections 2–3: Core, Organizational Profiles and Tiers; Appendix A: Core outcomes"
+        },
+        {
+          "title": "NIST CSF 2.0 Small Business Quick-Start Guide (SP 1300)",
+          "url": "https://www.nist.gov/publications/nist-cybersecurity-framework-20-small-business-quick-start-guide",
+          "locator": "Getting started with cybersecurity risk management; supplement to CSF 2.0"
+        }
+      ],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "risk-register",
+      "title": "Cybersecurity Risk Register Template",
+      "description": "Create a blank risk register with scenarios, evidence, owners, treatment and residual-risk review; no invented probabilities.",
+      "tags": [
+        "risk",
+        "register",
+        "template",
+        "likelihood",
+        "impact",
+        "residual",
+        "treatment",
+        "cybersecurity"
+      ],
+      "text": "## Original Frame template\nThis is a Frame template, not an official NIST form. Copy it into a project document only when requested. Leave unsupported fields blank or Unknown.\n\n| ID | Service/asset | Scenario and business consequence | Evidence/reference | Existing safeguards | Likelihood and rationale | Impact and rationale | Treatment/action | Owner | Target date | Residual risk | Acceptance authority/review date | Status |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| [ID] | [Service] | [Event → consequence] | [Document or ticket] | [Verified safeguards] | [Unknown] | [Unknown] | [Proposed action] | [Owner] | [Unassigned] | [Not assessed] | [Pending] | [Open] |\n\n## How to fill it\nSeparate one event and consequence per row. Agree on the scope, time horizon and rating definitions before rating; use the organization's existing scale where supplied. Do not turn ordinal labels into numerical probabilities or multiply arbitrary scores without an approved method. Keep evidence confidence separate from severity. A planned action does not reduce residual risk until its implementation and effectiveness are checked. Only the authorized risk owner can accept risk; Frame may draft the decision record. Link detailed sensitive evidence instead of copying secrets or personal records into the register.",
+      "sources": [],
+      "applicability": "Organizational cybersecurity planning for US businesses, including California. Framework guidance is not a certification, legal requirement, penetration test, or authorization to change systems. Sector, contract and legal obligations require separate review.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "US"
+  ],
+  "reviewedAt": "2026-09-29",
+  "rights": "Original Frame-authored briefs, questions, templates and workflows. Official publications are linked, not reproduced or bundled. No agency endorsement. The source-check date is not a legal effective date, continuous update service, or assurance of completeness. Templates are not official NIST or CISA forms."
+}

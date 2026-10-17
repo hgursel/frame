@@ -141,6 +141,9 @@ Deferred from V1 at the owner's request. V1 retains one administrator.
 
 ## Shared Knowledge Library (implemented)
 
+- Compact searchable app/project catalog, status filters, expandable section details, project-level import, and direct install-and-attach for bundled references.
+- Optional GitHub downloads: 12 detailed California/guild guides (27 sections), 48 official-source URLs, deterministic versioned JSON files and checksums. Both employer and member-service roles are covered; bargaining agreements are excluded. Existing eight bundled briefs and pinned project versions are preserved. Legal/attorney review remains an acceptance task.
+
 - Eight optional packs with 37 current sections: expanded California HR Essentials and Business Contract Review (v1.1), plus Workplace Investigations, Performance Reviews & Improvement Plans, and Commercial Leases. Published v1.0 content remains unchanged; project upgrades are explicit. Cybersecurity Essentials, IT Security Operations, and Responsible AI at Work add 11 source-linked sections and original risk-register/AI-use templates. Original workflows, source links, and applicability metadata; no full manuals or live threat feeds.
 - Global install/export/validated JSON import and per-project version selection; immutable installed snapshots, explicit upgrades, and historical citation preservation.
 - Existing bounded retrieval/search/read tools include attached sections; read-only local citation viewer and latest-turn activity references. Project files and maintenance remain separate.

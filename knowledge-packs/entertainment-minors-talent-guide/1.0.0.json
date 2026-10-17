@@ -1,0 +1,86 @@
+{
+  "id": "entertainment-minors-talent-guide",
+  "title": "California Entertainment Minors & Talent Services",
+  "description": "Permit, safeguarding, work-condition, agency-licensing, and referral review for entertainment-related inquiries, without bargaining agreement coverage.",
+  "pages": [
+    {
+      "id": "minor-performer-intake",
+      "title": "Minor Performers: Permits and Safeguarding",
+      "tags": [
+        "minor",
+        "child performer",
+        "permit",
+        "entertainment",
+        "safeguarding"
+      ],
+      "applicability": "California entertainment work involving people under eighteen; age, schooling, work type, and actual location determine the review.",
+      "text": "## Legal framework\nDIR distinguishes a minor’s entertainment work permit from an employer’s permit to employ minors. A permit is not blanket authorization for any hours, activity, or conditions. Separate rules address schooling, work conditions, supervision, and other protections. DIR’s child-performer-services guidance also identifies provider permitting and current mandated-reporting developments. Do not treat parental consent, unpaid participation, or a short appearance as automatically removing legal requirements.\n\n## Intake and document verification\nIdentify age using an appropriate confidential verification process, legal guardian or authorized contact, employer, production, work location, dates, school status, proposed activities, and who will supervise. Record permit type, holder, validity, and conditions without exposing identification documents in a general chat. Confirm the employer’s permit separately. Ask the responsible specialists to verify applicable working hours, school obligations, rest, and any trust-account or court-approval questions; do not invent an age-based schedule from memory.\n\n## Safeguarding review\nMap access to the child, transport, changing areas, communications, supervision, emergency contacts, and reporting routes. Establish who handles concerns independently of the person arranging the work. Do not ask Frame to investigate suspected abuse or decide whether an immediate report is required before obtaining qualified assistance. Preserve a report factually, avoid repeated suggestive interviews, and follow the applicable safeguarding and reporting procedures promptly.\n\n## Role boundaries\nDetermine whether the guild is employer, organizer, service provider, representative, or a source of information. Referral to a production does not necessarily make the guild the employer, but neither should the organization assume it has no relevant responsibilities. Verify the actual activity and legal entity. Protect the minor’s data, restrict case access, and keep medical, identification, and financial documents out of widely shared references.\n\n## Example and counsel handoff\nA member asks whether their child can appear in a short promotional video at a guild event. Establish whether this is entertainment employment, who controls the work, the child’s age, and the nature of any compensation or benefit. Ask counsel and the relevant permit authority about worker/employer permits, supervision, schooling, hours, consent, and financial protections. Deliver a fact sheet and missing-document list; do not say that an informal event or parental signature makes the arrangement exempt.",
+      "sources": [
+        {
+          "title": "DIR: Minors Employed in Entertainment",
+          "url": "https://www.dir.ca.gov/dlse/minors_employed_in_the_entertainment_industry.html",
+          "locator": "Worker and employer permits, applicable rules, and links to child-labor resources."
+        },
+        {
+          "title": "DIR: Entertainment Work Permit",
+          "url": "https://www.dir.ca.gov/dlse/Entertainment-Work-Permit.htm",
+          "locator": "Minor work-permit process and training requirements."
+        },
+        {
+          "title": "DIR: Permit to Employ Minors",
+          "url": "https://www.dir.ca.gov/dlse/Entertainment-Permit-to-Employ-Minors.htm",
+          "locator": "Employer permit requirements and resources."
+        },
+        {
+          "title": "DIR: Child Performer Services Permit",
+          "url": "https://www.dir.ca.gov/dlse/Child_performer_services_permit.htm",
+          "locator": "Covered service providers, background checks, and current mandated-reporting notice."
+        }
+      ],
+      "description": "Minor Performers: Permits and Safeguarding: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "talent-services-review",
+      "title": "Talent Agencies, Managers, and Service Providers",
+      "tags": [
+        "talent agency",
+        "manager",
+        "license",
+        "procurement",
+        "audition",
+        "minor"
+      ],
+      "applicability": "California artist employment procurement and entertainment services; labels do not determine whether licensing rules apply.",
+      "text": "## Legal framework\nDIR explains that arranging employment for artists can trigger talent-agency licensing requirements. The actual activities matter more than whether a business calls itself a manager, coach, consultant, or platform. Fee-related talent services and services to child performers can involve additional requirements. A guild recommendation or industry reputation is not a substitute for checking the applicable license and legal obligations.\n\n## Map the services\nObtain the contract, marketing claims, payment terms, communications, referrals, and examples of what the provider actually does. Separate coaching, portfolio services, advice, introductions, auditions, negotiations, and procurement of employment. Identify who receives fees, commissions, referral payments, or other benefits and when. Do not assume that a service is lawful because the artist agreed to the fee or that every dispute makes the provider unlicensed.\n\n## Verify representations\nUse the official licensing/permit process to verify the correct legal entity and status for the relevant period. Compare the represented entity with the contracting/payee entity and disclosed business address. Ask about authority to hold funds or bind the artist, termination provisions, record access, and dispute handling. Identify missing licenses or inconsistent identity information as questions for investigation, not proof of fraud.\n\n## Minors and referrals\nWhere minors are involved, separately review child-performer-services permitting, applicable training and reporting requirements, parental communications, and access to the child. A provider’s adult-client license may not answer every child-safety obligation. A guild referral process should document selection criteria and disclose relevant relationships; it should not imply that the guild guarantees outcomes or provides legal approval of every contract.\n\n## Example and deliverable\nA company sells costly coaching and promises introductions that appear to include arranging paid work. Assemble the advertised promises, actual communications, fees, legal entity, and license evidence. Ask counsel whether the conduct triggers talent-agency or other requirements, what remedies or deadlines may apply, and how the guild should communicate with the member. Frame can compare documents and prepare questions; it should not threaten enforcement, determine contract invalidity, or tell the artist to ignore an agreement without legal review.",
+      "sources": [
+        {
+          "title": "DIR: Talent Agency Licensing",
+          "url": "https://dir.ca.gov/dlse/Talent%20Agency_License_and_Fee-Related_Talent_Services.htm",
+          "locator": "Procurement of employment, licensing, fee-related services, and current notices."
+        },
+        {
+          "title": "DIR: Child Performer Services Permit",
+          "url": "https://www.dir.ca.gov/dlse/Child_performer_services_permit.htm",
+          "locator": "Covered service providers, background checks, and current mandated-reporting notice."
+        },
+        {
+          "title": "DIR: Entertainment Work Permit",
+          "url": "https://www.dir.ca.gov/dlse/Entertainment-Work-Permit.htm",
+          "locator": "Minor work-permit process and training requirements."
+        }
+      ],
+      "description": "Talent Agencies, Managers, and Service Providers: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

@@ -1,0 +1,76 @@
+{
+  "id": "workplace-investigations",
+  "title": "Workplace Investigations",
+  "description": "Neutral complaint intake, evidence organization, interview preparation, and investigation-report workflows for human-led reviews.",
+  "jurisdiction": [
+    "US",
+    "US-CA"
+  ],
+  "pages": [
+    {
+      "id": "intake-plan",
+      "title": "Complaint Intake & Investigation Plan",
+      "description": "Structure a workplace complaint, define investigation scope, and identify process risks.",
+      "tags": [
+        "investigation",
+        "investigations",
+        "complaint",
+        "intake",
+        "harassment",
+        "retaliation",
+        "scope"
+      ],
+      "applicability": "US business workflow. Applicable law, company policies, bargaining agreements, and case facts need separate review. Not an automated employment decision.",
+      "text": "## Reference brief\nCRD’s harassment-prevention guide discusses prompt, fair investigations by impartial, qualified investigators. Confidentiality has practical limits, and findings require an evidence-based process. This pack supports that process; it does not appoint an investigator or make findings.\n\n## Intake\nRecord each allegation separately with the reported event/date, people involved, source, relevant policy, and requested follow-up. Use “reported” or “alleged” for unestablished facts. Identify missing records and potential conflicts of interest. Do not promise secrecy, legal privilege, a particular outcome, or that no action will occur without the complainant’s approval.\n\n## Plan\nSuggest the issues to examine, relevant date range, evidence to preserve, interview roles, investigator/decision-maker responsibilities, and a review schedule. Escalate urgent safety or preservation concerns to the authorized human owner. Interim measures require human assessment and should not be treated as a finding. Avoid blanket instructions restricting lawful workplace discussions.\n\n## Output\nIssue list, evidence-request list, proposed investigation steps, conflict/escalation questions, and nonretaliation follow-up plan. Separate company procedure from external guidance and identify what counsel must verify.",
+      "sources": [
+        {
+          "title": "CRD Harassment Prevention Guide (2025)",
+          "url": "https://calcivilrights.ca.gov/wp-content/uploads/sites/32/2025/04/Harassment-Prevention-Guide-2025.pdf",
+          "locator": "Investigation practices, impartiality, confidentiality, and evidence evaluation"
+        }
+      ],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "evidence-interviews",
+      "title": "Evidence Timeline & Interview Preparation",
+      "description": "Organize records and prepare neutral questions without inventing facts or assessing credibility automatically.",
+      "tags": [
+        "evidence",
+        "timeline",
+        "chronology",
+        "interview",
+        "witness",
+        "statement",
+        "investigation"
+      ],
+      "applicability": "US business workflow. Applicable law, company policies, bargaining agreements, and case facts need separate review. Not an automated employment decision.",
+      "text": "## Evidence organization\nAssign a local evidence identifier to each provided item. Record the original source, date received, event date/time if known, and extraction limitations. Preserve original wording when a short quotation is necessary; keep summaries distinct. Link each event to supporting and contradicting material. Mark unknown dates and uncertain ordering explicitly. Never fill gaps with a plausible narrative.\n\n## Interview preparation\nDraft open questions for each issue: what occurred, when/where, who was present, what records exist, what the person directly observed, and what they learned from others. Add neutral follow-up questions for inconsistencies. Give the responding person’s account a place in the plan. Do not treat hesitation, writing style, an accent, emotion, or a model’s impression as evidence of truthfulness.\n\n## Output\nChronology columns: date/uncertainty; reported event; source ID/page; direct observation or secondhand account; dispute; next verification step. Produce separate question lists by interview role. Do not contact witnesses, secretly record, alter source evidence, or store case-specific allegations and identities in learned methods.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "investigation-report",
+      "title": "Investigation Report & Human Review",
+      "description": "Prepare a source-linked report that separates evidence, unresolved issues, and human findings.",
+      "tags": [
+        "investigation",
+        "report",
+        "findings",
+        "conclusion",
+        "evidence",
+        "complaint"
+      ],
+      "applicability": "US business workflow. Applicable law, company policies, bargaining agreements, and case facts need separate review. Not an automated employment decision.",
+      "text": "## Report structure\nUse purpose/scope, process followed, materials reviewed, allegations, evidence by issue, conflicting accounts, missing information, and limitations. Include relevant policy text and dates from actual company documents. If a human investigator has supplied findings and the applicable standard, identify those findings as theirs and trace them to supporting evidence. Do not invent the standard or label an allegation substantiated on the model’s authority.\n\n## Review checks\nCheck that adverse evidence and alternative explanations are not omitted, factual assertions have citations, and quotations match sources. Identify statements supported by only one account, extraction gaps, and contradictions needing follow-up. Do not infer legal privilege merely because a report is confidential or a lawyer is copied.\n\n## Output\nA draft report plus a human-review checklist. Keep factual synthesis separate from legal conclusions, disciplinary recommendations, and management decisions. Restrict unnecessary sensitive details. Use approved report instructions when a PDF is requested; do not claim the report has been delivered to employees or counsel.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "reviewedAt": "2026-09-26",
+  "rights": "Original Frame-authored briefs and workflows distributed with Frame. Linked agency publications are not reproduced or bundled. Sources are not endorsements. Source-check date is not a legal effective date or a certification of completeness."
+}

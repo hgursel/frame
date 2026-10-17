@@ -1,0 +1,82 @@
+{
+  "id": "entertainment-rights-ai-guide",
+  "title": "Entertainment Copyright, Digital Likeness & AI",
+  "description": "Rights-clearance and AI-use analysis for guild communications, archives, events, and member inquiries. No contract-rate tables or bargaining agreements.",
+  "pages": [
+    {
+      "id": "copyright-clearance",
+      "title": "Copyright Ownership and Rights Clearance",
+      "tags": [
+        "copyright",
+        "license",
+        "archive",
+        "screening",
+        "work for hire",
+        "fair use"
+      ],
+      "applicability": "US creative works used by an organization or discussed in a member inquiry; copyright, likeness, trademark, and contractual rights must be separated.",
+      "text": "## Legal framework\nThe Copyright Office explains two work-made-for-hire routes: an employee’s work within the scope of employment, or specified commissioned categories with the required signed agreement. Commissioning or paying for a work alone does not establish that status. Fair use is a fact-specific analysis rather than a fixed number of seconds, words, or images. A credit line, nonprofit mission, or educational purpose is not automatic permission. Copyright ownership and permission to use someone’s likeness are separate questions.\n\n## Create a rights map\nIdentify each asset: footage, stills, music, script excerpts, artwork, logos, interviews, photographs, and promotional copy. For each record the creator, claimed owner, source, creation date, agreement, rights granted, territory, media, term, editing permission, sublicensing, attribution, and exclusions. Distinguish possession of a file from permission to reproduce or publicly show it. Verify that the person granting permission actually controls the relevant rights.\n\n## Define the proposed use\nDescribe who will see the material, whether access is restricted, how it will be promoted, whether money changes hands, and whether the asset will be modified, recorded, streamed, archived, or repurposed. A license for one event may not cover an online recording. A vendor’s stock license may impose restrictions on transfer or use in a new product. Identify unanswered questions before publication rather than relying on an assumed customary practice.\n\n## Fair-use discussion and alternatives\nIf permission is absent, ask counsel to assess purpose/character, nature of the work, amount/substantiality, and market effects with the actual material and use. Do not have Frame guarantee fair use from a short description. Compare obtaining a license, reducing the use, linking to an authorized source, substituting original material, or omitting the asset. Preserve evidence of the analysis and approvals, including conditions on the permitted use.\n\n## Example and counsel deliverable\nA guild wants to include film clips, headshots, and music in an awards-event recording later posted publicly. Build separate clearance rows for each asset and each use, not a single statement that the event is nonprofit. Deliver the proposed edit, license documents, owner contacts, gaps, and feasible alternatives. Ask counsel about ownership, permissions, exceptions, releases, and distribution limits. No bargaining agreement provisions are included or inferred.",
+      "sources": [
+        {
+          "title": "US Copyright Office: Works Made for Hire",
+          "url": "https://www.copyright.gov/circs/circ30.pdf",
+          "locator": "Employee works and eligible specially commissioned works; signed writing and classification facts."
+        },
+        {
+          "title": "US Copyright Office: Fair Use Index",
+          "url": "https://www.copyright.gov/fair-use/",
+          "locator": "Four-factor analysis and fact-specific decisions; no fixed safe word count or duration."
+        }
+      ],
+      "description": "Copyright Ownership and Rights Clearance: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "digital-replicas-ai",
+      "title": "Digital Replicas, Creative AI, and Consent",
+      "tags": [
+        "AI",
+        "digital replica",
+        "voice",
+        "likeness",
+        "synthetic media",
+        "copyright"
+      ],
+      "applicability": "US/California creative AI and likeness questions; separate living-person consent, deceased-person rights, copyright, and workplace use.",
+      "text": "## Legal framework\nThe Copyright Office’s AI reports distinguish digital-replica concerns from copyrightability of generated material and training questions. A report recommending legislation is not itself an enacted rule. California’s 2024 enactment announcement describes digital-likeness measures involving personal-service contracts and deceased performers. The announcement is an orientation source only: counsel must check current statutory conditions, exceptions, dates, and later developments before applying it. This pack makes no claim that all AI use is prohibited or all consent clauses are enforceable.\n\n## Inventory the activity\nSeparate scanning or recording a person, storing the source, training or adapting a model, generating a new performance, editing an existing performance, and distributing the result. For each stage identify actor, purpose, data, authority, audience, time period, and retention. A permission to record an interview may not answer whether its voice can be cloned. A model license may not grant rights in every training input or output.\n\n## Review consent and control\nCollect the actual signed permission and any amendments, explanations, representation information, and restrictions. Compare the proposed use with what was described. Ask about specific media, duration, new uses, transfer to vendors, security, deletion, review rights, compensation, and revocation terms where applicable. Do not assume that a broad future-technology phrase resolves statutory or contractual questions. Identify whose authorization is needed and who has authority to grant it.\n\n## Human authorship and workplace use\nDocument human creative contributions, AI-generated portions, editing choices, and provenance when discussing registration or ownership. Do not classify an entire output from a percentage estimate or promise that prompting alone creates protectable authorship. For employment or member-service decision systems, separately review discrimination, accessibility, privacy, and records issues. This creative-rights analysis does not authorize automated personnel decisions.\n\n## Example and questions\nA vendor proposes a synthetic narration in a member’s recognizable voice using prior event recordings. Create a stage-by-stage rights map and request the exact consent and vendor terms before proceeding. Ask counsel about applicable likeness protections, contract conditions, copyrights, possible misleading attribution, retention, and permitted future use. Present licensed-human narration, a properly authorized replica, or a non-identifying alternative as options for review. Clearly identify unsettled law and current-source gaps; do not manufacture a universal rule from a press release.",
+      "sources": [
+        {
+          "title": "US Copyright Office: Artificial Intelligence Study",
+          "url": "https://www.copyright.gov/policy/artificial-intelligence/",
+          "locator": "Reports on digital replicas, copyrightability, and training; distinguish recommendations from enacted law."
+        },
+        {
+          "title": "California Governor: Digital Likeness Legislation",
+          "url": "https://www.gov.ca.gov/2024/09/17/governor-newsom-signs-bills-to-protect-digital-likeness-of-performers/",
+          "locator": "2024 enactment overview of AB 2602 and AB 1836; use current statutory text for conditions and exceptions, not this announcement alone."
+        },
+        {
+          "title": "US Copyright Office: Works Made for Hire",
+          "url": "https://www.copyright.gov/circs/circ30.pdf",
+          "locator": "Employee works and eligible specially commissioned works; signed writing and classification facts."
+        },
+        {
+          "title": "CRD: Approved Employment AI Regulations",
+          "url": "https://calcivilrights.ca.gov/2025/06/30/civil-rights-council-secures-approval-for-regulations-to-protect-against-employment-discrimination-related-to-artificial-intelligence/",
+          "locator": "Approval announcement; employment decisions and automated-decision records. Consult linked final regulations, not earlier proposals."
+        }
+      ],
+      "description": "Digital Replicas, Creative AI, and Consent: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

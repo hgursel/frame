@@ -1,0 +1,77 @@
+{
+  "id": "guild-benefits-oversight-guide",
+  "title": "Benefits, Plan Roles & Service-Provider Oversight",
+  "description": "Separate guild/member-service roles from plan administration, benefit eligibility, appeals, fiduciary duties, fees, and vendor oversight.",
+  "pages": [
+    {
+      "id": "benefits-claims-roles",
+      "title": "Benefit Questions, Plan Documents, and Claims",
+      "tags": [
+        "benefits",
+        "ERISA",
+        "pension",
+        "health plan",
+        "appeal",
+        "eligibility"
+      ],
+      "applicability": "Staff or member benefit inquiries involving potentially ERISA-covered plans; identify the actual plan and responsible administrator.",
+      "text": "## Legal framework\nDOL’s ERISA resources distinguish participant rights, claims procedures, plan documents, and fiduciary responsibilities. A guild, employer, insurer, administrator, and benefit fund are not interchangeable. Retirement plans can also differ significantly by type. A general explanation of a plan does not establish a person’s eligibility, benefit amount, or appeal outcome. The relevant plan terms and applicable law must be identified for the actual period and claim.\n\n## Establish the record\nObtain the plan name, administrator, plan type, relevant summary plan description and amendments, governing documents where needed, eligibility records, claim submission, denial notice, and communications. Identify coverage dates, service periods, contributions, and any dispute about records. Restrict medical and financial information to an appropriate case channel. Do not place a full medical file into general project knowledge to answer an administrative question.\n\n## Claims and appeals workflow\nDistinguish an informal inquiry, request for documents, initial claim, appeal, and external legal action. Extract the actual reasons for a denial, cited plan provisions, evidence considered, missing information, and the appeal instructions in the notice. Ask counsel or the plan administrator to confirm applicable procedures and deadlines promptly. Do not assume an informal conversation extends the time to appeal or that a generic ERISA period fits every claim type.\n\n## Role boundaries and assistance\nDocument whether guild staff are providing navigation, collecting records with authorization, representing a person, or exercising actual plan authority. Avoid promising approval or overriding the administrator’s decision without authority. If the complaint concerns the guild’s own conduct or a shared official, review conflicts. Keep member communications clear about who is responsible for the next step and what assistance is actually being provided.\n\n## Example and counsel handoff\nA member believes service credit is missing after work with several employers. Assemble dated work and contribution records, plan statements, the actual benefit formula source, and prior inquiries. Separate a possible employer reporting error from a plan interpretation or eligibility dispute. Prepare a reconciliation and focused questions for the administrator and counsel. Frame should not calculate a guaranteed pension, give investment advice, or imply that membership alone establishes coverage under a particular plan.",
+      "sources": [
+        {
+          "title": "DOL EBSA: ERISA",
+          "url": "https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/erisa",
+          "locator": "Coverage, participant rights, claims resources, and fiduciary responsibilities."
+        },
+        {
+          "title": "DOL EBSA: Understanding Your Retirement Plan",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/what-you-should-know-about-your-retirement-plan",
+          "locator": "Plan types, governing documents, vesting, benefits claims, and plan termination concepts."
+        }
+      ],
+      "description": "Benefit Questions, Plan Documents, and Claims: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "fiduciary-vendor-review",
+      "title": "Plan Fiduciary Roles, Fees, and Vendor Monitoring",
+      "tags": [
+        "fiduciary",
+        "benefits",
+        "fees",
+        "vendor",
+        "plan",
+        "cybersecurity"
+      ],
+      "applicability": "Potential ERISA plan decisions by an employer, union, trustee, committee, or service provider; functional responsibilities must be determined.",
+      "text": "## Legal framework\nDOL explains that fiduciary status can depend on functions and discretion, not merely title. Hiring a provider does not necessarily eliminate the responsibility to select and monitor it prudently. Plan duties and prohibited-transaction rules are separate from a guild officer’s responsibilities over union funds. Fees should be evaluated in relation to services and the applicable legal standard, not treated as reasonable because a vendor describes them as standard.\n\n## Role and authority map\nIdentify the plan, governing documents, named fiduciaries, actual decision-makers, committee authority, delegated functions, and conflicts. Separate business decisions about establishing or changing a plan from administration and investment functions that may have different legal treatment. Do not infer fiduciary status from an organizational chart alone. Record who exercises discretion and what the contract and actual practice show.\n\n## Provider evaluation\nDocument services required, provider qualifications, experience, compensation sources, conflicts, references, security practices, subcontractors, insurance, reporting, and termination/data-return arrangements. Compare alternatives on consistent criteria. For fee analysis, distinguish direct and indirect compensation, bundled services, participant charges, and allocation methods. Do not recommend an investment or provider solely from a headline fee or marketing performance number.\n\n## Monitoring record\nSet a schedule for reviewing service performance, complaints, fees, security incidents, staffing changes, control reports, and unresolved issues. Minutes should capture the information considered, questions asked, reasons for decisions, and follow-up owners. Do not backfill minutes as if a review occurred when it did not. Preserve independent advice and conflict disclosures through appropriate channels, and seek counsel when a transaction may involve a related party or prohibited arrangement.\n\n## Example and output\nA benefit administrator proposes a cheaper bundled platform with a new subcontractor handling participant data. Compare the full services and compensation, migration risks, access controls, incident obligations, exit rights, and monitoring evidence. Ask counsel about fiduciary roles, conflicts, disclosure, and transaction restrictions. Deliver a decision matrix with uncertainties and action owners. Frame can organize diligence; it cannot certify prudence, guarantee an investment outcome, or replace a plan fiduciary’s documented judgment.",
+      "sources": [
+        {
+          "title": "DOL EBSA: Meeting Your Fiduciary Responsibilities",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/meeting-your-fiduciary-responsibilities",
+          "locator": "Functional fiduciary roles, prudence, service providers, prohibited transactions, and cybersecurity review."
+        },
+        {
+          "title": "DOL EBSA: Retirement Plan Fees and Expenses",
+          "url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/understanding-retirement-plan-fees-and-expenses",
+          "locator": "Types of fees, allocation, disclosures, and evaluation."
+        },
+        {
+          "title": "DOL EBSA: ERISA",
+          "url": "https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/erisa",
+          "locator": "Coverage, participant rights, claims resources, and fiduciary responsibilities."
+        }
+      ],
+      "description": "Plan Fiduciary Roles, Fees, and Vendor Monitoring: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

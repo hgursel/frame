@@ -1,0 +1,52 @@
+# Source register
+
+Publisher pages consulted on 2026-10-17 for the new detailed guides. This is a source check, not attorney verification or a guarantee of completeness/currentness. Page-level references identify the topics supported. External publications are not redistributed.
+
+- [Cal/OSHA: Heat Illness Guidance](https://www.dir.ca.gov/dosh/heatillnessinfo.html) — Indoor and outdoor standards, model plans, and training materials.
+- [Cal/OSHA: Workplace Violence FAQ](https://www.dir.ca.gov/dosh/Workplace-Violence/FAQ.html) — Coverage, exclusions, employee participation, incident records, and multi-employer settings.
+- [Cal/OSHA: Workplace Violence Rulemaking](https://www.dir.ca.gov/dosh/doshreg/Workplace-Violence-in-General-Industry/) — Draft standards and advisory meetings; drafts are not adopted rules.
+- [Cal/OSHA: Workplace Violence, General Industry](https://www.dir.ca.gov/dosh/Workplace-Violence/General-Industry.html) — Labor Code 6401.9 overview, written plan, training, incident log, and resources.
+- [California Attorney General: CCPA](https://oag.ca.gov/privacy/ccpa) — Privacy coverage and rights; apply to the actual entity and processing relationship.
+- [California Attorney General: Data Breach Reporting](https://oag.ca.gov/privacy/databreach/reporting) — Civil Code 1798.29 and 1798.82 notification and Attorney General sample-notice submission.
+- [California Courts: Discovery in Civil Cases](https://selfhelp.courts.ca.gov/discovery-civil) — Discovery methods and distinction between party discovery and third-party subpoenas.
+- [California Courts: Subpoenas](https://www.selfhelp.courts.ca.gov/subpoena) — Document and testimony demands; determine the type of subpoena and appropriate response with counsel.
+- [California Governor: Digital Likeness Legislation](https://www.gov.ca.gov/2024/09/17/governor-newsom-signs-bills-to-protect-digital-likeness-of-performers/) — 2024 enactment overview of AB 2602 and AB 1836; use current statutory text for conditions and exceptions, not this announcement alone.
+- [California Title 8, Section 3396](https://www.dir.ca.gov/Title8/3396.html) — Indoor heat applicability, exceptions, assessment, controls, and emergency response.
+- [CRD: Approved Employment AI Regulations](https://calcivilrights.ca.gov/2025/06/30/civil-rights-council-secures-approval-for-regulations-to-protect-against-employment-discrimination-related-to-artificial-intelligence/) — Approval announcement; employment decisions and automated-decision records. Consult linked final regulations, not earlier proposals.
+- [CRD: Complaint Process](https://calcivilrights.ca.gov/ComplaintProcess/) — Intake, supporting documents, investigation, and case-closure procedures.
+- [CRD: Employment](https://calcivilrights.ca.gov/Employment/) — FEHA coverage, protected categories, harassment, retaliation, and complaint information.
+- [CRD: Fair Chance Act](https://calcivilrights.ca.gov/fair-chance-act/) — Conditional offers, individualized assessment, notices, and response opportunities.
+- [CRD: Harassment Prevention Guide (2025)](https://calcivilrights.ca.gov/wp-content/uploads/sites/32/2025/04/Harassment-Prevention-Guide-2025.pdf) — Fair investigations, impartiality, confidentiality, evidence, and corrective responses.
+- [CRD: Job-Protected Leave](https://calcivilrights.ca.gov/family-medical-%20pregnancy-leave/) — CFRA, pregnancy disability, bereavement, reproductive loss, and violence-related leave resources.
+- [CRD: Reasonable Accommodation](https://calcivilrights.ca.gov/accommodation/) — Interactive process, essential functions, disability accommodation, and undue hardship.
+- [DIR: California Paid Sick Leave FAQ](https://www.dir.ca.gov/dlse/paid_sick_leave.htm) — Use, accrual, frontloading, schedules, and state/local interaction; check current permitted purposes.
+- [DIR: Child Performer Services Permit](https://www.dir.ca.gov/dlse/Child_performer_services_permit.htm) — Covered service providers, background checks, and current mandated-reporting notice.
+- [DIR: Entertainment Work Permit](https://www.dir.ca.gov/dlse/Entertainment-Work-Permit.htm) — Minor work-permit process and training requirements.
+- [DIR: Equal Pay and Pay Transparency](https://www.dir.ca.gov/dlse/california_equal_pay_act.htm) — Labor Code 432.3 and 1197.5; salary history, pay scales, and substantially similar work.
+- [DIR: Independent Contractors](https://dir.ca.gov/dlse/faq_independentcontractor.htm) — ABC test, exemptions, and relationship to the Borello test; identify the applicable statutory exception before relying on it.
+- [DIR: Meal Periods](https://dir.ca.gov/dlse/FAQ_MealPeriods.html) — General five-hour rule, motion-picture exception, waivers, and on-duty meals.
+- [DIR: Minors Employed in Entertainment](https://www.dir.ca.gov/dlse/minors_employed_in_the_entertainment_industry.html) — Worker and employer permits, applicable rules, and links to child-labor resources.
+- [DIR: Overtime](https://dir.ca.gov/dlse/FAQ_Overtime.htm) — General daily/weekly overtime, regular rate, and exceptions.
+- [DIR: Paydays and Final Wages](https://www.dir.ca.gov/dlse/FAQ_Paydays.htm) — Discharge, resignation, undisputed wages, and the special motion-picture final-pay discussion referencing Labor Code 201.5.
+- [DIR: Permit to Employ Minors](https://www.dir.ca.gov/dlse/Entertainment-Permit-to-Employ-Minors.htm) — Employer permit requirements and resources.
+- [DIR: Retaliation Complaint Investigation Unit](https://www.dir.ca.gov/dlse/dlseretaliation.html) — Labor Commissioner retaliation jurisdiction and links to filing procedures.
+- [DIR: Talent Agency Licensing](https://dir.ca.gov/dlse/Talent%20Agency_License_and_Fee-Related_Talent_Services.htm) — Procurement of employment, licensing, fee-related services, and current notices.
+- [DIR: Wildfire Smoke Worker Protection](https://www.dir.ca.gov/wildfire-smoke/worker-protection-requirements.html) — Exposure assessment, air quality, controls, respirators, and training.
+- [DOL EBSA: ERISA](https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/erisa) — Coverage, participant rights, claims resources, and fiduciary responsibilities.
+- [DOL EBSA: Meeting Your Fiduciary Responsibilities](https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/meeting-your-fiduciary-responsibilities) — Functional fiduciary roles, prudence, service providers, prohibited transactions, and cybersecurity review.
+- [DOL EBSA: Retirement Plan Fees and Expenses](https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/understanding-retirement-plan-fees-and-expenses) — Types of fees, allocation, disclosures, and evaluation.
+- [DOL EBSA: Understanding Your Retirement Plan](https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/resource-center/publications/what-you-should-know-about-your-retirement-plan) — Plan types, governing documents, vesting, benefits claims, and plan termination concepts.
+- [DOL: FMLA Employer Guide](https://www.dol.gov/agencies/whd/fmla/employer-guide) — Coverage, employee eligibility, notices, certification, designation, and restoration.
+- [IWC Wage Order 12: Motion Picture Industry](https://www.dir.ca.gov/t8/11120.html) — Sections 1–3 (scope, definitions, hours), 7 (records), 11–12 (meals/rest); verify current amendments.
+- [IWC Wage Order 4: Professional and Clerical Occupations](https://dir.ca.gov/t8/11040.html) — Scope and occupational coverage; compare office work with industry-specific orders.
+- [Los Angeles Office of Wage Standards](https://wagesla.lacity.gov/) — City boundaries, current local wage and sick-leave notices; distinguish city from county and neighboring cities.
+- [NLRB: Right to Fair Representation](https://www.nlrb.gov/about-nlrb/rights-we-protect/the-law/employees/right-to-fair-representation) — Fair representation and limits of that duty; distinguish statutory representation from internal union affairs.
+- [NLRB: Your Rights](https://www.nlrb.gov/about-nlrb/rights-we-protect/your-rights) — Protected concerted activity and representation during qualifying investigatory interviews.
+- [OLMS: Conducting Audits in Unions](https://www.dol.gov/agencies/olms/regs/compliance/union-audit-guide) — Trustee review, receipts/disbursements, assets, liabilities, and reconciliation.
+- [OLMS: Conducting Local Union Officer Elections](https://www.dol.gov/agencies/olms/compliance-assistance/publications/guide-for-conducting-local-union-officer-elections) — Election planning, nominations, eligibility, notices, ballots, observers, and records.
+- [OLMS: Internal Financial Controls](https://www.dol.gov/agencies/olms/compliance-assistance/tips/internal-financial-controls) — Documented authorization, segregation of duties, supporting records, and payment controls.
+- [OLMS: Officer and Employee Reporting](https://www.dol.gov/agencies/olms/compliance-assistance/labor-organization-officer-employee-reporting) — LM-30 and related disclosure resources; reporting is distinct from permissibility.
+- [OLMS: Union Member Rights and Officer Responsibilities](https://www.dol.gov/agencies/olms/compliance-assistance/publications/union-member-rights-and-officer-responsibilities-under-the-lmrda) — LMRDA rights, financial reporting, fiduciary responsibilities, and restrictions on office.
+- [US Copyright Office: Artificial Intelligence Study](https://www.copyright.gov/policy/artificial-intelligence/) — Reports on digital replicas, copyrightability, and training; distinguish recommendations from enacted law.
+- [US Copyright Office: Fair Use Index](https://www.copyright.gov/fair-use/) — Four-factor analysis and fact-specific decisions; no fixed safe word count or duration.
+- [US Copyright Office: Works Made for Hire](https://www.copyright.gov/circs/circ30.pdf) — Employee works and eligible specially commissioned works; signed writing and classification facts.

@@ -1,0 +1,86 @@
+{
+  "id": "ca-workplace-safety-guide",
+  "title": "California Workplace Safety & Incident Planning",
+  "description": "Office, event, and production-adjacent safety review: violence prevention, reporting roles, heat, smoke, and practical emergency coordination.",
+  "pages": [
+    {
+      "id": "violence-prevention",
+      "title": "Workplace Violence Plans and Incident Response",
+      "tags": [
+        "workplace violence",
+        "safety",
+        "SB 553",
+        "WVPP",
+        "incident"
+      ],
+      "applicability": "California non-healthcare workplaces; determine coverage and any exclusion under the current statute and applicable standard.",
+      "text": "## Legal framework\nCalifornia Labor Code 6401.9 establishes workplace-violence prevention obligations for covered general-industry employers, including a written plan, employee participation, training, and incident-related records. Cal/OSHA’s FAQ explains exclusions and multi-employer questions. The rulemaking page also contains proposed standards: distinguish an existing statutory duty from a discussion draft or future effective requirement. A small office, remote employee, or public event should not be classified as exempt from a headline alone.\n\n## Plan review\nIdentify each worksite and activity, public access, security responsibilities, reporting channels, emergency contacts, employee involvement, and coordination with landlords or vendors. Assess reception areas, parking, off-site meetings, member events, and work-related threats received online. Assign an owner for corrective actions and a process for verifying completion. A downloaded template becomes useful only when site-specific responsibilities and controls are filled in and exercised.\n\n## Incident handling\nImmediate safety and emergency response come first. Do not ask Frame to evaluate whether a threat is genuine before contacting appropriate emergency or security resources. After immediate needs are addressed, preserve the report and record what happened, location, circumstances, injuries, involved roles, actions taken, and witnesses through an approved incident process. Separate the violence incident log from confidential investigative material and avoid unnecessary identifiers in broadly accessible records. Determine whether occupational injury reporting, workers’ compensation, or other notifications are also implicated; one log does not satisfy every requirement.\n\n## Assessment and follow-up\nCompare the incident with existing controls: how was access gained, were reporting instructions understood, could help be summoned, and were corrective actions delayed? Involve appropriate employees in the review. Avoid blaming a reporter for using a designated channel. Track training attendance and questions, changes to the plan, and recurring patterns without making medical or criminal-risk predictions about an individual.\n\n## Example and counsel questions\nA guild holds an evening member event in rented space and receives threatening messages. Map the roles of the guild, venue, security contractor, and any production employer separately. Ask counsel and safety professionals which plans apply, what coordination is needed, what documentation can be shared, and which reporting duties are triggered. Produce a responsibility matrix and unresolved action list; do not label a plan compliant based on a checklist alone.",
+      "sources": [
+        {
+          "title": "Cal/OSHA: Workplace Violence, General Industry",
+          "url": "https://www.dir.ca.gov/dosh/Workplace-Violence/General-Industry.html",
+          "locator": "Labor Code 6401.9 overview, written plan, training, incident log, and resources."
+        },
+        {
+          "title": "Cal/OSHA: Workplace Violence FAQ",
+          "url": "https://www.dir.ca.gov/dosh/Workplace-Violence/FAQ.html",
+          "locator": "Coverage, exclusions, employee participation, incident records, and multi-employer settings."
+        },
+        {
+          "title": "Cal/OSHA: Workplace Violence Rulemaking",
+          "url": "https://www.dir.ca.gov/dosh/doshreg/Workplace-Violence-in-General-Industry/",
+          "locator": "Draft standards and advisory meetings; drafts are not adopted rules."
+        }
+      ],
+      "description": "Workplace Violence Plans and Incident Response: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "heat-smoke-event-safety",
+      "title": "Heat, Smoke, Events, and Worksite Coordination",
+      "tags": [
+        "heat",
+        "wildfire",
+        "smoke",
+        "events",
+        "production",
+        "emergency"
+      ],
+      "applicability": "California indoor/outdoor work, including visits and events. This is a planning guide, not technical safety instruction for hazardous production activities.",
+      "text": "## Legal framework\nCal/OSHA provides separate indoor and outdoor heat-illness standards and wildfire-smoke protections. Indoor heat rules include scope, exceptions, assessment, and control requirements. Wildfire obligations depend on conditions and the applicable standard, not simply whether an office remains open. A venue’s permission to operate does not establish that all employer safety duties have been met. Current thresholds and exceptions must be checked in the standards for the particular setting.\n\n## Build an exposure map\nIdentify locations, dates, hours, tasks, exertion, equipment or clothing, access to cooling or shade, indoor ventilation, outdoor air infiltration, and employee transportation. Distinguish staff who remain indoors from people working outdoors, loading equipment, attending locations, or staffing entrances. Record who monitors conditions, where measurements come from, how frequently they are updated, and who can stop or relocate work. Avoid relying only on a weather forecast when workplace conditions differ.\n\n## Practical controls and coordination\nAsk a qualified safety lead about engineering controls, scheduling, water, rest, cooling, training, acclimatization, communication, and emergency response as applicable. Use the relevant official requirements to develop measures; do not improvise respirator or medical instructions. Verify responsibility among the employer, venue, landlord, security provider, and production organization. Agreements about who supplies equipment should not be assumed to eliminate statutory duties.\n\n## Individual needs and records\nUse a confidential process for accommodation requests and restrictions. Do not require a person to disclose a diagnosis publicly to obtain an assessment. Keep logs of conditions, alerts, decisions, instructions, and incidents, including contrary information that was considered. Document a change in conditions and the resulting action rather than silently overwriting an earlier assessment. Review the effect of cancellations or schedule changes on pay, leave, and access to assistance separately.\n\n## Example and escalation\nAn outdoor event proceeds while smoke conditions worsen; office staff assigned to entrances were treated as indoor workers. Frame should identify the mismatch in exposure assumptions, request the actual duty schedule and monitoring record, and flag the decision owner. Deliver a scenario table for postponement, relocation, reduced exposure, or cancellation for professional review. Serious injuries, hazardous equipment, stunts, pyrotechnics, weapons, and medical emergencies require qualified specialists; this guide cannot authorize continuing unsafe work.",
+      "sources": [
+        {
+          "title": "Cal/OSHA: Heat Illness Guidance",
+          "url": "https://www.dir.ca.gov/dosh/heatillnessinfo.html",
+          "locator": "Indoor and outdoor standards, model plans, and training materials."
+        },
+        {
+          "title": "California Title 8, Section 3396",
+          "url": "https://www.dir.ca.gov/Title8/3396.html",
+          "locator": "Indoor heat applicability, exceptions, assessment, controls, and emergency response."
+        },
+        {
+          "title": "DIR: Wildfire Smoke Worker Protection",
+          "url": "https://www.dir.ca.gov/wildfire-smoke/worker-protection-requirements.html",
+          "locator": "Exposure assessment, air quality, controls, respirators, and training."
+        },
+        {
+          "title": "Cal/OSHA: Workplace Violence FAQ",
+          "url": "https://www.dir.ca.gov/dosh/Workplace-Violence/FAQ.html",
+          "locator": "Coverage, exclusions, employee participation, incident records, and multi-employer settings."
+        }
+      ],
+      "description": "Heat, Smoke, Events, and Worksite Coordination: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}
