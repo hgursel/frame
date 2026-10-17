@@ -1,0 +1,113 @@
+{
+  "id": "ca-leave-accommodation-guide",
+  "title": "California Leave & Accommodation: Detailed Review",
+  "description": "Separate job protection, pay replacement, sick leave, pregnancy, disability accommodation, and local rules using fact-specific review workflows.",
+  "pages": [
+    {
+      "id": "leave-coverage",
+      "title": "CFRA, FMLA, Pregnancy, and Pay Replacement",
+      "tags": [
+        "CFRA",
+        "FMLA",
+        "pregnancy",
+        "leave",
+        "disability"
+      ],
+      "applicability": "California staff and member inquiries. Establish employer coverage, worker eligibility, relationship, qualifying event, and leave dates.",
+      "text": "## Legal framework\nCFRA and FMLA are separate job-protection laws with different coverage and eligibility rules. CRD describes CFRA coverage beginning at five employees and qualifying family and medical purposes. Federal FMLA coverage and employee eligibility require their own review; its employee rules include service, hours, and worksite considerations. Pregnancy disability leave is a separate California protection. Wage replacement, including state disability or paid family leave benefits, does not by itself establish a right to be absent or restored to a job.\n\n## Use parallel tracks\nBuild separate columns for job protection, benefit/pay replacement, accrued paid time, accommodation, and employer policy. For each track record the authority, eligibility facts, notices, required documentation, available amount, accounting method, and possible overlap. Do not simply add all leave periods or assume they always run concurrently. Ask counsel which periods can overlap and which cannot on the supplied facts. A payroll administrator’s payment decision is not necessarily a leave designation.\n\n## Fact development\nObtain hire dates and breaks in service, actual hours, work locations including remote arrangements, employee counts and entity relationships, the reason for leave at the level needed to assess eligibility, requested dates, and prior leave in the relevant measuring period. Preserve requests even if they do not name a statute. Use a restricted medical channel for certifications; the general case brief should usually describe limitations and scheduling needs rather than diagnoses or full medical records.\n\n## Notices, operations, and return\nIdentify the person responsible for acknowledging requests, seeking permitted certification, providing required notices, tracking leave, coordinating benefits, and arranging return. Keep managers informed about availability and approved restrictions without distributing medical details. When circumstances change, update the timeline and the governing analysis. Exhaustion of a leave allowance is not an automatic termination instruction; consider the accommodation track and other protections.\n\n## Example and counsel questions\nA worker receives state wage-replacement benefits and a supervisor assumes no further leave paperwork is needed. Ask whether any job-protection law applies, whether notices were supplied, whether leave was designated correctly, and what restoration obligations remain. Deliver a calendar with separate legal/pay tracks, unresolved overlaps, and proposed communications for review. Confirm current state guidance for bereavement, reproductive loss, and violence-related leave rather than forcing every absence into CFRA.",
+      "sources": [
+        {
+          "title": "CRD: Job-Protected Leave",
+          "url": "https://calcivilrights.ca.gov/family-medical-%20pregnancy-leave/",
+          "locator": "CFRA, pregnancy disability, bereavement, reproductive loss, and violence-related leave resources."
+        },
+        {
+          "title": "DOL: FMLA Employer Guide",
+          "url": "https://www.dol.gov/agencies/whd/fmla/employer-guide",
+          "locator": "Coverage, employee eligibility, notices, certification, designation, and restoration."
+        },
+        {
+          "title": "CRD: Reasonable Accommodation",
+          "url": "https://calcivilrights.ca.gov/accommodation/",
+          "locator": "Interactive process, essential functions, disability accommodation, and undue hardship."
+        }
+      ],
+      "description": "CFRA, FMLA, Pregnancy, and Pay Replacement: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "interactive-process",
+      "title": "Accommodation and the Interactive Process",
+      "tags": [
+        "accommodation",
+        "disability",
+        "interactive process",
+        "remote work",
+        "essential functions"
+      ],
+      "applicability": "California employment accommodation discussions; individualized assessment and confidential handling are required.",
+      "text": "## Legal framework\nCRD explains that covered employers must provide reasonable disability accommodation absent undue hardship and engage in a timely good-faith interactive process. The relevant question is how an individual can perform essential functions, not whether every employee receives the same arrangement. A request need not use a specific legal phrase. Accommodation may remain relevant after other leave is exhausted. This guide supports fact development; it does not decide disability status or medical fitness.\n\n## Define the work accurately\nObtain the job description and compare it with actual duties, frequency, location, staffing, and performance expectations. Separate essential functions from a preferred way of performing them. Describe the operational outcome a restriction affects: travel, prolonged standing, schedule predictability, concentration, or physical handling. Do not have the model infer a diagnosis from behavior or reject a request because the person appears healthy.\n\n## Develop alternatives\nCreate an options table with the requested accommodation, alternatives discussed, employee feedback, feasibility evidence, trial period, and reassessment date. Depending on facts, topics may include equipment, modified schedules, changes in methods, leave, or reassignment analysis. These are possibilities to assess, not a promise that any one is legally required or sufficient. Do not substitute a cheaper option without considering whether it is effective. Record the particular evidence behind a claimed hardship rather than repeating general inconvenience.\n\n## Protect the process\nUse the organization’s approved medical-information channel and restrict access. Managers generally need approved functional restrictions and arrangements, not a complete medical file. Document requests, reasonable follow-up, alternatives, decisions, and reasons without argumentative characterizations. A failure to provide one requested document should prompt review of what was requested and why before the case is closed. Keep performance concerns separate enough to determine whether the proposed standard is legitimate and whether accommodation was considered.\n\n## Example and counsel handoff\nA staff member requests remote work after a medical event. Establish which duties truly require presence, what can be done remotely, what evidence supports a limitation, and whether a trial or alternative arrangement could work. Ask counsel about permissible documentation, timing, reassignment, and interaction with protected leave. Deliver a factual record of engagement and unresolved options, not a predetermined denial letter or a declaration that remote work is always required.",
+      "sources": [
+        {
+          "title": "CRD: Reasonable Accommodation",
+          "url": "https://calcivilrights.ca.gov/accommodation/",
+          "locator": "Interactive process, essential functions, disability accommodation, and undue hardship."
+        },
+        {
+          "title": "CRD: Employment",
+          "url": "https://calcivilrights.ca.gov/Employment/",
+          "locator": "FEHA coverage, protected categories, harassment, retaliation, and complaint information."
+        },
+        {
+          "title": "DOL: FMLA Employer Guide",
+          "url": "https://www.dol.gov/agencies/whd/fmla/employer-guide",
+          "locator": "Coverage, employee eligibility, notices, certification, designation, and restoration."
+        }
+      ],
+      "description": "Accommodation and the Interactive Process: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "sick-and-local-leave",
+      "title": "Paid Sick Leave and Local Workplace Rules",
+      "tags": [
+        "paid sick leave",
+        "accrual",
+        "frontload",
+        "Los Angeles",
+        "local leave"
+      ],
+      "applicability": "California work with a separate check for the city or county where services are actually performed.",
+      "text": "## Legal framework\nDIR’s statewide FAQ explains that covered employees must generally be allowed at least forty hours or five days of annual sick-leave use, whichever is greater. Accrual, use, carryover, and caps are different concepts. Frontloading and accrual methods have different requirements. Los Angeles has its own wage and paid-sick-leave framework tied to work within city boundaries. A state-compliant handbook should not be assumed sufficient for every location or work schedule.\n\n## Audit the policy in four layers\nFirst identify coverage and qualifying purposes under current law. Second map accrual or frontloading and eligibility to begin use. Third examine use increments, carryover, caps, reinstatement after rehire where applicable, and payment calculation. Fourth review notices, balances, records, and how supervisors handle requests. Compare the written policy with payroll configuration and real examples. A benefit labeled PTO needs analysis of its operation, not merely its name.\n\n## Schedule and location evidence\nRecord scheduled day length, actual hours, exempt/nonexempt status, variable work, remote locations, and relevant employment dates. The hours-versus-days rule can matter for a person with a long normal workday. Ask for the actual work address and city boundary; a Los Angeles postal address alone does not answer municipal coverage. Separate state and local requirements in a comparison table and flag which provisions need current verification.\n\n## Handling a request\nDocument the request date, requested time, available balance, and reason category only to the extent necessary. Avoid collecting diagnosis details in the general discussion. Check whether an attendance point, replacement-worker requirement, or other supervisor practice interferes with protected use. Escalate inconsistent documentation demands and possible retaliation. Also ask whether another leave or accommodation protection applies when the sick-leave balance is exhausted.\n\n## Example and deliverable\nAn employee working ten-hour shifts is told that forty hours is always the annual maximum. Frame should identify the schedule issue and request the applicable policy and jurisdiction, not invent a final entitlement. Provide a worked payroll illustration only after verified assumptions are recorded, then distinguish that illustration from a legal conclusion. Counsel questions should identify the applicable use allowance, accrual method, local overlays, and corrective notices. Do not reuse expired pandemic supplemental-leave summaries as current general law.",
+      "sources": [
+        {
+          "title": "DIR: California Paid Sick Leave FAQ",
+          "url": "https://www.dir.ca.gov/dlse/paid_sick_leave.htm",
+          "locator": "Use, accrual, frontloading, schedules, and state/local interaction; check current permitted purposes."
+        },
+        {
+          "title": "Los Angeles Office of Wage Standards",
+          "url": "https://wagesla.lacity.gov/",
+          "locator": "City boundaries, current local wage and sick-leave notices; distinguish city from county and neighboring cities."
+        },
+        {
+          "title": "CRD: Job-Protected Leave",
+          "url": "https://calcivilrights.ca.gov/family-medical-%20pregnancy-leave/",
+          "locator": "CFRA, pregnancy disability, bereavement, reproductive loss, and violence-related leave resources."
+        }
+      ],
+      "description": "Paid Sick Leave and Local Workplace Rules: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

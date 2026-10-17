@@ -1,0 +1,58 @@
+{
+  "id": "performance-reviews",
+  "title": "Performance Reviews & Improvement Plans",
+  "description": "Evidence-based review drafts, measurable goals, support plans, and follow-up records without automated personnel decisions.",
+  "jurisdiction": [
+    "US",
+    "US-CA — company and local requirements must be checked"
+  ],
+  "pages": [
+    {
+      "id": "performance-review",
+      "title": "Performance Review Evidence & Drafting",
+      "description": "Turn documented expectations and work evidence into a balanced performance-review draft.",
+      "tags": [
+        "performance",
+        "review",
+        "reviews",
+        "evaluation",
+        "feedback",
+        "goals",
+        "rating"
+      ],
+      "applicability": "US business workflow. Applicable law, company policies, bargaining agreements, and case facts need separate review. Not an automated employment decision.",
+      "text": "## Reference brief\nEEOC’s disability guidance discusses clear, consistently applied performance and conduct standards and reasonable accommodation. Standards and accommodations must be considered in the actual circumstances; the guide is not permission to ignore accommodation needs or protected rights.\n\n## Workflow\nObtain the role description, review period, previously communicated goals, measurement definitions, work evidence, relevant context, and approved rating rubric. Map each observation to a specific expectation and cited evidence. Distinguish isolated events from a documented pattern and results from factors outside the employee’s control. Include achievements and the employee’s account, not only shortcomings.\nReplace vague labels such as “bad attitude” with observable, relevant behavior only when evidence supports it. Do not invent feedback, infer disability, or use protected traits or protected activity as negative factors. Refer leave/accommodation interactions to HR for review. A model-generated score is not an employment decision.\n\n## Output\nExpectation | observed evidence and date | impact | employee/context response | proposed feedback | missing information. Suggested ratings require the supplied rubric and human verification.",
+      "sources": [
+        {
+          "title": "EEOC Performance and Conduct Standards",
+          "url": "https://www.eeoc.gov/laws/guidance/applying-performance-and-conduct-standards-employees-disabilities",
+          "locator": "Performance standards, conduct, and reasonable accommodation"
+        }
+      ],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "improvement-plan",
+      "title": "Performance Improvement Plan & Follow-up",
+      "description": "Draft a PIP with measurable expectations, support, checkpoints, and evidence-based review.",
+      "tags": [
+        "pip",
+        "improvement",
+        "plan",
+        "performance",
+        "coaching",
+        "checkpoint",
+        "goal"
+      ],
+      "applicability": "US business workflow. Applicable law, company policies, bargaining agreements, and case facts need separate review. Not an automated employment decision.",
+      "text": "## Inputs\nAsk for the specific performance gap, documented examples, agreed role expectations, prior feedback, employee response, available support, and the company’s approved process. Do not assume a PIP is legally required or that it guarantees continued employment. Do not use the plan to create a pretext for a decision already made.\n\n## Plan template\nFor each gap, specify the desired observable outcome, measurement/source, responsible people, training/resources, realistic checkpoint dates, review owner, and how the employee can raise blockers. Proposed targets and timeframes need manager approval; there is no universal 30/60/90-day rule. Keep accommodation requests and protected leave questions in the appropriate HR process rather than making medical assumptions.\n\n## Follow-up\nCompare documented progress with the original measures. Note support actually provided and any agreed changes. Explain missing evidence and contextual limits. Do not retroactively change the standard or call a missed target misconduct without review.\n\n## Output\nDraft plan, checkpoint agenda, and progress table. Label any suggested consequence language as requiring approved company wording and human review. Do not send the plan, schedule meetings, recommend termination automatically, or save identifiable performance records into reusable knowledge.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "reviewedAt": "2026-09-26",
+  "rights": "Original Frame-authored briefs and workflows distributed with Frame. Linked agency publications are not reproduced or bundled. Sources are not endorsements. Source-check date is not a legal effective date or a certification of completeness."
+}

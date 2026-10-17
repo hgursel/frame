@@ -1,0 +1,132 @@
+{
+  "id": "business-contract-review",
+  "version": "1.1.0",
+  "title": "Business Contract Review",
+  "description": "Review contracts, renewals, supplier pricing, NDAs, amendments, statements of work, and change orders using evidence from actual agreements.",
+  "jurisdiction": [
+    "US — governing law must be identified"
+  ],
+  "reviewedAt": "2026-09-26",
+  "rights": "Original Frame-authored briefs and workflows distributed with Frame. Linked agency publications are not reproduced or bundled. Sources are not endorsements. Source-check date is not a legal effective date or a certification of completeness.",
+  "pages": [
+    {
+      "id": "agreement-review",
+      "title": "Contract Review and Document Authority",
+      "description": "Review an agreement, establish document versions, and produce cited findings.",
+      "tags": [
+        "contract",
+        "agreement",
+        "review",
+        "legal",
+        "amendment",
+        "terms",
+        "msa"
+      ],
+      "applicability": "Business agreements. Governing law, contract type, and company requirements must be supplied; this workflow states no jurisdiction-specific legal rule.",
+      "text": "## Intake\nIdentify parties and roles, contract type, governing law, purpose, executed/draft status, effective dates, and company-approved requirements. Request the base agreement, amendments, schedules, statements of work, and incorporated documents. Do not infer enforceability or signature authority from a filename.\n\n## Review\nBuild a document inventory with dates and execution status. Read order-of-precedence and amendment provisions; do not assume the newest upload replaces the agreement. Trace definitions and cross-references. Review scope, obligations, price, acceptance, term, renewal, termination, confidentiality, ownership, liability, remedies, notices, and disputes. Separate a missing provision from an unfavorable provision. Compare company requirements only when provided. Ask for missing exhibits instead of inventing their terms.\n\n## Output\nExecutive summary, obligations table, and findings with document/section, observed term, business consequence, missing facts, and suggested negotiation question. Cite source passages for every contractual obligation. Label legal interpretations and proposed wording as requiring counsel review. A review is not approval to sign.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "renewal-obligations",
+      "title": "Renewals, Notices, and Obligations",
+      "description": "Extract recurring obligations and calculate notice dates from actual agreement terms.",
+      "tags": [
+        "renewal",
+        "renew",
+        "notice",
+        "deadline",
+        "obligation",
+        "termination",
+        "calendar",
+        "expiration"
+      ],
+      "applicability": "Contract-specific extraction; no universal notice period or date convention is assumed.",
+      "text": "## Workflow\nExtract term commencement, initial end, renewal mechanism, renewal length, termination rights, notice window, delivery method/address, receipt rule, business-day definition, and survival clauses. Cite each clause. Distinguish obligation owner from counterparty and note triggers or dependencies.\nFor a deadline calculation, show the cited anchor date, exact period, calendar/business-day convention, timezone when relevant, and calculation. Request missing dates or holiday rules. Distinguish send-by and received-by dates. Do not assume a signature date equals an effective date.\n\n## Output\nObligation | owner | trigger | due date or unresolved formula | delivery/evidence | clause citation. Mark inferred dates explicitly. Do not claim reminders were scheduled: extracting a register does not create an operational reminder system. Human confirmation is needed before relying on a deadline.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "supplier-pricing",
+      "title": "Supplier Scope, Pricing, and Invoice Review",
+      "description": "Compare service obligations, price schedules, and invoices without inventing commercial rules.",
+      "tags": [
+        "supplier",
+        "vendor",
+        "invoice",
+        "pricing",
+        "price",
+        "payment",
+        "sla",
+        "service",
+        "procurement"
+      ],
+      "applicability": "Supplier/service contracts with supplied schedules and transaction records.",
+      "text": "## Workflow\nExtract deliverables, quantities/units, acceptance criteria, milestones, rates, discounts, tiers, minimums, tax treatment, currency, billing frequency, indexation, expenses, and change-control clauses. Record service levels, measurement windows, exclusions, remedies, claim procedure, and caps. Do not assume every missed target creates an automatic credit.\nMatch invoice lines or read-only SQL results to contracted items and effective pricing periods. Validate keys and units before joining. Calculate locally from source records; show the formula and source for each assumption. Distinguish unmatched items, duplicates, missing evidence, and actual discrepancies. Read access does not authorize SQL writes or payment changes.\n\n## Output\nContracted basis | billed basis | calculation | discrepancy | evidence | unresolved question. Include page/clause and transaction references in the current report only. Never copy SQL results, actual parameter values, customer examples, or calculated totals into learned knowledge.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "nda",
+      "title": "NDA and Confidentiality Review",
+      "description": "Compare confidentiality provisions with company-approved requirements.",
+      "tags": [
+        "nda",
+        "confidentiality",
+        "disclosure",
+        "confidential",
+        "secret",
+        "recipient"
+      ],
+      "applicability": "Commercial confidentiality agreements; employment restrictions and enforceability need separate legal review.",
+      "text": "## Workflow\nIdentify mutual/unilateral structure, discloser/recipient, permitted purpose, definition of protected information, marking/oral-disclosure rules, exclusions, permitted recipients, care obligations, compelled-disclosure procedure, duration, and survival. Review return/destruction requirements and backup/legal-retention exceptions. Check ownership/license language, residuals, remedies, publicity, and restrictions beyond confidentiality.\nCompare the actual wording with the organization’s approved template or requirements. Do not invent a standard acceptable duration or state that an NDA prevents legally protected disclosures. Flag employee/contractor restrictions and jurisdiction-sensitive provisions for counsel.\n\n## Output\nClause | proposed term | approved baseline if supplied | difference | business question | citation. Proposed alternative language is a draft for review, not a determination of legal enforceability.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "compare-versions",
+      "title": "Amendment and Version Comparison",
+      "description": "Compare contract versions and trace the effect of amendments.",
+      "tags": [
+        "compare",
+        "comparison",
+        "version",
+        "redline",
+        "amendment",
+        "change",
+        "revised"
+      ],
+      "applicability": "Requires both versions or the original agreement plus amendments; extracted text may omit signatures, formatting, or image-only clauses.",
+      "text": "## Workflow\nIdentify the versions and compare definitions, obligations, amounts, dates, renewal, termination, liability, confidentiality, and dispute terms. Detect moved clauses separately from substantive changes. Follow changed cross-references and document precedence. For amendments, distinguish replaced text from additions and provisions left unchanged. Explicitly list missing schedules and extraction limitations.\n\n## Output\nTopic | earlier clause | later clause | substantive change | practical effect | citations to both versions. Use short supporting excerpts, preserve qualifications, and avoid declaring a clause absent if the source extraction is incomplete. For a proposed consolidated version, identify every assumption and obtain human verification before use.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "statements-of-work",
+      "title": "Statements of Work & Change Orders",
+      "description": "Review SOW deliverables, acceptance criteria, dependencies, and the effect of proposed change orders.",
+      "tags": [
+        "sow",
+        "statement",
+        "statements",
+        "work",
+        "change",
+        "order",
+        "orders",
+        "scope",
+        "deliverable",
+        "acceptance"
+      ],
+      "applicability": "Business services/projects. Use the executed master agreement, SOW, exhibits, and authorized changes; this workflow assumes no default legal terms.",
+      "text": "## Establish the baseline\nIdentify the master agreement and SOW versions, execution status, precedence clauses, approvers, and incorporated documents. Ask for missing attachments. Separate contractual commitments from informal planning notes. Do not assume a signed change order replaces every provision of the original SOW.\n\n## Scope and acceptance\nFor each deliverable, extract the measurable result, format, owner, deadline, acceptance test, reviewer, review window, rejection/cure process, exclusions, and dependencies. Distinguish an estimate from a binding milestone and customer inputs from supplier duties. Flag ambiguous phrases such as “as needed” with a concrete clarification question. Do not invent acceptance criteria or assume silence means acceptance.\n\n## Change impact\nCompare baseline and proposed scope, quantities, rates, milestones, resources, and dependencies. Show additions, deletions, unchanged duties, price/schedule effects, approval status, and affected cross-references. Calculate only from supplied inputs, exposing assumptions. Flag work proposed before required approval; never claim approval or initiate payment/work changes.\n\n## Output\nDeliverable matrix plus change log: original clause; proposed change; business impact; missing information; decision owner; citations. Suggested wording is a draft for the authorized reviewers.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ]
+}

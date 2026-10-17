@@ -78,6 +78,22 @@ try {
     'Responsible AI at Work',
   ])
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download more packs' })).toHaveAttribute(
+    'href',
+    'https://github.com/hgursel/frame/tree/main/knowledge-packs',
+  );
+  assert((await contracts.boundingBox())!.height < 150, 'Collapsed catalog rows should be compact');
+  await page.getByLabel('Search knowledge packs').fill('cybersecurity');
+  await expect(
+    page.getByRole('heading', { name: 'Cybersecurity Essentials', exact: true }),
+  ).toBeVisible();
+  await expect(hr).toHaveCount(0);
+  await page.getByLabel('Search knowledge packs').fill('no-such-topic-xyz');
+  await expect(page.getByText('No packs match your search or filter.')).toBeVisible();
+  await page.getByLabel('Search knowledge packs').fill('');
+  await page.getByLabel('Filter knowledge packs').selectOption('installed');
+  await expect(page.locator('.library-card')).toHaveCount(1);
+  await page.getByLabel('Filter knowledge packs').selectOption('all');
   await hr.getByRole('button', { name: 'Install pack' }).click();
   await expect(hr.getByRole('button', { name: 'Installed', exact: true })).toBeDisabled();
   await contracts.getByRole('button', { name: 'Install pack' }).click();
@@ -114,11 +130,16 @@ try {
     'https://airc.nist.gov/airmf-resources/playbook/map/',
   );
   await page.keyboard.press('Escape');
-  if (process.env.FRAME_SCREENSHOT)
+  if (process.env.FRAME_SCREENSHOT) {
+    await page
+      .locator('.library-card details[open] summary')
+      .evaluateAll((elements) => elements.forEach((el) => (el as HTMLElement).click()));
+    await page.locator('.library-heading').scrollIntoViewIfNeeded();
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-library.png'),
       fullPage: true,
     });
+  }
   if (!(await page.getByLabel('Project menu: People and Contracts').isVisible()))
     await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.getByLabel('Project menu: People and Contracts').click();
@@ -130,6 +151,44 @@ try {
   await contracts.getByRole('button', { name: 'Attach to project' }).click();
   await expect(contracts.getByRole('button', { name: 'Detach' })).toBeVisible();
   assert.equal(ctx.library.attachments(project.id).length, 2);
+  const leases = page
+    .locator('.library-card')
+    .filter({ has: page.getByRole('heading', { name: 'Commercial Leases', exact: true }) });
+  await leases.getByRole('button', { name: 'Install & attach', exact: true }).click();
+  await expect(leases.getByRole('button', { name: 'Detach', exact: true })).toBeVisible();
+  await leases.getByRole('button', { name: 'Detach', exact: true }).click();
+  await expect(
+    leases.getByRole('button', { name: 'Attach to project', exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel('Import library pack')
+    .setInputFiles(path.resolve('knowledge-packs/guild-governance-guide/1.0.0.json'));
+  const guild = page.locator('.library-card').filter({
+    has: page.getByRole('heading', {
+      name: 'Guild Governance, Elections & Financial Stewardship',
+      exact: true,
+    }),
+  });
+  await expect(guild).toBeVisible();
+  assert.equal(
+    ctx.library.attachments(project.id).length,
+    2,
+    'Import should not automatically attach',
+  );
+  await guild.getByRole('button', { name: 'Attach to project', exact: true }).click();
+  await expect(guild.getByRole('button', { name: 'Detach', exact: true })).toBeVisible();
+  await guild.getByText('Explore sections').click();
+  await guild
+    .getByRole('button', { name: 'Member Rights and Officer Elections', exact: true })
+    .click();
+  await expect(
+    reader.getByRole('heading', { name: 'Member Rights and Officer Elections', exact: true }),
+  ).toBeVisible();
+  await expect(reader.getByRole('link', { name: /OLMS: Conducting Local/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByLabel('Filter knowledge packs').selectOption('attached');
+  await expect(page.locator('.library-card')).toHaveCount(3);
+  await page.getByLabel('Filter knowledge packs').selectOption('all');
   if (!(await page.getByLabel('Project menu: People and Contracts').isVisible()))
     await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page

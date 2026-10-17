@@ -1,0 +1,76 @@
+{
+  "id": "ca-privacy-incident-guide",
+  "title": "California Privacy, Member Data & Breach Readiness",
+  "description": "Analyze legal-entity coverage, sensitive staff/member records, vendor processing, retention, and incident response without assuming nonprofit status settles privacy duties.",
+  "pages": [
+    {
+      "id": "privacy-coverage",
+      "title": "Privacy Coverage and Member-Data Handling",
+      "tags": [
+        "privacy",
+        "CCPA",
+        "CPRA",
+        "member data",
+        "nonprofit",
+        "vendor"
+      ],
+      "applicability": "Guilds, affiliates, benefit-related entities, employers, and their service providers; assess each legal entity and processing activity separately.",
+      "text": "## Legal framework\nThe California Attorney General states that the CCPA generally does not apply to nonprofit organizations. That is a starting point for coverage analysis, not a conclusion that no privacy duties exist. Affiliates, commercial activities, contracts, other statutes, and data-breach obligations need separate review. Do not promise CCPA rights or deny a request solely because someone describes the organization as a nonprofit. Employment and member-service information can also carry contractual, confidentiality, or sector-specific obligations.\n\n## Map entities and data\nIdentify the legal entity collecting the information, its status, why information is needed, where it comes from, who receives it, and where it is stored. Separate staff HR files, member contact details, dues records, complaints, disciplinary files, benefits information, and event registrations. Do not presume that the guild and a benefit plan are the same data controller or legal entity. Record sensitive categories without copying real identifying information into a general planning pack.\n\n## Review the lifecycle\nFor each dataset describe notice or authorization, access controls, purpose, disclosures, retention, deletion, backups, and applicable holds. Compare public privacy statements with actual vendor integrations and exports. Limit access to what the operational role needs; a shared project is not an appropriate default destination for every complaint or medical record. Evaluate whether an AI vendor uses submitted data for training, retains prompts, or permits subprocessors to access them. A local model reduces some transfers but does not automatically make every upload appropriate or privileged.\n\n## Requests and vendors\nCreate a request-routing process with identity verification proportionate to the risk. Determine the actual legal basis, exceptions, and deadlines before answering an access or deletion request. Avoid collecting more identity evidence than necessary. Review vendor security, deletion, incident notice, subcontracting, permitted use, export, and termination provisions. A confidentiality clause alone does not settle operational data protection.\n\n## Example and counsel output\nA member asks for all records about a complaint and demands deletion of the file. Identify the holder, role, retention/hold issues, third-party information, and legal basis before promising either disclosure or deletion. Deliver a data map, coverage questions, proposed response process, and record categories for counsel to review. Keep staff, member, and benefit-plan records distinct and explain uncertainty instead of asserting a blanket nonprofit exemption.",
+      "sources": [
+        {
+          "title": "California Attorney General: CCPA",
+          "url": "https://oag.ca.gov/privacy/ccpa",
+          "locator": "Covered businesses, general nonprofit exclusion, rights, and limitations; do not treat the exclusion as exemption from all privacy law."
+        },
+        {
+          "title": "California Attorney General: Data Breach Reporting",
+          "url": "https://oag.ca.gov/privacy/databreach/reporting",
+          "locator": "Civil Code 1798.29 and 1798.82 notification and Attorney General sample-notice submission."
+        },
+        {
+          "title": "CRD: Employment",
+          "url": "https://calcivilrights.ca.gov/Employment/",
+          "locator": "FEHA coverage, protected categories, harassment, retaliation, and complaint information."
+        }
+      ],
+      "description": "Privacy Coverage and Member-Data Handling: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "breach-triage",
+      "title": "Data Incidents, Notification Review, and Preservation",
+      "tags": [
+        "breach",
+        "incident",
+        "notification",
+        "ransomware",
+        "privacy"
+      ],
+      "applicability": "California personal-information incidents and potentially affected people in other jurisdictions; counsel must determine applicable notice duties and deadlines.",
+      "text": "## Legal framework\nThe Attorney General’s reporting guidance describes California breach-notification laws and when a sample notice must be submitted to the Attorney General. The analysis depends on the data, affected people, acquisition or access facts under the applicable law, security protections, and the organization’s role. The CCPA coverage question is separate. A security alert is not automatically a reportable breach, but a lack of proven misuse is not a sufficient reason to close the matter.\n\n## First response record\nRecord discovery time, who reported it, affected systems, containment steps, known data categories, and the difference between confirmed facts and hypotheses. Preserve logs and volatile evidence through the approved incident-response process. Restrict distribution of credentials, forensic images, and personal data. Use a factual chronology; do not let an AI-generated summary replace original evidence. Containment must be coordinated with preservation and business continuity rather than treated as a reason to erase systems reflexively.\n\n## Build the notification assessment\nMap potentially affected individuals by jurisdiction and identify whether the organization owns/licenses data, maintains it for another entity, or receives it from a vendor. Track encryption and key exposure, evidence of exfiltration, access permissions, vendor findings, and uncertainties. Ask counsel to verify current statutory timing, content, recipient, regulator, and contractual duties immediately. Do not calculate a notice deadline from a cached pack or assume a vendor’s later final report stops the clock.\n\n## Communications and insurance\nIdentify counsel, insurer, incident-response specialists, vendor contacts, and the executive decision owner. Review notice and consent conditions in relevant policies and contracts. Draft messages using only supported facts, distinguishing what is being investigated from what is known. Avoid unsupported assurances that no information was taken or that all affected people have been identified. Preserve version history of public and private communications and record who approved them.\n\n## Example and counsel brief\nA vendor reports that a member-services export was exposed, but cannot yet identify downloads. Record the export date, fields, permissions, access logs, affected population, and vendor obligations. Prepare a decision log with alternative hypotheses, needed evidence, notification questions, and assigned deadlines for counsel to confirm. Frame should organize the incident and source material; it should not declare that notification is unnecessary, direct evidence destruction, or represent that local processing creates attorney-client privilege.",
+      "sources": [
+        {
+          "title": "California Attorney General: Data Breach Reporting",
+          "url": "https://oag.ca.gov/privacy/databreach/reporting",
+          "locator": "Civil Code 1798.29 and 1798.82 notification and Attorney General sample-notice submission."
+        },
+        {
+          "title": "California Attorney General: CCPA",
+          "url": "https://oag.ca.gov/privacy/ccpa",
+          "locator": "Covered businesses, general nonprofit exclusion, rights, and limitations; do not treat the exclusion as exemption from all privacy law."
+        }
+      ],
+      "description": "Data Incidents, Notification Review, and Preservation: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

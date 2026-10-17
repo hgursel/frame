@@ -22,6 +22,7 @@ jobs:
       - run: npm ci
       - run: env -u FRAME_PYTHON npm run python:setup
       - run: npm run check
+      - run: npm run packs:check
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium --only-shell

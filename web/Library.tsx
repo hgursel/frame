@@ -125,6 +125,8 @@ export function KnowledgeLibraryPanel({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
   const endpoint = projectId ? `/projects/${projectId}/library` : '/library';
   const load = () => api<LibraryEntry[]>(endpoint).then(setEntries);
   useEffect(() => {
@@ -157,7 +159,27 @@ export function KnowledgeLibraryPanel({
       setBusy(false);
     }
   };
-  const visible = readOnly ? entries?.filter((e) => e.attached) : entries;
+  const available = readOnly ? entries?.filter((e) => e.attached) : entries;
+  const visible = available?.filter((entry) => {
+    const { pack } = entry;
+    const matchesStatus =
+      filter === 'all' ||
+      (filter === 'installed' && entry.installed) ||
+      (filter === 'attached' && entry.attached) ||
+      (filter === 'updates' &&
+        (!!entry.newerVersion ||
+          !!available?.some((e) => e.pack.id === pack.id && e.newerVersion === pack.version)));
+    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const text = [
+      pack.title,
+      pack.description,
+      ...pack.jurisdiction,
+      ...pack.pages.flatMap((p) => [p.title, p.description, ...p.tags]),
+    ]
+      .join(' ')
+      .toLowerCase();
+    return matchesStatus && terms.every((term) => text.includes(term));
+  });
   return (
     <section
       className="library-panel"
@@ -175,25 +197,40 @@ export function KnowledgeLibraryPanel({
               : 'Practical reference briefs and review workflows. Install once, then select packs in Project settings.'}
           </p>
         </div>
-        {!projectId && (
-          <label className="button-link library-import">
-            Import pack
-            <input
-              aria-label="Import library pack"
-              type="file"
-              accept=".json,application/json"
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = '';
-                if (!file) return;
-                void change(async () => {
-                  if (file.size > 1_500_000) throw new Error('Pack must be smaller than 1.5 MB.');
-                  return api('/library/import', 'POST', JSON.parse(await file.text()));
-                }, 'Pack imported. Attach it in Project settings.');
-              }}
-            />
-          </label>
+        {!readOnly && (
+          <div className="library-catalog-actions">
+            <a
+              href="https://github.com/hgursel/frame/tree/main/knowledge-packs"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              Download more packs ↗
+            </a>
+            <label className="button-link library-import">
+              Import pack
+              <input
+                aria-label="Import library pack"
+                type="file"
+                accept=".json,application/json"
+                disabled={busy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  void change(
+                    async () => {
+                      if (file.size > 1_500_000)
+                        throw new Error('Pack must be smaller than 1.5 MB.');
+                      return api('/library/import', 'POST', JSON.parse(await file.text()));
+                    },
+                    projectId
+                      ? 'Pack imported. Select Attach to project to use it here.'
+                      : 'Pack imported. Attach it in Project settings.',
+                  );
+                }}
+              />
+            </label>
+          </div>
         )}
       </div>
       {error && (
@@ -206,10 +243,36 @@ export function KnowledgeLibraryPanel({
           {notice}
         </p>
       )}
+      <div className="library-toolbar">
+        <input
+          aria-label="Search knowledge packs"
+          placeholder="Search packs, topics, or jurisdictions…"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select
+          aria-label="Filter knowledge packs"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="all">All packs</option>
+          <option value="installed">Installed</option>
+          {projectId && <option value="attached">Attached</option>}
+          <option value="updates">Updates available</option>
+        </select>
+        <span className="muted small" aria-live="polite">
+          {visible?.length || 0} of {available?.length || 0}
+        </span>
+      </div>
       {!entries ? (
         <p className="muted">Loading library…</p>
       ) : !visible?.length ? (
-        <p className="muted">No library packs attached. Select them in Project settings.</p>
+        <p className="muted">
+          {available?.length
+            ? 'No packs match your search or filter.'
+            : 'No library packs attached. Select them in Project settings.'}
+        </p>
       ) : (
         <div className="library-grid">
           {visible.map(({ pack, installed, attached, bundled, newerVersion }) => {
@@ -217,37 +280,48 @@ export function KnowledgeLibraryPanel({
               entries.find((e) => e.pack.id === pack.id && e.attached)?.pack.version || null;
             return (
               <article className="library-card" key={`${pack.id}:${pack.version}`}>
+                <div className="library-row-title">
+                  <h3>{pack.title}</h3>
+                  <p className="muted small">
+                    {pack.jurisdiction.join(' · ')} · {pack.pages.length} sections · v{pack.version}
+                  </p>
+                </div>
                 <div className="library-card-top">
                   <span className="library-badge">
-                    {attached
-                      ? 'Attached'
-                      : installed
-                        ? 'Installed'
-                        : bundled
-                          ? 'Included with Frame'
-                          : 'Imported'}
+                    {newerVersion
+                      ? 'Update available'
+                      : attached
+                        ? 'Attached'
+                        : installed
+                          ? 'Installed'
+                          : bundled
+                            ? 'Available'
+                            : 'Imported'}
                   </span>
-                  <span className="muted small">v{pack.version}</span>
                 </div>
-                <h3>{pack.title}</h3>
-                <p>{pack.description}</p>
-                <p className="muted small">
-                  {pack.jurisdiction.join(' · ')}
-                  <br />
-                  {pack.pages.length} sections · Source check {pack.reviewedAt}
-                </p>
-                {!bundled && (
-                  <p className="muted small">
-                    Imported content · verify publisher and accuracy before use.
-                  </p>
-                )}
-                {newerVersion && (
-                  <p className="library-update">
-                    Version {newerVersion} available. Attached projects keep their selected version.
-                  </p>
-                )}
                 <details>
                   <summary>Explore sections</summary>
+                  <p>{pack.description}</p>
+                  <p className="muted small">
+                    Source check {pack.reviewedAt} ·{' '}
+                    {new Set(pack.pages.flatMap((p) => p.sources.map((s) => s.url))).size} publisher
+                    references ·{' '}
+                    {pack.pages
+                      .reduce((n, p) => n + p.text.split(/\s+/).length, 0)
+                      .toLocaleString()}{' '}
+                    words
+                  </p>
+                  {!bundled && (
+                    <p className="muted small">
+                      Imported content · verify publisher and accuracy before use.
+                    </p>
+                  )}
+                  {newerVersion && (
+                    <p className="library-update">
+                      Version {newerVersion} available. Attached projects keep their selected
+                      version.
+                    </p>
+                  )}
                   <ul className="library-sections">
                     {pack.pages.map((page) => (
                       <li key={page.id}>
@@ -270,14 +344,20 @@ export function KnowledgeLibraryPanel({
                     {projectId ? (
                       <button
                         type="button"
-                        disabled={busy || !installed}
+                        disabled={busy}
                         onClick={() =>
                           void change(
-                            () =>
-                              api(`/projects/${projectId}/library/${pack.id}`, 'PUT', {
+                            async () => {
+                              if (!installed)
+                                await api('/library/install', 'POST', {
+                                  id: pack.id,
+                                  version: pack.version,
+                                });
+                              return api(`/projects/${projectId}/library/${pack.id}`, 'PUT', {
                                 version: attached ? null : pack.version,
                                 previousVersion: previous,
-                              }),
+                              });
+                            },
                             attached
                               ? 'Pack detached. Project documents are unchanged.'
                               : 'Pack attached. New chat turns use this version.',
@@ -287,7 +367,7 @@ export function KnowledgeLibraryPanel({
                         {attached
                           ? 'Detach'
                           : !installed
-                            ? 'Install in Settings first'
+                            ? 'Install & attach'
                             : previous
                               ? 'Use this version'
                               : 'Attach to project'}
@@ -324,8 +404,9 @@ export function KnowledgeLibraryPanel({
       {!projectId && (
         <p className="muted small library-footnote">
           Works locally after installation. Packs contain authored summaries and workflows, not
-          complete statutes or government-approved forms. Publisher links open external websites.
-          Updates arrive with Frame releases or explicit file imports.
+          complete statutes or government-approved forms. Detailed California and guild guides are
+          available through Download more packs. Publisher links open external websites. Updates
+          arrive with Frame releases or explicit file imports.
         </p>
       )}
     </section>

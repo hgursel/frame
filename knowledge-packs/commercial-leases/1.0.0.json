@@ -1,0 +1,75 @@
+{
+  "id": "commercial-leases",
+  "title": "Commercial Leases",
+  "description": "Review premises, rent schedules, operating costs, repairs, options, and exit terms against the actual commercial lease.",
+  "jurisdiction": [
+    "US — property jurisdiction and governing law must be identified"
+  ],
+  "pages": [
+    {
+      "id": "lease-review",
+      "title": "Commercial Lease Review & Premises",
+      "description": "Inventory a commercial lease and identify business obligations and missing exhibits.",
+      "tags": [
+        "commercial",
+        "lease",
+        "leases",
+        "tenant",
+        "landlord",
+        "premises",
+        "rent",
+        "property"
+      ],
+      "applicability": "US commercial property agreements; identify state/city and governing law. No residential-tenant rules or jurisdiction-specific legal conclusions are supplied.",
+      "text": "## Intake\nIdentify landlord/tenant entities, property and suite, intended use, state/city, governing law, draft/executed status, lease term, amendments, guaranties, and company-approved requirements. Obtain exhibits, plans, rules, work letters, and incorporated documents. Do not apply residential rent, deposit, repair, or eviction rules to a commercial agreement by analogy.\n\n## Review matrix\nExtract permitted use and restrictions, area/measurement definition, possession and commencement conditions, base/additional rent, deposit/guaranty, insurance, maintenance/repairs, alterations, access, assignment/subletting, defaults/cure, notices, options, casualty/condemnation, and surrender. Identify landlord obligations as well as tenant obligations. Distinguish lease statements from externally verified permits, accessibility, or suitability; the agreement alone does not prove a site can lawfully support the intended business.\n\n## Output\nTopic | actual clause/exhibit | responsible party | business consequence | missing fact | negotiation question. Cite the lease for every claimed duty. Ask counsel to check applicable local commercial-tenant protections and enforceability rather than declaring terms valid or invalid.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "rent-operating-costs",
+      "title": "Rent Schedules & Operating Costs",
+      "description": "Check base rent, escalations, CAM/NNN charges, reconciliation, and invoice calculations.",
+      "tags": [
+        "rent",
+        "cam",
+        "nnn",
+        "operating",
+        "costs",
+        "escalation",
+        "lease",
+        "invoice",
+        "charges"
+      ],
+      "applicability": "US commercial property agreements; identify state/city and governing law. No residential-tenant rules or jurisdiction-specific legal conclusions are supplied.",
+      "text": "## Extract before calculating\nIdentify commencement, possession and rent-start dates separately. Record area basis, currency, payment frequency, abatements, escalation dates/formula, index/base period, floors/caps, percentage rent if any, and taxes/insurance/utilities. Read definitions of operating expenses and the tenant’s share. Labels such as “NNN” or “gross” do not replace the actual clauses.\n\n## Review\nExtract excluded expenses, management/admin fees, capital-cost treatment, gross-up provisions, base-year assumptions, reconciliation rules, supporting-record access, audit/objection windows, and caps on controllable costs where present. Do not invent caps or assume the landlord can pass through every expense.\n\n## Calculate\nUse the supplied lease schedule and invoices. Show units, period, proration basis, formula, intermediate steps, and cited inputs. Request missing indices, area, dates, or expense records. Separate forecast assumptions from actual liabilities. Avoid double-counting base rent and additional rent.\n\n## Output\nPeriod | contracted basis | billed basis | supported calculation | difference | source | unresolved question. Calculations do not authorize withholding rent or changing payment instructions.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "lease-options-exit",
+      "title": "Lease Options, Repairs & Exit",
+      "description": "Extract renewal/termination options, notice mechanics, repair allocations, and surrender obligations.",
+      "tags": [
+        "lease",
+        "renewal",
+        "option",
+        "notice",
+        "repair",
+        "maintenance",
+        "surrender",
+        "exit",
+        "termination"
+      ],
+      "applicability": "US commercial property agreements; identify state/city and governing law. No residential-tenant rules or jurisdiction-specific legal conclusions are supplied.",
+      "text": "## Options and notices\nIdentify each renewal, expansion, early-termination, assignment, and subletting provision. Capture prerequisites, exercise window, recipient/address, permitted delivery, receipt rule, pricing mechanism, and consequences of default. Show calculations from cited anchor dates and verified day-count rules. Mark unknown conditions; an option is not an automatic renewal.\n\n## Repairs and exit\nAllocate structural, roof, building systems, interior, and shared-area duties from the lease and amendments. Distinguish routine maintenance, replacement, code-related work, and damage responsibility. Review improvements ownership, removal/restoration, inspection, keys/access, remaining charges, deposit accounting, guaranty release, and holdover provisions. Do not assume returning keys ends liability or that one party pays every repair.\n\n## Output\nAn obligations/notice register and exit checklist with clause citations, owners, conditions, unresolved dates, and requested evidence. Distinguish generated dates from confirmed deadlines. Frame has not scheduled reminders, exercised an option, sent notice, or authorized withholding payment.",
+      "sources": [],
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "reviewedAt": "2026-09-26",
+  "rights": "Original Frame-authored briefs and workflows distributed with Frame. Linked agency publications are not reproduced or bundled. Sources are not endorsements. Source-check date is not a legal effective date or a certification of completeness."
+}

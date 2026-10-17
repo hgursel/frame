@@ -1,0 +1,80 @@
+{
+  "id": "ca-investigations-guide",
+  "title": "California Investigations & Retaliation",
+  "description": "Detailed intake, evidence assessment, independence, confidentiality, corrective-action, and retaliation-monitoring guides for staff and member matters.",
+  "pages": [
+    {
+      "id": "investigation-design",
+      "title": "Designing a Fair Workplace Investigation",
+      "tags": [
+        "harassment",
+        "investigation",
+        "complaint",
+        "evidence",
+        "witness"
+      ],
+      "applicability": "Workplace allegations involving staff or production personnel. First identify whether the guild is employer, representative, witness, or recipient of a referral.",
+      "text": "## Legal framework\nCRD’s harassment guidance emphasizes prompt, fair, impartial fact gathering and an appropriate response. The inquiry should be designed to find facts rather than justify a preferred outcome. A workplace investigation is distinct from a judicial decision and from a criminal investigation. Employer, individual, and organizational duties can differ. Do not promise absolute secrecy or treat the absence of a formal complaint form as a reason to ignore notice of a problem.\n\n## Scope and independence\nRecord each allegation, people involved, dates, locations, applicable policy version, immediate safety concerns, and the organization’s role. Check the proposed investigator’s reporting line, prior involvement, financial interests, and relationships. Senior-leadership allegations, competing member interests, or significant conflicts may warrant outside counsel or an independent investigator. Define who investigates, who decides, and who handles interim arrangements. Interim steps should address risk without predetermining facts or burdening the complainant automatically.\n\n## Evidence plan\nCreate an allegation matrix with supporting evidence, contrary evidence, missing evidence, and source reliability. Preserve relevant messages, schedules, contemporaneous reports, and available recordings through approved channels. Interview people with direct knowledge and give the respondent a fair chance to address the allegations. Separate firsthand recollection from inference and repetition. Use open questions, retain the witness’s qualifications, and avoid feeding a rehearsed narrative to witnesses.\n\n## Evaluation and findings\nAssess consistency, opportunity to observe, contemporaneous corroboration, plausible alternative explanations, and contradictions. Demeanor alone is an unreliable shortcut; do not generate credibility scores from personality, protected characteristics, or an AI impression. State the standard and policy being applied and distinguish factual findings from legal conclusions. A finding of insufficient evidence is not a finding that the reporter lied. Record limitations, including unavailable witnesses or missing messages.\n\n## Example and counsel brief\nA member reports misconduct at a production and also alleges that a guild employee mishandled the report. Split the employer’s underlying investigation from the guild’s response review and identify conflicts before sharing files. Deliver a timeline, allegation matrix, interview list, preservation status, and questions about scope, independence, notices, and corrective options. Do not assume that copying counsel makes the investigation privileged; counsel must design and assess the privilege strategy.",
+      "sources": [
+        {
+          "title": "CRD: Harassment Prevention Guide (2025)",
+          "url": "https://calcivilrights.ca.gov/wp-content/uploads/sites/32/2025/04/Harassment-Prevention-Guide-2025.pdf",
+          "locator": "Fair investigations, impartiality, confidentiality, evidence, and corrective responses."
+        },
+        {
+          "title": "CRD: Employment",
+          "url": "https://calcivilrights.ca.gov/Employment/",
+          "locator": "FEHA coverage, protected categories, harassment, retaliation, and complaint information."
+        },
+        {
+          "title": "CRD: Complaint Process",
+          "url": "https://calcivilrights.ca.gov/ComplaintProcess/",
+          "locator": "Intake, supporting documents, investigation, and case-closure procedures."
+        }
+      ],
+      "description": "Designing a Fair Workplace Investigation: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "retaliation-and-response",
+      "title": "Retaliation, Corrective Action, and Follow-Up",
+      "tags": [
+        "retaliation",
+        "whistleblower",
+        "discipline",
+        "complaint",
+        "follow-up"
+      ],
+      "applicability": "Employment and member-service responses to reports, participation in investigations, or exercise of workplace rights; identify the specific protected activity.",
+      "text": "## Legal framework\nCalifornia has several retaliation protections with different protected activities, decision standards, agencies, and deadlines. CRD handles civil-rights-related matters; the Labor Commissioner administers numerous labor-law retaliation protections. Do not collapse wage complaints, safety reports, discrimination complaints, and internal disagreements into a single rule. Protection does not necessarily depend on the underlying allegation ultimately being substantiated.\n\n## Separate chronology from inference\nRecord the protected activity asserted, when each decision-maker learned of it, the challenged action, earlier plans or performance records, comparators, and stated reasons. Timing can be relevant but does not alone prove or disprove causation. A prior problem does not automatically justify any later response. Preserve drafts and approvals showing when the decision was formed. Include changes in assignments, access, schedules, references, exclusion, and other consequences, not just firing.\n\n## Review proposed actions\nBefore discipline or a significant change involving a reporter or witness, review the factual basis, consistent treatment, policy, approval history, and practical impact. Consider whether an interim separation of people can be accomplished without automatically reducing the reporting person’s opportunities. Frame may identify inconsistencies and questions, but should not decide whose account is true or recommend punishment based on an unverified summary.\n\n## Follow-up controls\nAssign an independent contact, explain how new concerns can be raised, and set actual check-in dates. Review whether corrective measures were implemented and whether problems recur. Limit information shared with the workforce to what is appropriate; do not publish witness statements or a disciplinary file. Preserve the original investigation and later follow-up separately so that updates do not overwrite the historical record. Confidentiality instructions need legal review and should not be a blanket prohibition on protected discussion.\n\n## Worked discussion and escalation\nA supervisor removes a staff member from a visible assignment after the person participates in an investigation, explaining that the change reduces tension. Ask who chose the change, whether the employee agreed, what alternatives existed, and how duties and advancement are affected. Present neutral alternatives for counsel rather than a conclusion of liability. Deliver a decision timeline, comparator evidence, risks needing prompt action, and a follow-up plan. Refer filing deadlines and agency selection for current legal verification; an internal review does not automatically extend an external deadline.",
+      "sources": [
+        {
+          "title": "DIR: Retaliation Complaint Investigation Unit",
+          "url": "https://www.dir.ca.gov/dlse/dlseretaliation.html",
+          "locator": "Labor Commissioner retaliation jurisdiction and links to filing procedures."
+        },
+        {
+          "title": "CRD: Employment",
+          "url": "https://calcivilrights.ca.gov/Employment/",
+          "locator": "FEHA coverage, protected categories, harassment, retaliation, and complaint information."
+        },
+        {
+          "title": "CRD: Complaint Process",
+          "url": "https://calcivilrights.ca.gov/ComplaintProcess/",
+          "locator": "Intake, supporting documents, investigation, and case-closure procedures."
+        }
+      ],
+      "description": "Retaliation, Corrective Action, and Follow-Up: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States",
+    "California"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}
