@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api } from './api.js';
 import { RichMarkdown } from './RichMarkdown.js';
+import { DownloadCatalog } from './DownloadCatalog.js';
 import type { LibraryEntry, LibraryPack, LibraryPage } from '../shared/library.js';
 import './library.css';
 const pageUrl = (p: LibraryPack, id: string) =>
@@ -127,6 +128,7 @@ export function KnowledgeLibraryPanel({
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [browsing, setBrowsing] = useState(false);
   const endpoint = projectId ? `/projects/${projectId}/library` : '/library';
   const load = () => api<LibraryEntry[]>(endpoint).then(setEntries);
   useEffect(() => {
@@ -180,6 +182,8 @@ export function KnowledgeLibraryPanel({
       .toLowerCase();
     return matchesStatus && terms.every((term) => text.includes(term));
   });
+  if (browsing && !readOnly)
+    return <DownloadCatalog onBack={() => setBrowsing(false)} onInstalled={load} />;
   return (
     <section
       className="library-panel"
@@ -199,13 +203,9 @@ export function KnowledgeLibraryPanel({
         </div>
         {!readOnly && (
           <div className="library-catalog-actions">
-            <a
-              href="https://github.com/hgursel/frame/tree/main/knowledge-packs"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              Download more packs ↗
-            </a>
+            <button disabled={busy} onClick={() => setBrowsing(true)}>
+              Browse packs
+            </button>
             <label className="button-link library-import">
               Import pack
               <input
@@ -405,7 +405,7 @@ export function KnowledgeLibraryPanel({
         <p className="muted small library-footnote">
           Works locally after installation. Packs contain authored summaries and workflows, not
           complete statutes or government-approved forms. Detailed federal, industry, California,
-          and guild guides are available through Download more packs. Publisher links open external
+          and guild guides are available through Browse packs. Publisher links open external
           websites. Updates arrive with Frame releases or explicit file imports.
         </p>
       )}

@@ -31,6 +31,27 @@ export interface LibraryEntry {
   bundled: boolean;
   newerVersion?: string;
 }
+export interface DownloadablePack {
+  id: string;
+  version: string;
+  title: string;
+  description: string;
+  type: string;
+  collection: string;
+  reviewedAt: string;
+  sections: number;
+  words: number;
+  sources: number;
+  bytes: number;
+  sha256: string;
+  file: string;
+  downloadUrl: string;
+  jurisdiction: string[];
+  pages: Pick<LibraryPage, 'id' | 'title' | 'description' | 'tags'>[];
+}
+export interface DownloadCatalogEntry extends DownloadablePack {
+  installed: boolean;
+}
 export interface LibraryReference {
   pack: string;
   version: string;
