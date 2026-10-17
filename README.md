@@ -30,7 +30,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
 - **Remember useful methods.** Project memory learns recurring tasks and parameterized SQL without saving result values. Keep up to 30 methods per project, review changes, and supply relevant methods directly to future chats. [Configure learning and maintenance →](docs/KNOWLEDGE_MAINTENANCE.md)
 - **Keep the history.** Knowledge pages include revisions and provenance. Export a portable **Open Knowledge Format 0.2** bundle with an index and change log.
-- **Add shared business references.** Browse eight included packs in a compact, searchable catalog, or [download 28 detailed federal, industry, California, and guild guides](knowledge-packs/). Topics include employment, safety, privacy, commercial practices, IP/AI, benefits, tax preparation, governance, entertainment, and work with outside counsel. Industry guides cover technology/services, healthcare, nonprofits, education, property, manufacturing, construction, logistics, and retail/hospitality. Import explicitly and attach a version to selected projects; open cited sections inside chat. No bargaining agreement content is included in the new guides. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
+- **Add shared business references.** Open **Settings → Knowledge Library → Browse packs** to search eight included packs and 28 detailed federal, industry, California, and guild guides. Inspect sections, install directly, or download JSON without leaving Frame. Topics include employment, safety, privacy, commercial practices, IP/AI, benefits, tax preparation, governance, entertainment, and work with outside counsel. Industry guides cover technology/services, healthcare, nonprofits, education, property, manufacturing, construction, logistics, and retail/hospitality. Attach a version to selected projects separately; open cited sections inside chat. No bargaining agreement content is included in the new guides. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
 [Explore the knowledge workflow →](docs/KNOWLEDGE.md)
@@ -135,6 +135,7 @@ Use **+ → Upload images**, or paste a screenshot into the chat. Preview or rem
 - **Your model endpoint.** Frame connects to the llama.cpp server you operate, with no cloud-model fallback.
 - **Your stored data.** Project files, knowledge, settings, chart datasets, and conversation history stay in the configured data directory on the Frame host.
 - **No telemetry.** Frame disables Pi install telemetry and model-catalog network refreshes. Initial dependency installation still requires package downloads.
+- **Optional reference downloads.** Browsing knowledge packs works offline. Explicitly downloading or installing an optional pack contacts Frame’s public GitHub repository, verifies its checksum, and sends no project content. Installed packs remain local; project attachment and upgrades are separate choices.
 - **Explicit capabilities.** Enable built-in plugins per project and opt into trusted host tools when you need filesystem or Python/shell execution.
 
 > [!IMPORTANT]

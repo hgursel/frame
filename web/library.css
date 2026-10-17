@@ -15,6 +15,9 @@
   max-width: 650px;
   margin: 0;
 }
+.library-download-catalog .library-heading > button {
+  flex-shrink: 0;
+}
 .library-grid {
   display: flex;
   flex-direction: column;

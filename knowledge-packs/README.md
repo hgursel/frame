@@ -21,12 +21,16 @@ The new federal and industry guides use a federal jurisdiction label, not Califo
 
 ## Install a pack
 
+In Frame, choose **Settings → Knowledge Library → Browse packs**, or **Browse packs** in Project settings. Search or filter the catalog, inspect section details, then choose **Install pack** for direct installation or **Download JSON** to save a file. Neither action attaches a pack to a project. Catalog browsing works offline; downloading optional guides requires the Frame server to reach the public repository. Included briefs need no internet. Downloaded files are size-checked, SHA-256-verified against Frame’s release catalog, and schema-validated before installation.
+
+For manual distribution:
+
 1. Open the [catalog](CATALOG.md) and save the desired **JSON** download. Use the raw download, not a GitHub HTML page. No GitHub account is required for public downloads.
 2. In Frame, open **Settings → Knowledge Library**, or **Project settings → Library references**, and select **Import pack**.
 3. Review its sections, jurisdiction, review date, and sources. Downloaded files are treated as imported, unverified content; importing is not publisher verification.
 4. Select **Attach to project**. The next chat turn can retrieve its sections through the knowledge tools. Importing alone does not add it to a conversation or publish company information.
 
-Packs work locally after import. Frame does not fetch publisher links, phone home, auto-download from GitHub, or auto-update attached versions. Opening an external source or GitHub link is a separate browser action. Publisher URLs are references, not offline copies of the linked text. Use counsel or current primary sources for live-law verification; Frame's local model cannot imply it visited those links.
+Packs work locally after installation. Frame does not fetch publisher links, phone home, auto-download from GitHub, or auto-update attached versions. Optional pack downloads happen only on the user's Install or Download action; they send no project data or credentials and follow no redirects. The catalog updates with Frame releases. Opening an external source or GitHub link is a separate browser action. Publisher URLs are references, not offline copies of the linked text. Use counsel or current primary sources for live-law verification; Frame's local model cannot imply it visited those links.
 
 ## Suggested selections
 
@@ -51,7 +55,7 @@ To update, download/import the new version and explicitly choose **Use this vers
 
 ## Maintaining the collection
 
-Authoring files are in `src/`. Run `npm run packs:build` from the repository root to regenerate JSON downloads, the catalog, and source register offline. Run `npm run packs:check` to verify generated files match their authoring source. The test suite validates imports, version pinning, source structure, and bounded retrieval. Automated checks do not validate legal conclusions.
+Authoring files are in `src/`. Run `npm run packs:build` from the repository root to regenerate JSON downloads, the catalog, the metadata-only application catalog (`server/library/download-catalog.ts`), and source register offline. Run `npm run packs:check` to verify generated files match their authoring source. The test suite validates downloads, imports, version pinning, source structure, and bounded retrieval. Automated checks do not validate legal conclusions.
 
 For a substantive update, review current primary sources, record the actual review date, identify changed rules and effective dates, include contrary or limiting authorities where relevant, and increment the version. Retain previous downloads for reproducibility. The detailed guides have **not** been reviewed by a licensed attorney; an outside-counsel editorial review is recommended before relying on them for organizational decisions.
 

@@ -1,6 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
@@ -27,11 +27,27 @@ const model = createServer(async (req, res) => {
 await new Promise<void>((r) => model.listen(0, '127.0.0.1', r));
 const root = await mkdtemp(path.join(tmpdir(), 'frame-library-browser-'));
 const origin = 'http://127.0.0.1:31880';
+let packDownloads = 0;
+let downloadFailure = false;
+const federalPack = JSON.parse(await readFile('knowledge-packs/catalog.json', 'utf8')).packs.find(
+  (p: any) => p.collection === 'Federal core',
+);
+const federalData = await readFile(`knowledge-packs/${federalPack.file}`);
+const scrollSettingsToTop = (element: Element) => {
+  for (let parent: Element | null = element; parent; parent = parent.parentElement)
+    parent.scrollTop = 0;
+};
 const ctx = await createApp({
   dataDir: root,
   origin,
   setupToken: 'library-test',
   webDir: path.resolve('dist/web'),
+  libraryFetch: async (url: string) => {
+    packDownloads++;
+    assert.equal(url, federalPack.downloadUrl);
+    if (downloadFailure) throw new Error('offline');
+    return new Response(federalData);
+  },
 });
 const project = ctx.store.createProject({
   name: 'People and Contracts',
@@ -78,10 +94,7 @@ try {
     'Responsible AI at Work',
   ])
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Download more packs' })).toHaveAttribute(
-    'href',
-    'https://github.com/hgursel/frame/tree/main/knowledge-packs',
-  );
+  await expect(page.getByRole('button', { name: 'Browse packs', exact: true })).toBeVisible();
   assert((await contracts.boundingBox())!.height < 150, 'Collapsed catalog rows should be compact');
   await page.getByLabel('Search knowledge packs').fill('cybersecurity');
   await expect(
@@ -235,6 +248,58 @@ try {
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-library-mobile.png'),
       fullPage: true,
     });
+  await page.getByRole('button', { name: 'Browse packs', exact: true }).click();
+  await expect(page.locator('.library-download-catalog .library-card')).toHaveCount(36);
+  await page.getByLabel('Filter pack collection').selectOption('Federal core');
+  await expect(page.locator('.library-card')).toHaveCount(7);
+  await page.getByLabel('Search downloadable packs').fill('no-match-xyz');
+  await expect(page.getByText('No packs match your search.', { exact: false })).toBeVisible();
+  await page.getByLabel('Search downloadable packs').fill(federalPack.title);
+  const downloadable = page.locator('.library-download-catalog .library-card');
+  await expect(downloadable).toHaveCount(1);
+  await downloadable.getByText('Pack details & sections').click();
+  await expect(downloadable.locator('.library-sections li')).toHaveCount(federalPack.sections);
+  assert.equal(packDownloads, 0, 'browsing and inspecting metadata must not fetch GitHub');
+  assert(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+    'mobile catalog must not overflow',
+  );
+  await page.locator('.settings-panel').evaluate(scrollSettingsToTop);
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-catalog-mobile.png'),
+      fullPage: true,
+    });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  downloadFailure = true;
+  await downloadable.getByRole('button', { name: 'Install pack', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not download this pack');
+  await expect(
+    downloadable.getByRole('button', { name: 'Install pack', exact: true }),
+  ).toBeEnabled();
+  downloadFailure = false;
+  const downloaded = page.waitForEvent('download');
+  await downloadable.getByRole('button', { name: 'Download JSON', exact: true }).click();
+  const file = await downloaded;
+  assert.equal(file.suggestedFilename(), `${federalPack.id}-${federalPack.version}.json`);
+  assert.deepEqual(await readFile((await file.path())!), federalData);
+  assert(!ctx.library.installed().some((p: any) => p.id === federalPack.id));
+  const attachmentsBefore = ctx.library.attachments(project.id);
+  await downloadable.getByRole('button', { name: 'Install pack', exact: true }).click();
+  await expect(downloadable.getByRole('button', { name: 'Installed', exact: true })).toBeDisabled();
+  assert.deepEqual(ctx.library.attachments(project.id), attachmentsBefore);
+  await expect(
+    page.getByRole('status').filter({ hasText: 'installed. Return to the library' }),
+  ).toBeVisible();
+  await page.locator('.settings-panel').evaluate(scrollSettingsToTop);
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace('.png', '-catalog.png'),
+      fullPage: true,
+    });
+  await page.getByRole('button', { name: 'Back to library', exact: true }).click();
+  await page.getByLabel('Search knowledge packs').fill(federalPack.title);
+  await expect(page.getByRole('heading', { name: federalPack.title, exact: true })).toBeVisible();
   assert.deepEqual(errors, []);
   console.log(
     'Library browser: installation, attachment, sources, SDK retrieval, citations, dialog, and mobile layout passed.',

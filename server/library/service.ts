@@ -13,7 +13,7 @@ const key = z
   .max(80);
 const version = z.string().regex(/^\d{1,4}\.\d{1,4}\.\d{1,4}$/);
 const date = z.iso.date();
-const packSchema = z
+export const packSchema = z
   .object({
     id: key,
     version,

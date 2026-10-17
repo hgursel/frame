@@ -1,6 +1,7 @@
 import { chatFilesApi } from './chat-files-api.js';
 import { imagesSchema } from './images.js';
 import { KnowledgeLibrary, libraryApi } from './library/service.js';
+import { libraryDownloadsApi } from './library/downloads.js';
 import { Skills, skillsApi } from './skills.js';
 import { recall, validSqlMethod } from './maintenance/recall.js';
 import { Incognito } from './incognito.js';
@@ -83,6 +84,7 @@ export async function createApp(options: {
   webDir?: string;
   sqlDriver?: SqlDriver;
   generator?: Generator;
+  libraryFetch?: typeof fetch;
 }) {
   const origin = new URL(options.origin).origin;
   const store = new Store(path.resolve(options.dataDir));
@@ -531,6 +533,7 @@ export async function createApp(options: {
   chatFilesApi(app, knowledge, wiki, runner);
   knowledgeApi(app, knowledge, wiki, runner);
   libraryApi(app, library, runner, knowledge);
+  libraryDownloadsApi(app, library, options.libraryFetch);
   mssqlApi(app, mssql, runner);
   projectPluginsApi(app, runner, mssql, charts, reports);
   skillsApi(app, skills);

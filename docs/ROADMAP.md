@@ -141,6 +141,7 @@ Deferred from V1 at the owner's request. V1 retains one administrator.
 
 ## Shared Knowledge Library (implemented)
 
+- In-app **Browse packs** in app/project settings: offline metadata search and collection filters, section previews, explicit verified installation or JSON download from the fixed public Frame repository. No background network requests, project-data transmission, automatic attachments, or version replacement. Download failures, authentication/origin guards, integrity checks, and desktop/mobile flows have automated coverage.
 - Compact searchable app/project catalog, status filters, expandable section details, project-level import, and direct install-and-attach for bundled references.
 - Optional GitHub downloads: 12 detailed California/guild guides (27 sections), 48 official-source URLs, deterministic versioned JSON files and checksums. Both employer and member-service roles are covered; bargaining agreements are excluded. Existing eight bundled briefs and pinned project versions are preserved. Legal/attorney review remains an acceptance task.
 - Federal/industry expansion: seven federal core guides and nine industry guides add 34 practical sections. The catalog now groups 36 downloads (28 detailed guides, 61 sections, 117 official-source URLs, plus eight bundled briefs). All previously published JSON files remain unchanged; new content uses federal jurisdiction metadata and explicit state/local limitations. All new sections have scoped search/read coverage; no live-model or legal-review claim is made.
