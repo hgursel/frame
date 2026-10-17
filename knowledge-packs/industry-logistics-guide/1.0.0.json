@@ -1,0 +1,71 @@
+{
+  "id": "industry-logistics-guide",
+  "title": "Logistics, Fleet & Shipping Operations",
+  "description": "Carrier-role mapping, driver-hours planning, shipment records, and hazardous-materials escalation.",
+  "pages": [
+    {
+      "id": "fleet-and-hours",
+      "title": "Carrier Roles, Driver Hours & Operational Records",
+      "tags": [
+        "logistics",
+        "fleet",
+        "FMCSA",
+        "hours of service",
+        "carrier",
+        "transportation"
+      ],
+      "applicability": "Commercial motor vehicle operations; interstate/intrastate status, vehicle characteristics, role, and exceptions must be checked.",
+      "text": "## Framework and limits\nDetermine whether the organization acts as a motor carrier, broker, shipper, private fleet, or several of these in different transactions. FMCSA requirements depend on operating facts, vehicles, cargo, routes, and applicable exceptions. A vehicle's company logo or a driver's contractor agreement does not settle the regulatory role. State rules can also affect intrastate operations.\n\nHours-of-service rules distinguish property and passenger operations and include conditions for particular exceptions. Do not apply one driving limit to every route or assume that short distance removes every duty. Driving, on-duty time, breaks, inspections, and records must be evaluated under the applicable framework. Commercial pressure does not establish an exception.\n\n## Practical review\nCreate an operations register showing entities, authorities, vehicles, drivers, routes, cargo, qualification records, maintenance, and responsible managers. Validate regulatory status and required insurance through appropriate official sources rather than relying only on a sales certificate. For each route type, document the hours assumptions and how dispatch will handle delays, detention, breakdowns, and unsafe conditions.\n\nReconcile dispatch instructions, driver records, telematics, maintenance reports, and delivery evidence. Provide a route for drivers to report fatigue or unsafe scheduling without pressure to falsify records. Establish who can cancel or reschedule a load. Review recurring exceptions for a planning problem rather than treating them as unavoidable isolated events.\n\n## Example\nA distributor adds a long-distance delivery after a driver has spent much of the day loading and waiting. The dispatcher calculates only the remaining driving miles. Frame should request the full duty history, applicable operation type, route assumptions, and any claimed exception. It should not approve the trip based on mileage alone or suggest altering logs to fit the delivery promise.\n\n## Counsel questions and next steps\nAsk which federal and state rules apply, whether the business has assumed additional carrier or broker responsibilities, and what records support compliance. Review contracts for dispatch control, cargo responsibility, claims, insurance, and incident cooperation without assuming contractual labels control regulatory status. After a crash or serious complaint, preserve records and involve qualified safety and legal personnel promptly. Frame can organize operational facts and identify unresolved assumptions; it should not certify driver fitness, vehicle roadworthiness, or a legally compliant route from incomplete data.",
+      "sources": [
+        {
+          "title": "FMCSA: Motor Carrier Safety Planner",
+          "url": "https://www.fmcsa.dot.gov/safety/carrier-safety/motor-carrier-safety-planner",
+          "locator": "Carrier applicability, qualification, vehicle maintenance, hours, and records; links to detailed planner."
+        },
+        {
+          "title": "FMCSA: Hours of Service Summary",
+          "url": "https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations",
+          "locator": "Separate property/passenger limits, exceptions, short haul, and adverse driving conditions."
+        }
+      ],
+      "description": "Carrier Roles, Driver Hours & Operational Records: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "hazmat-and-handoffs",
+      "title": "Hazardous Materials & Shipment Handoffs",
+      "tags": [
+        "logistics",
+        "hazmat",
+        "PHMSA",
+        "shipping",
+        "batteries",
+        "training"
+      ],
+      "applicability": "Potentially regulated hazardous-material shipments; material, quantity, packaging, transport mode, and exceptions control.",
+      "text": "## Framework and limits\nHazardous-material transportation duties depend on the material and functions performed, not simply whether a company calls itself a logistics provider. Classification, packaging, marking, labeling, shipping papers, and training can involve different people. Consumer packaging or a small quantity does not automatically establish an exception. Air, highway, rail, and vessel movements can have different requirements.\n\nPHMSA training guidance explains function-specific and other training duties under the Hazardous Materials Regulations. General workplace safety training does not necessarily cover transportation functions. A person selecting packaging, preparing shipping papers, or offering a shipment may need relevant training even if someone else drives the truck.\n\n## Practical review\nInventory potentially regulated shipments, including batteries, aerosols, chemicals, samples, returns, and damaged goods. Have qualified personnel determine classification and applicable exceptions. Record the material description, quantity, condition, packaging, transport mode, destination, and basis for the shipping method. Do not infer a classification solely from a product's marketing name or a partial safety-data sheet.\n\nDefine handoffs between purchasing, warehousing, customer service, carriers, and returns teams. Maintain current training records and instructions for the actual functions performed. Verify that labels and documents match the contents and that carrier acceptance conditions are satisfied. Create a clear stop-and-escalate route when contents or condition are uncertain, especially for damaged products or changed transport modes.\n\n## Example\nA retailer's returns team plans to send damaged battery-powered devices back by air using the same labels used for new products. Frame should identify the changed condition and mode as reasons for qualified review before shipment. It should not invent a packaging method or assume that the original supplier's shipping approval applies to damaged returns. The useful output is a complete shipment fact sheet for the trained specialist.\n\n## Counsel questions and next steps\nAsk who is performing regulated functions, which exceptions are valid, and whether additional registration, security, or incident requirements apply. Review agreements for responsibility and access to accurate product information, but do not treat indemnity as permission to ship incorrectly. Preserve shipment and training records and investigate rejected or leaking packages for systemic causes. Frame should support classification intake and document organization; technical shipping decisions and emergency response must follow qualified personnel and applicable procedures.",
+      "sources": [
+        {
+          "title": "PHMSA: Training Requirements for Industry",
+          "url": "https://www.phmsa.dot.gov/training/hazmat/training-requirements-industry",
+          "locator": "49 CFR 172.700–704; function-specific, safety, security, and other applicable hazmat training."
+        },
+        {
+          "title": "PHMSA: Hazmat Transportation Requirements",
+          "url": "https://www.phmsa.dot.gov/training/hazmat/hazmat-transportation-requirements-pdf",
+          "locator": "Shipping papers, hazardous materials table, packaging, marking, labels, placards, and training."
+        }
+      ],
+      "description": "Hazardous Materials & Shipment Handoffs: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

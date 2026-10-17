@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { detailedPacks } from './src/index.js';
+import { detailedPacks, federalPacks, sectorPacks } from './src/index.js';
 import { bundledPacks } from '../server/library/bundles.js';
 
 // Build offline. No source scraping, credential use, or installation side effects.
@@ -25,7 +25,22 @@ const emit = async (name: string, data: string) => {
     await writeFile(url, data);
   }
 };
-const catalog = [];
+const catalog: {
+  id: string;
+  version: string;
+  title: string;
+  description: string;
+  type: string;
+  collection: string;
+  reviewedAt: string;
+  sections: number;
+  words: number;
+  sources: number;
+  bytes: number;
+  sha256: string;
+  file: string;
+  downloadUrl: string;
+}[] = [];
 for (const pack of packs) {
   const data = JSON.stringify(pack, null, 2) + '\n';
   const file = `${pack.id}/${pack.version}.json`;
@@ -36,6 +51,13 @@ for (const pack of packs) {
     title: pack.title,
     description: pack.description,
     type: detailedPacks.includes(pack) ? 'detailed-guide' : 'bundled-brief',
+    collection: federalPacks.includes(pack)
+      ? 'Federal core'
+      : sectorPacks.includes(pack)
+        ? 'Industry guides'
+        : detailedPacks.includes(pack)
+          ? 'California and guild guides'
+          : 'Bundled briefs',
     reviewedAt: pack.reviewedAt,
     sections: pack.pages.length,
     words: pack.pages.reduce((n, p) => n + p.text.split(/\s+/).length, 0),
@@ -53,13 +75,20 @@ await emit(
 await emit(
   'CATALOG.md',
   '# Downloadable knowledge packs\n\nSave a JSON download, then choose **Import pack** in Frame’s Knowledge Library or Project settings. Importing does not attach it to a project. Detailed guides are optional additions; bundled briefs preserve the existing releases.\n\n' +
-    '| Pack | Content | Sections | Words | Sources | Download |\n|---|---|---:|---:|---:|---|\n' +
-    catalog
+    ['Federal core', 'Industry guides', 'California and guild guides', 'Bundled briefs']
       .map(
-        (p) =>
-          `| ${p.title} | ${p.type === 'detailed-guide' ? 'Detailed guide' : 'Bundled brief'} | ${p.sections} | ${p.words} | ${p.sources} | [v${p.version} JSON](${p.downloadUrl}) |`,
+        (collection) =>
+          `## ${collection}\n\n` +
+          '| Pack | Sections | Words | Sources | Download |\n|---|---:|---:|---:|---|\n' +
+          catalog
+            .filter((p) => p.collection === collection)
+            .map(
+              (p) =>
+                `| ${p.title} | ${p.sections} | ${p.words} | ${p.sources} | [v${p.version} JSON](${p.downloadUrl}) |`,
+            )
+            .join('\n'),
       )
-      .join('\n') +
+      .join('\n\n') +
     '\n',
 );
 const refs = new Map(
@@ -69,7 +98,7 @@ const refs = new Map(
 );
 await emit(
   'SOURCES.md',
-  '# Source register\n\nPublisher pages consulted on 2026-10-17 for the new detailed guides. This is a source check, not attorney verification or a guarantee of completeness/currentness. Page-level references identify the topics supported. External publications are not redistributed.\n\n' +
+  '# Source register\n\nPublisher pages consulted on 2026-10-17 for the detailed guides. This is a source check, not attorney verification or a guarantee of completeness/currentness. Page-level references identify the topics supported. External publications are not redistributed. Federal guides distinguish binding rules from voluntary frameworks and model codes; state and local overlays require separate review.\n\n' +
     [...refs.values()]
       .sort((a, b) => a.title.localeCompare(b.title))
       .map((s) => `- [${s.title}](${s.url}) — ${s.locator}`)

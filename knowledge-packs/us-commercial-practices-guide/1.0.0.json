@@ -1,0 +1,76 @@
+{
+  "id": "us-commercial-practices-guide",
+  "title": "Federal Advertising, Competition & Commercial Practices",
+  "description": "Review marketing claims, endorsements, competitor interactions, and commercial terms with clear federal/state boundaries.",
+  "pages": [
+    {
+      "id": "claims-and-reviews",
+      "title": "Advertising Claims, Endorsements & Customer Reviews",
+      "tags": [
+        "advertising",
+        "consumer protection",
+        "FTC",
+        "endorsements",
+        "reviews",
+        "marketing"
+      ],
+      "applicability": "Advertising and consumer-facing representations; specialized products and state consumer laws may add requirements.",
+      "text": "## Framework and limits\nFTC truth-in-advertising principles require attention to what a reasonable audience understands, including implied claims, not just literal wording. Objective claims need appropriate support before publication. A disclosure does not reliably cure a misleading headline or an unsupported promise. Health, safety, environmental, financial, and performance claims can demand specialized evidence and additional legal review.\n\nEndorsement guidance addresses truthful experience and material connections. Paid relationships, free products, employment, and other connections may affect how an audience evaluates an endorsement. Distinguish agency guides from binding rules governing reviews and testimonials. Neither a platform's built-in label nor an agency contract automatically establishes compliance.\n\n## Practical review\nCreate a claims register containing the exact statement, audience, channel, implied message, supporting evidence, limitations, and approval date. Save the actual screen, packaging, script, or landing page, including mobile display. Identify who owns the underlying study or measurement and whether it describes the product and population being advertised. Review changes in product performance rather than reusing old substantiation indefinitely.\n\nFor campaigns using influencers or customer stories, record permissions, compensation, instructions, and monitoring responsibilities. Ask whether the story suggests typical results that the business can support. Review solicitation and moderation practices so the displayed feedback is not misleading. Do not generate fictional customers or turn internal examples into purported real testimonials. Escalate incentives tied to positive sentiment and restrictions on honest consumer reviews.\n\n## Example\nA SaaS company advertises that its tool cuts processing time in half after testing only one favorable customer workflow. A careful review distinguishes a narrow measured result from a general promise. Frame can propose qualified wording tied to documented conditions and a broader validation plan. It should not fabricate supporting statistics or suggest hiding limitations in a distant policy page.\n\n## Counsel questions and next steps\nAsk which express and implied claims require substantiation, whether disclosures are clear in each format, and what review rules apply to the proposed incentive. Identify special sector rules before launch. Keep a correction and withdrawal process for inaccurate claims, including reseller materials and scheduled social posts. Track complaints as evidence about audience interpretation. A campaign approval should specify what was reviewed and when it expires; it should not be treated as permanent clearance for altered products, audiences, or statements.",
+      "sources": [
+        {
+          "title": "FTC: Advertising FAQs for Small Business",
+          "url": "https://www.ftc.gov/business-guidance/resources/advertising-faqs-guide-small-business",
+          "locator": "FTC Act truthfulness, substantiation, express and implied claims, and disclosures."
+        },
+        {
+          "title": "FTC: Endorsements, Influencers, and Reviews",
+          "url": "https://www.ftc.gov/business-guidance/advertising-marketing/endorsements-influencers-reviews",
+          "locator": "Endorsement Guides, material connections, consumer reviews, and linked binding review rules."
+        }
+      ],
+      "description": "Advertising Claims, Endorsements & Customer Reviews: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "competition-and-terms",
+      "title": "Competitor Contact, Trade Groups & Contract Review",
+      "tags": [
+        "antitrust",
+        "competition",
+        "contracts",
+        "trade association",
+        "pricing",
+        "bids"
+      ],
+      "applicability": "Commercial issue spotting; ordinary contract enforceability is largely state-law dependent and is not resolved here.",
+      "text": "## Framework and limits\nFederal antitrust law distinguishes certain serious competitor restraints from collaborations requiring more detailed analysis. Price fixing, bid rigging, and market allocation are major warning signs. Trade associations and professional networks do not create a blanket exemption. A business justification should be documented and evaluated, not assumed to legalize a restriction.\n\nAgreements about shared standards, joint purchasing, information exchange, or access to association services can require fact-specific analysis. Avoid relying on an old agency safe harbor without confirming its current status and scope. This guide does not interpret collective bargaining agreements or labor exemptions. Refer those separate questions to counsel.\n\n## Practical review\nBefore a competitor meeting, set an agenda, identify legitimate purposes, and assign someone to stop inappropriate discussion. Escalate conversations about current or future prices, customers, territories, bids, wages, or hiring restrictions. Record an objection and departure when needed; merely remaining silent may not be an adequate response. Do not use a shared vendor or algorithm as a presumed workaround for an unlawful agreement.\n\nFor commercial contracts, prepare a separate issue table covering scope, deliverables, payment, renewal, termination, intellectual property, confidentiality, security, indemnities, liability limits, insurance, and dispute process. Identify the governing law and the parties' actual roles. Federal competition or consumer rules may affect a term, but contract formation, remedies, restraints, and enforceability often require state-specific analysis. Label negotiation suggestions as commercial positions, not statements that a clause is legally required.\n\n## Example\nMembers of a professional association propose a common minimum consulting rate and a shared spreadsheet of planned increases. Frame should flag competitor-pricing coordination and recommend counsel review before any exchange. A safer discussion may address general operational issues without sharing competitively sensitive plans, but the appropriate design depends on the facts. Calling the spreadsheet educational does not decide the legal question.\n\n## Counsel questions and next steps\nAsk which participants compete, what information is necessary, how the proposed activity affects customers and workers, and whether restrictions can be narrowed or removed. For a suspicious communication already received, preserve it and seek advice rather than deleting it or forwarding it widely. Document an approved process for association events and recurring surveys. Keep commercial contract review distinct from antitrust clearance: a signed agreement can still create regulatory risk, and a favorable business deal can still contain impractical operational obligations.",
+      "sources": [
+        {
+          "title": "FTC: Dealings with Competitors",
+          "url": "https://www.ftc.gov/advice-guidance/competition-guidance/guide-antitrust-laws/dealings-competitors",
+          "locator": "Price fixing, bid rigging, market allocation, and fact-dependent competitor collaborations."
+        },
+        {
+          "title": "FTC: Other Agreements Among Competitors",
+          "url": "https://www.ftc.gov/advice-guidance/competition-guidance/guide-antitrust-laws/dealings-competitors/other-agreements-among-competitors",
+          "locator": "Trade-association standards, membership restrictions, advertising rules, and competitive effects."
+        },
+        {
+          "title": "FTC: Advertising FAQs for Small Business",
+          "url": "https://www.ftc.gov/business-guidance/resources/advertising-faqs-guide-small-business",
+          "locator": "FTC Act truthfulness, substantiation, express and implied claims, and disclosures."
+        }
+      ],
+      "description": "Competitor Contact, Trade Groups & Contract Review: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

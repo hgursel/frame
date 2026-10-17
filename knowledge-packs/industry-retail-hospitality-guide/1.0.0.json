@@ -1,0 +1,115 @@
+{
+  "id": "industry-retail-hospitality-guide",
+  "title": "Retail, Restaurants & Hospitality",
+  "description": "Tips and youth employment, food-safety oversight, public access, and customer-facing claims across service businesses.",
+  "pages": [
+    {
+      "id": "service-workforce",
+      "title": "Tips, Youth Workers & Shift Controls",
+      "tags": [
+        "retail",
+        "restaurant",
+        "hospitality",
+        "tips",
+        "FLSA",
+        "child labor"
+      ],
+      "applicability": "Service-sector employment; state wage, tip-credit, scheduling, and youth-work restrictions may be stricter.",
+      "text": "## Framework and limits\nThe FLSA contains rules for tipped employees, tip credits, pooling, overtime, and youth employment. State law may prohibit a tip credit or add protections. Distinguish voluntary tips from mandatory service charges and determine how each is treated for the relevant purpose. A customer-facing label does not resolve payroll treatment.\n\nManagers and supervisors cannot generally receive other employees' tips through a pool, even if they sometimes serve customers. The applicable duties test matters, not only the title. Youth-employment rules depend on age, hours, equipment, and tasks; parental consent or an employee's willingness does not eliminate prohibited work. Check current rules and any specific exceptions before assigning work.\n\n## Practical review\nMap jobs, actual duties, ages where relevant, schedules, pay rates, tip practices, service charges, deductions, and timekeeping. Review opening and closing work, training, meetings, and work across locations. Reconcile point-of-sale records, payroll, tip distributions, and manager adjustments. Explain lawful policies clearly and preserve original records when correcting errors.\n\nFor younger staff, maintain a task-and-equipment authorization list based on verified age and applicable rules. Train shift supervisors to recognize restrictions, including when a last-minute substitution changes the work. Review school schedules and local permits where required. Do not assume that safe handling in practice makes a legally restricted task permissible.\n\n## Example\nA restaurant assigns a teenage employee to close late and lets an assistant manager share the tip pool because the manager also runs food. Frame should separate youth hours and tasks from the manager's actual duties and the pooling rules. It should request the state, age, schedule, and role facts before offering a conclusion. A staffing shortage is an operational problem to solve within the applicable rules.\n\n## Counsel questions and next steps\nAsk whether the tip structure and deductions are lawful, whether overtime calculations are correct, and which youth restrictions apply to each task. Have payroll validate any correction and preserve the calculation basis. Review local scheduling, meal, rest, and minimum-wage requirements independently. Frame can prepare a shift-control checklist and evidence table; it should not calculate a final settlement or assume employees can waive protections in an acknowledgment.",
+      "sources": [
+        {
+          "title": "DOL: Fact Sheet 15 — Tipped Employees",
+          "url": "https://www.dol.gov/agencies/whd/fact-sheets/15-tipped-employees-flsa",
+          "locator": "FLSA tip credit, tip pools, manager restrictions, overtime, and stronger state protections."
+        },
+        {
+          "title": "DOL: Child Labor in Restaurants",
+          "url": "https://www.dol.gov/agencies/whd/fact-sheets/2a-child-labor-restaurants",
+          "locator": "Age, hours, equipment and task restrictions; school schedules and limited exceptions."
+        },
+        {
+          "title": "DOL: Wages and the Fair Labor Standards Act",
+          "url": "https://www.dol.gov/agencies/whd/flsa",
+          "locator": "Federal minimum wage, overtime, recordkeeping, and youth employment; coverage and exemptions matter."
+        }
+      ],
+      "description": "Tips, Youth Workers & Shift Controls: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "food-safety",
+      "title": "Food Safety, Complaints & Supplier Traceability",
+      "tags": [
+        "restaurant",
+        "hospitality",
+        "food",
+        "FDA",
+        "food code",
+        "retail"
+      ],
+      "applicability": "Retail food and food-service oversight; actual requirements depend on adopted state/local codes and facility activities.",
+      "text": "## Framework and limits\nThe FDA Food Code is a model used by jurisdictions to develop retail food rules. Publication of a new edition does not automatically replace a restaurant's applicable local requirements. Identify the regulator, adopted edition, amendments, permit conditions, and type of operation. Manufacturing, wholesale distribution, and specialized processing can raise additional requirements beyond ordinary retail service.\n\nFood-safety procedures should be established by qualified personnel using applicable standards. This guide organizes oversight and incident records; it does not prescribe cooking temperatures, validate shelf life, or determine that a particular food is safe. Allergens, employee illness, sanitation, temperature control, cross-contact, and supplier practices require operational expertise.\n\n## Practical review\nMaintain a facility file with permits, inspection findings, responsible managers, approved processes, supplier records, training, cleaning procedures, and relevant logs. Record what is measured, how equipment is checked, who reviews exceptions, and what corrective action follows. Avoid a paper-only system in which staff record expected values rather than actual observations.\n\nFor supplier changes, verify product identity, labeling, allergen information, traceability, and handling requirements before use. Keep purchase and lot records sufficient to identify affected inventory. Establish a complaint route that captures symptoms or concerns as reported without diagnosing customers. Preserve implicated product information and engage the appropriate manager, health authority, insurer, and counsel when warranted.\n\n## Example\nA café switches ingredient suppliers and receives a complaint about an allergic reaction. The menu description has not changed, and staff no longer have the previous packaging. Frame should help reconstruct the ingredient, supplier, receipt, preparation, and customer-communication records. It should not declare causation, reassure the café that the food was safe, or suggest continuing sales while a potentially serious issue remains unresolved by responsible professionals.\n\n## Counsel questions and next steps\nAsk which regulator and reporting obligations apply, what records or samples should be preserved, and what customer communication is appropriate. Coordinate operational changes with qualified food-safety staff rather than treating legal review as permission to resume service. Track inspection and complaint trends, verify corrections, and update training after changes. Confirm local adoption before converting a model-code provision into a mandatory company rule. Frame's useful role is organizing evidence, identifying gaps, and supporting a clear handoff to the people accountable for food safety.",
+      "sources": [
+        {
+          "title": "FDA: Food Code",
+          "url": "https://www.fda.gov/food/retail-food-protection/fda-food-code",
+          "locator": "Model retail food code and editions, including 2026; enforceability depends on jurisdiction adoption."
+        },
+        {
+          "title": "FDA: State Retail Food Codes",
+          "url": "https://www.fda.gov/food/fda-food-code/state-retail-and-food-service-codes-and-regulations-state",
+          "locator": "Locate state retail food requirements; verify local authority, adopted edition, and amendments."
+        },
+        {
+          "title": "FTC: Advertising FAQs for Small Business",
+          "url": "https://www.ftc.gov/business-guidance/resources/advertising-faqs-guide-small-business",
+          "locator": "FTC Act truthfulness, substantiation, express and implied claims, and disclosures."
+        }
+      ],
+      "description": "Food Safety, Complaints & Supplier Traceability: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "customer-access",
+      "title": "Customer Access, Reservations & Promotions",
+      "tags": [
+        "retail",
+        "hospitality",
+        "hotel",
+        "ADA",
+        "accessibility",
+        "advertising"
+      ],
+      "applicability": "Public-facing service businesses; public-accommodation coverage and state consumer protections need specific review.",
+      "text": "## Framework and limits\nADA Title III can affect how public-facing businesses provide goods and services, communicate, modify policies, and address physical barriers. Existing facilities, new construction, and alterations have different requirements. A small business or older building is not automatically outside the law. Lease allocations can help coordinate work without necessarily eliminating owner or operator responsibilities to the public.\n\nConsumer-facing descriptions also need review. Claims about accessibility, room features, pricing, refunds, or service availability should match actual practice. Federal advertising principles and applicable sector or state rules may affect what must be disclosed. This page does not provide a complete hotel-reservation or pricing compliance checklist.\n\n## Practical review\nWalk through a customer's actual journey: discovering the service, obtaining information, booking or purchasing, entering, receiving service, paying, and resolving a complaint. Identify barriers in physical access, communication, policies, and vendor systems. Test promised features and train staff on approved alternatives and escalation routes. Do not assume a website badge or one accessible entrance establishes that the full experience works.\n\nMaintain accurate descriptions of available facilities and services. Review promotions in the format customers actually see, including mobile pages and third-party booking channels. Record mandatory conditions clearly and ensure staff can honor published commitments. Preserve complaints and the version of the offer involved so recurring problems can be investigated.\n\n## Example\nA hotel advertises an accessible room but a reservation-platform change removes the feature details and staff cannot confirm the requested arrangement. Frame should help compare the advertised promise, room inventory, booking record, and operational handoff. It should not conclude that a generic disclaimer transfers all responsibility to the platform. A practical response addresses the customer's immediate access needs while investigating the process failure.\n\n## Counsel questions and next steps\nAsk which accessibility standards and reservation rules apply, what modifications or communication aids are appropriate, and whether promotional claims need correction. Obtain qualified technical assessment where design or construction is involved. Assign owners for vendor changes, staff training, and complaint follow-up. Review lease and supplier agreements for cooperation and remediation rather than relying solely on indemnities. Frame can organize the facts and proposed improvements; it should not certify accessibility or dismiss a request without an individualized assessment under the applicable rules.",
+      "sources": [
+        {
+          "title": "DOJ: ADA Small Business Primer",
+          "url": "https://www.ada.gov/resources/title-iii-primer/",
+          "locator": "Public accommodations, barrier removal, effective communication, policy modifications, and new construction."
+        },
+        {
+          "title": "DOJ: ADA Title III Regulations",
+          "url": "https://www.ada.gov/law-and-regs/regulations/title-iii-regulations/",
+          "locator": "28 CFR Part 36; coverage, owner/tenant duties, modifications, communication, and accessibility."
+        },
+        {
+          "title": "FTC: Advertising FAQs for Small Business",
+          "url": "https://www.ftc.gov/business-guidance/resources/advertising-faqs-guide-small-business",
+          "locator": "FTC Act truthfulness, substantiation, express and implied claims, and disclosures."
+        }
+      ],
+      "description": "Customer Access, Reservations & Promotions: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

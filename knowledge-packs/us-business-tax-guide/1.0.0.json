@@ -1,0 +1,81 @@
+{
+  "id": "us-business-tax-guide",
+  "title": "Federal Business Tax & Payroll Readiness",
+  "description": "Organize classification, deposits, supporting records, and adviser handoffs without hard-coding changing tax thresholds.",
+  "pages": [
+    {
+      "id": "payroll-tax",
+      "title": "Worker Status, Payroll Taxes & Reconciliation",
+      "tags": [
+        "IRS",
+        "tax",
+        "payroll",
+        "contractor",
+        "withholding",
+        "employment taxes"
+      ],
+      "applicability": "Federal employer tax preparation; state payroll rules, entity-specific issues, and individual advice are outside this guide.",
+      "text": "## Framework and limits\nFederal employment tax responsibilities include appropriate withholding, employer taxes, deposits, returns, and information reporting. Determine the relationship before choosing a payroll or contractor workflow. The IRS common-law test considers the actual relationship; a contractor agreement or payment through an entity does not alone resolve status. Other laws use different tests, so a tax conclusion does not settle wage-and-hour or state classification.\n\nUse Publication 15 and relevant current-year instructions for the period at issue. Deposit schedules, wage bases, forms, and special rules must be verified rather than copied from an old checklist. Outsourcing payroll does not mean the employer can ignore whether returns and payments were actually made.\n\n## Practical review\nMaintain a worker register with the employing entity, start and end dates, work locations, classification basis, payment method, and supporting documents. Identify who directs the work, provides tools, bears business risk, and controls the relationship. Route ambiguous cases to the tax adviser and counsel before repeatedly using an unsupported classification.\n\nFor each payroll cycle, reconcile gross pay, taxable adjustments, deductions, net pay, employer liabilities, bank funding, and tax deposits. At quarter and year end, compare filed returns and information statements with payroll totals and the general ledger. Investigate mismatches rather than forcing a balancing entry. Restrict access to tax identifiers and payment credentials, and use independent verification for bank-account changes.\n\n## Example\nA nonprofit pays a recurring project coordinator as a contractor because funding comes from a short-term grant. The coordinator uses the organization's systems and follows a manager's daily instructions. Frame should collect the actual relationship facts and identify the separate tax and labor questions. Grant duration does not establish worker status. The appropriate output is a documented adviser referral, not a retroactive declaration that every payment was wages.\n\n## Counsel and tax-adviser questions\nAsk whether a formal classification determination or correction process is appropriate, which periods and returns are affected, and how to communicate changes. If a payroll provider failed to deposit taxes, preserve authorization and payment records and contact qualified advisers promptly. Build a calendar with named owners and backup reviewers, using verified dates for the actual forms and entity. Keep tax advice and employment advice coordinated, since fixing one workflow can expose issues in another.",
+      "sources": [
+        {
+          "title": "IRS: Employment Taxes",
+          "url": "https://www.irs.gov/businesses/small-businesses-self-employed/employment-taxes",
+          "locator": "Federal withholding, Social Security, Medicare, unemployment taxes, deposits, and returns."
+        },
+        {
+          "title": "IRS: Publication 15 — Employer Tax Guide",
+          "url": "https://www.irs.gov/forms-pubs/about-publication-15",
+          "locator": "Current-year employer tax guide and revision links; tax periods and forms must be verified."
+        },
+        {
+          "title": "IRS: Independent Contractor vs. Employee",
+          "url": "https://www.irs.gov/taxtopics/tc762",
+          "locator": "Federal common-law employment tax classification; distinct from FLSA and state tests."
+        }
+      ],
+      "description": "Worker Status, Payroll Taxes & Reconciliation: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "business-records",
+      "title": "Business Records, Expenses & Tax-Adviser Handoff",
+      "tags": [
+        "IRS",
+        "records",
+        "expenses",
+        "tax return",
+        "assets",
+        "reconciliation"
+      ],
+      "applicability": "Federal business-record organization; entity type, tax year, accounting method, and transaction details control treatment.",
+      "text": "## Framework and limits\nFederal tax treatment depends on more than a transaction's label in accounting software. Determine the legal entity, tax classification, tax year, accounting method, and business purpose. Publication 334 is aimed at Schedule C sole proprietors and statutory employees; it is not a universal filing manual for corporations, partnerships, or exempt organizations.\n\nRecords should substantiate income, expenses, assets, and relevant employment obligations. Payment evidence alone may not explain business purpose or establish deductibility. Costs may require allocation, capitalization, or other treatment rather than immediate deduction. Tax thresholds and special provisions change, so this pack intentionally does not supply a universal deduction limit or filing calendar.\n\n## Practical review\nPrepare an adviser package with reconciled books, bank and payment-processor statements, revenue detail, invoices, contracts, payroll reports, asset purchases and disposals, financing, owner transactions, and prior-year carryforwards identified by the adviser. Separate missing documents from disputed treatment. Maintain a list of unusual transactions instead of burying them in miscellaneous expense accounts.\n\nFor expenses, record what was purchased, who benefited, the business purpose, date, amount, and supporting evidence. Identify mixed personal/business use and related-party transactions for review. For assets, preserve acquisition, improvement, disposition, and financing records. Choose retention periods based on the record and governing requirement, and suspend ordinary destruction when a dispute, examination, or preservation duty applies.\n\n## Example\nA small software firm records a large development engagement, hardware purchases, and the owner's travel under one project expense. Frame should help separate the transactions and list the facts the tax adviser needs. It should not assume that all project spending is currently deductible, that a vendor invoice proves business use, or that a rule for sole proprietors applies to the firm's chosen entity.\n\n## Counsel and tax-adviser questions\nAsk which items need capitalization, allocation, corrected information reporting, or additional support. Confirm estimated-payment and filing responsibilities for the actual entity and owners rather than deriving them from revenue alone. Review state nexus and sales-tax questions separately; a federal income-tax guide does not answer them. Keep a final reconciliation from the books to the filed return and document adviser-approved adjustments. Frame can organize records and surface inconsistencies, while qualified advisers determine filing positions and sign-off.",
+      "sources": [
+        {
+          "title": "IRS: Business Records",
+          "url": "https://www.irs.gov/businesses/small-businesses-self-employed/what-kind-of-records-should-i-keep",
+          "locator": "Support for income, expenses, assets, and employment taxes; records must establish business purpose."
+        },
+        {
+          "title": "IRS: Publication 334 — Small Business Tax Guide",
+          "url": "https://www.irs.gov/forms-pubs/about-publication-334",
+          "locator": "Federal tax guide for Schedule C sole proprietors and statutory employees, not all entity types."
+        },
+        {
+          "title": "IRS: Publication 15 — Employer Tax Guide",
+          "url": "https://www.irs.gov/forms-pubs/about-publication-15",
+          "locator": "Current-year employer tax guide and revision links; tax periods and forms must be verified."
+        }
+      ],
+      "description": "Business Records, Expenses & Tax-Adviser Handoff: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

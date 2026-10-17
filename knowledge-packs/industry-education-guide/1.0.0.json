@@ -1,0 +1,81 @@
+{
+  "id": "industry-education-guide",
+  "title": "Education, Student Data & Program Access",
+  "description": "FERPA vendor review, student-record requests, and disability-access workflows for schools and educational programs.",
+  "pages": [
+    {
+      "id": "student-data-vendors",
+      "title": "Student Records, Vendors & Educational Technology",
+      "tags": [
+        "education",
+        "school",
+        "FERPA",
+        "student data",
+        "edtech",
+        "COPPA"
+      ],
+      "applicability": "Educational institutions and their vendors; FERPA coverage, student age, funding, and state student-privacy rules matter.",
+      "text": "## Framework and limits\nFERPA governs qualifying education records at covered educational agencies and institutions. Determine coverage and who holds the rights before releasing records; a parent's role can change when rights transfer to an eligible student. Do not assume that every tutoring business or training provider is directly covered, or that a school-related label makes every disclosure permissible.\n\nThe school-official exception is conditional. Outsourced providers need the required relationship, control, legitimate educational interest, and limits on use and redisclosure. It is not a blanket permission to send student records to any useful application. COPPA and state student-privacy rules can present additional obligations, especially for online services involving children. School authorization has limits and should not be treated as approval for unrelated commercial use.\n\n## Practical review\nInventory learning platforms, assessment tools, messaging, recordings, AI assistants, analytics, and support systems. For each, document data fields, purpose, access, retention, subcontractors, and whether records are used to train models or advertise. Evaluate the actual settings and contract, not only a vendor's education-friendly branding. Assign responsibility for student access requests, correction issues, incident response, and end-of-contract deletion or return.\n\nCreate a disclosure decision record identifying the requester, student's status, records sought, authority or consent, scope, and any required disclosure log. Verify identity and avoid sharing entire files when only a narrow record is relevant. Keep records and communications accessible to authorized staff while limiting unnecessary copying into personal accounts or unsupported tools.\n\n## Example\nA teacher uploads named student essays to a free AI feedback service. The service retains submissions for product improvement and has no agreement with the school. Frame should identify the educational purpose, data, vendor terms, applicable exception or consent, and approval process. It should not assume classroom usefulness or removal of student names alone resolves all privacy issues.\n\n## Counsel questions and next steps\nAsk whether FERPA applies, whether the proposed vendor arrangement satisfies an exception, what additional children's-privacy requirements exist, and how parent or student rights will be honored. Require review before expanding a tool from an approved administrative purpose to analytics or research. For a suspected disclosure, preserve facts and involve the school's responsible officials promptly. This workflow supports governance and factual review; it does not authorize disclosure or replace institution-specific policies.",
+      "sources": [
+        {
+          "title": "Education: FERPA Frequently Asked Questions",
+          "url": "https://studentprivacy.ed.gov/frequently-asked-questions",
+          "locator": "20 USC 1232g and 34 CFR Part 99; coverage, consent, records access, and disclosure exceptions."
+        },
+        {
+          "title": "Education: School Officials Under FERPA",
+          "url": "https://studentprivacy.ed.gov/faq/who-school-official-under-ferpa",
+          "locator": "Outsourcing, direct control, legitimate educational interests, and annual-notice criteria."
+        },
+        {
+          "title": "FTC: Complying with COPPA — FAQs",
+          "url": "https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions",
+          "locator": "16 CFR Part 312; child-directed services, actual knowledge, parental consent, and educational use limits."
+        }
+      ],
+      "description": "Student Records, Vendors & Educational Technology: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "program-access",
+      "title": "Disability Access, Accommodations & Educational Decisions",
+      "tags": [
+        "education",
+        "Section 504",
+        "ADA",
+        "disability",
+        "accommodation",
+        "accessibility"
+      ],
+      "applicability": "Schools and postsecondary programs; public/private status, federal funding, and educational level change the framework.",
+      "text": "## Framework and limits\nSection 504, the ADA, and special-education laws can overlap but are not identical. Public elementary and secondary schools have evaluation, placement, and free-appropriate-public-education obligations under applicable rules. Postsecondary access generally uses a different framework involving qualified students, academic adjustments, and auxiliary aids. Do not transplant a college process into K–12 or assume a prior school plan automatically answers every college request.\n\nCoverage also depends on institutional type and funding. Religious, private, public, and federally funded programs need separate analysis. A diagnosis alone does not define every appropriate adjustment, and a uniform policy does not excuse failure to consider an applicable access obligation. Essential requirements and claimed undue burdens require careful, documented analysis under the correct law.\n\n## Practical review\nIdentify the student's barrier, program requirements, requested support, existing evidence, and the responsible decision process. Involve qualified educational and disability professionals. Maintain a clear route for requests, timely communication, review, and grievances. Separate confidential disability information from general classroom or personnel access while ensuring relevant staff know the approved supports they must implement.\n\nReview practical access to materials, assessments, labs, fieldwork, events, transportation, and digital systems. Test whether a proposed aid works for the individual rather than assuming that purchasing technology solves the problem. Document alternatives and reasons for decisions. If a request intersects with safety or a professional program's technical requirements, obtain appropriate expertise rather than relying on stereotypes or a broad exclusion.\n\n## Example\nA college changes a course to mandatory video participation and a student requests an accessible alternative. Frame should gather the learning objective, actual barrier, available technology, proposed alternatives, and institutional process. It should not conclude that online delivery is inherently accessible or that an identical requirement for everyone guarantees equal opportunity. The decision needs a record of what was considered and why the selected support is effective.\n\n## Counsel questions and next steps\nAsk which legal framework and procedural safeguards apply, who is authorized to decide, and whether the proposed alternative preserves access to the program. Identify unresolved implementation problems before exams or placements occur. Review recurring complaints for systemic barriers and procurement failures. Frame can organize the facts and options, but individualized educational placement, clinical assessment, and legal determinations require the institution's qualified professionals and counsel.",
+      "sources": [
+        {
+          "title": "Education: Section 504 FAPE FAQs",
+          "url": "https://www.ed.gov/laws-and-policy/civil-rights-laws/disability-discrimination/frequently-asked-questions-section-504-free-appropriate-public-education-fape",
+          "locator": "Elementary/secondary evaluation, placement, educational services, and procedural safeguards."
+        },
+        {
+          "title": "Education: Postsecondary Auxiliary Aids",
+          "url": "https://www.ed.gov/laws-and-policy/individuals-disabilities/auxiliary-aids-and-services-for-postsecondary-students-with-disabilities",
+          "locator": "Section 504/ADA higher-education access and effective auxiliary aids; different framework from K–12 FAPE."
+        },
+        {
+          "title": "DOJ: ADA Title III Regulations",
+          "url": "https://www.ada.gov/law-and-regs/regulations/title-iii-regulations/",
+          "locator": "28 CFR Part 36; coverage, owner/tenant duties, modifications, communication, and accessibility."
+        }
+      ],
+      "description": "Disability Access, Accommodations & Educational Decisions: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

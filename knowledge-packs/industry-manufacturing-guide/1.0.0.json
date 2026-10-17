@@ -1,0 +1,76 @@
+{
+  "id": "industry-manufacturing-guide",
+  "title": "Manufacturing, Product Safety & Environmental Operations",
+  "description": "Consumer-product traceability and reporting, hazardous-waste decisions, and supplier-change controls.",
+  "pages": [
+    {
+      "id": "product-quality-reporting",
+      "title": "Product Safety, Supplier Changes & Reporting",
+      "tags": [
+        "manufacturing",
+        "CPSC",
+        "product safety",
+        "recall",
+        "testing",
+        "suppliers"
+      ],
+      "applicability": "Consumer products within CPSC jurisdiction; food, medical devices, vehicles, and other regulated products need separate regimes.",
+      "text": "## Framework and limits\nDetermine the product, users, supply-chain role, and responsible regulator. CPSC does not regulate every manufactured item. For covered consumer products, testing, certification, labeling, and reporting duties depend on applicable rules and product characteristics. Children's products can have additional requirements. A supplier certificate is not a universal assurance that the finished product complies.\n\nSection 15(b) of the Consumer Product Safety Act can require immediate reporting of information indicating specified noncompliance, defects, or serious risks. Do not wait for a confirmed injury, completed root-cause study, or agreed recall plan before evaluating the reporting trigger. The agency's guidance explains investigation limits and other conditions. Reporting and deciding on corrective action are related but separate steps.\n\n## Practical review\nBuild a product file with design versions, intended use, test requirements, test results, certificates, warnings, supplier specifications, and distribution records. Link each production lot to components and relevant changes. Require review when a supplier substitutes material, a factory changes a process, or marketing expands the intended use. Check current import and certification procedures for the actual shipment.\n\nMaintain a complaint process that connects returns, warranty claims, incident reports, quality findings, and social feedback. Train staff to escalate potential hazards without requiring them to prove legal liability. Preserve failed samples and traceability records. Establish who can pause shipments, segregate inventory, contact regulators, and communicate with distributors. Avoid minimizing an event in public statements before the evidence is understood.\n\n## Example\nA small manufacturer receives several reports of overheating after a component substitution. The supplier says the replacement meets its own specification, and no one has reported an injury. Frame should organize the affected lots, reports, testing history, and distribution scope, then flag immediate reporting assessment. It should not conclude that absence of injury or supplier reassurance removes the need to act.\n\n## Counsel questions and next steps\nAsk which regulator and reporting duties apply, whether further testing can proceed without delaying a required report, and what interim distribution controls are appropriate. Coordinate any recall or corrective communication with qualified product-safety personnel and counsel. Verify effectiveness using actual inventory and customer records. Frame's role is to develop a coherent factual record and escalation plan, not to certify engineering safety or decide that a product is safe to keep selling.",
+      "sources": [
+        {
+          "title": "CPSC: Duty to Report",
+          "url": "https://www.cpsc.gov/Business--Manufacturing/Recall-Guidance/Duty-to-Report-to-CPSC-Rights-and-Responsibilities-of-Businesses",
+          "locator": "Consumer Product Safety Act section 15(b); information triggering immediate reporting and investigation limits."
+        },
+        {
+          "title": "CPSC: General Use Product Certification and Testing",
+          "url": "https://www.cpsc.gov/Business--Manufacturing/Testing-Certification/General-Use-Products-Certification-and-Testing",
+          "locator": "Applicable rules, certificates, testing, and changes to components; check current import eFiling requirements."
+        }
+      ],
+      "description": "Product Safety, Supplier Changes & Reporting: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "waste-and-processes",
+      "title": "Hazardous Waste, Process Changes & Site Records",
+      "tags": [
+        "manufacturing",
+        "EPA",
+        "RCRA",
+        "hazardous waste",
+        "environment",
+        "operations"
+      ],
+      "applicability": "Federal hazardous-waste triage; authorized state programs, permits, air, water, and local requirements need separate review.",
+      "text": "## Framework and limits\nWaste obligations depend on the material and how it is generated and handled, not simply the size of the company. EPA's hazardous-waste framework distinguishes generator categories using quantities generated and other relevant conditions. Waste determination, accumulation, shipment, and documentation need an activity-specific assessment. Recycling or calling a material reusable does not automatically remove regulation.\n\nRCRA hazardous-waste duties are only part of environmental compliance. Air emissions, wastewater, stormwater, spill prevention, chemical reporting, and local permits can create separate obligations. Approved state programs can be stricter or broader than the federal baseline. This page does not establish a facility's generator category or permit status.\n\n## Practical review\nMap process inputs, outputs, cleaning activities, maintenance, laboratory materials, and discarded inventory. Record the basis for each waste determination, including process knowledge and testing where appropriate. Track quantities by the applicable period and waste stream. Identify containers, accumulation locations, inspections, emergency arrangements, transporters, receiving facilities, and records needed for the actual category.\n\nReview process changes before purchasing substitutes or increasing production. A new solvent, coating, or cleaning step may change waste characteristics and worker hazards. Coordinate environmental and safety reviews so labels, training, protective measures, and disposal arrangements remain consistent. Verify downstream documentation rather than assuming that handing waste to a contractor ends responsibility.\n\n## Example\nA fabrication shop replaces a cleaning chemical and begins storing spent material in the same drum used for the prior process. The waste contractor has not been told about the change. Frame should gather product information, process details, generation volumes, mixing practices, and prior determinations. It should not infer compatibility or legal disposal from similar product names. Qualified environmental personnel should reassess before the old handling procedure continues.\n\n## Counsel questions and next steps\nAsk which state and federal requirements apply, whether a category or permit change occurred, and what corrective reporting or records are needed. Preserve historical manifests and decisions while correcting practices; do not rewrite old records to appear compliant. Assign an owner to verify contractor credentials, shipments, and unresolved exceptions. Use the federal guide to structure the questions, then obtain site-specific technical and legal advice. A generic checklist cannot authorize disposal, determine chemical compatibility, or replace emergency procedures for a release.",
+      "sources": [
+        {
+          "title": "EPA: Hazardous Waste Guide for Small Businesses",
+          "url": "https://www.epa.gov/hwgenerators/managing-your-hazardous-waste-guide-small-businesses",
+          "locator": "RCRA hazardous waste determination, generator duties, storage, shipment, and state program differences."
+        },
+        {
+          "title": "EPA: Hazardous Waste Generators",
+          "url": "https://www.epa.gov/hwgenerators",
+          "locator": "Generator category depends on monthly waste generation; links to category and state-specific guidance."
+        },
+        {
+          "title": "OSHA: Employer Responsibilities",
+          "url": "https://www.osha.gov/workers/employer-responsibilities",
+          "locator": "Workplace hazards, standards, training, records, reporting, and protection against retaliation."
+        }
+      ],
+      "description": "Hazardous Waste, Process Changes & Site Records: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

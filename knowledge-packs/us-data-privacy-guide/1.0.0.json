@@ -1,0 +1,97 @@
+{
+  "id": "us-data-privacy-guide",
+  "title": "Federal Privacy, Data Security & Breach Triage",
+  "description": "Identify applicable federal data regimes, evaluate vendors and privacy promises, and coordinate incident obligations.",
+  "pages": [
+    {
+      "id": "coverage-and-promises",
+      "title": "Data Coverage, Privacy Promises & Vendors",
+      "tags": [
+        "privacy",
+        "FTC",
+        "GLBA",
+        "COPPA",
+        "HIPAA",
+        "data",
+        "vendors"
+      ],
+      "applicability": "Cross-industry federal issue spotting; sector, state, local, contractual, and international duties require additional review.",
+      "text": "## Framework and limits\nDetermine obligations from data, activity, people, and organizational role. Do not assume that one privacy regime covers every record or that the absence of HIPAA means information is unregulated. HIPAA coverage depends on covered-entity or business-associate status. The FTC Safeguards Rule covers specified financial institutions under FTC jurisdiction. COPPA addresses covered online collection involving children under 13. FTC Act issues can also arise from misleading privacy representations or unfair practices where jurisdiction exists.\n\nNonprofit status, a business-to-business label, and a vendor's security certification do not answer all coverage questions. State privacy, consumer-health, biometric, breach, and employment rules may apply independently. Federal rules also differ in definitions and exemptions; a single spreadsheet column marked sensitive is not enough.\n\n## Practical review\nPrepare a data map by actual use: collection source, purpose, individuals affected, access, vendors, retention, deletion, and disclosures. Include analytics, support tickets, recordings, exports, and AI prompts. Match public notices and sales claims to what systems really do. For each use, identify the authority or consent relied on, the responsible owner, and the evidence supporting that conclusion.\n\nWhen selecting a vendor, review its permitted purposes, subcontractors, data location, retention, model-training use, security controls, incident cooperation, and exit process. Distinguish contractual restrictions from technical enforcement. Ask what happens to backups, logs, and derived data after a deletion request. Verify that access is limited and periodically reviewed. These are proposed review controls, not a claim that every item is legally mandated for every business.\n\n## Example\nA wellness platform describes itself as outside HIPAA and allows a marketing tool to receive user activity. The relevant questions include what health information is conveyed, whether the platform falls within a different federal regime, what users were told, and which state rules apply. Frame should produce a coverage matrix with unknowns rather than approving the integration because no hospital is involved.\n\n## Counsel questions and next steps\nAsk which federal regimes cover each activity, whether a notice or consent is adequate, and which data uses should pause until resolved. Assign a process for reviewing new uses before launch. For children or health information, avoid relying on an ordinary terms-of-service acceptance as a universal authorization. Retain the versions of notices and contracts actually used so future investigations can reconstruct the promises made at the time.",
+      "sources": [
+        {
+          "title": "FTC: Protecting Personal Information",
+          "url": "https://www.ftc.gov/business-guidance/resources/protecting-personal-information-guide-business",
+          "locator": "Data inventory, minimization, access protection, disposal, and incident planning; guidance rather than a universal code."
+        },
+        {
+          "title": "FTC: Safeguards Rule Business Guide",
+          "url": "https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-know",
+          "locator": "16 CFR Part 314; covered financial institutions, security programs, service providers, and notification events."
+        },
+        {
+          "title": "FTC: Complying with COPPA — FAQs",
+          "url": "https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions",
+          "locator": "16 CFR Part 312; child-directed services, actual knowledge, parental consent, and educational use limits."
+        },
+        {
+          "title": "HHS: Covered Entities and Business Associates",
+          "url": "https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html",
+          "locator": "45 CFR 160.103 coverage; provider transaction condition, health plans, clearinghouses, and business associates."
+        },
+        {
+          "title": "FTC: Health Breach Notification Rule",
+          "url": "https://www.ftc.gov/legal-library/browse/rules/health-breach-notification-rule",
+          "locator": "16 CFR Part 318; personal health record vendors and related entities outside HIPAA; final-rule links."
+        }
+      ],
+      "description": "Data Coverage, Privacy Promises & Vendors: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "incident-triage",
+      "title": "Security Incidents, Notifications & Evidence",
+      "tags": [
+        "breach",
+        "incident response",
+        "notification",
+        "ransomware",
+        "FTC",
+        "security"
+      ],
+      "applicability": "Business incident coordination; reporting triggers and clocks must be established for each applicable regime.",
+      "text": "## Framework and limits\nA security incident, contractual incident, legally defined breach, and reportable event may be different things. A notification obligation can depend on data type, affected people, access or acquisition, encryption and key exposure, organizational role, and timing of discovery. There is no safe universal deadline for every U.S. business. State and sector requirements must be assessed alongside contractual and insurer conditions.\n\nThe FTC's general breach guide supports an organized response. The Safeguards Rule and Health Breach Notification Rule contain specific obligations for their covered populations. HIPAA has its own assessment and notification rules. Do not assume a vendor's conclusion, absence of visible theft, or later recovery of files resolves every applicable definition.\n\n## Practical review\nActivate a response owner and preserve a contemporaneous chronology. Contain continuing access while retaining evidence where feasible: identity events, endpoint records, application logs, affected file inventories, configuration changes, and vendor messages. Record gaps and logging limitations explicitly. Involve qualified technical responders and counsel for material incidents; mark hypotheses separately from verified observations.\n\nCreate an obligation register showing the potentially applicable law or contract, trigger, discovery date, recipient, required content, deadline, decision owner, and evidence supporting the conclusion. Update it as facts change. Establish who approves notices and who confirms delivery. Coordinate communications so support staff, management, customers, and regulators do not receive conflicting explanations. Preserve uncertainty in statements instead of promising that no data was affected before investigation supports it.\n\n## Example\nA managed-service provider reports that an administrator token was exposed but says its review found no downloads. The customer has limited logs and contractual obligations to notify business clients. Frame should separate confirmed exposure from unknown access, request the investigation scope and evidence, and identify independent notification duties. It should not label the incident harmless solely because the provider used the phrase no evidence.\n\n## Counsel questions and next steps\nAsk when each reporting clock started, whether a permitted delay or exception actually applies, and how to communicate continuing investigation results. Consider insurer and law-enforcement coordination where relevant without assuming either suspends legal duties. After containment, test recovery and access changes, preserve required records, and assign corrective actions with verification. Review whether the original privacy notices and contracts need prospective changes. Frame's useful output is a decision-ready incident chronology and obligation register, not an unsupported declaration that notification is unnecessary.",
+      "sources": [
+        {
+          "title": "FTC: Data Breach Response",
+          "url": "https://www.ftc.gov/business-guidance/resources/data-breach-response-guide-business",
+          "locator": "Containment, investigation, notifications, and communication; determine applicable state and sector requirements."
+        },
+        {
+          "title": "FTC: Safeguards Rule Business Guide",
+          "url": "https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-know",
+          "locator": "16 CFR Part 314; covered financial institutions, security programs, service providers, and notification events."
+        },
+        {
+          "title": "FTC: Health Breach Notification Rule",
+          "url": "https://www.ftc.gov/legal-library/browse/rules/health-breach-notification-rule",
+          "locator": "16 CFR Part 318; personal health record vendors and related entities outside HIPAA; final-rule links."
+        },
+        {
+          "title": "HHS: HIPAA Breach Notification Rule",
+          "url": "https://www.hhs.gov/hipaa/for-professionals/breach-notification/index.html",
+          "locator": "45 CFR 164.400–414; unsecured PHI, breach assessment, exceptions, and notification responsibilities."
+        }
+      ],
+      "description": "Security Incidents, Notifications & Evidence: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

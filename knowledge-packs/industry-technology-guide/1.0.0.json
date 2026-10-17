@@ -1,0 +1,87 @@
+{
+  "id": "industry-technology-guide",
+  "title": "Technology, Software & Professional Services",
+  "description": "Delivery acceptance, software rights, client confidentiality, secure development, and AI vendor review.",
+  "pages": [
+    {
+      "id": "delivery-and-rights",
+      "title": "Client Scope, Acceptance & Rights Handoffs",
+      "tags": [
+        "technology",
+        "software",
+        "consulting",
+        "professional services",
+        "SOW",
+        "licenses"
+      ],
+      "applicability": "Software and professional-service engagements; contract remedies and professional duties require jurisdiction-specific advice.",
+      "text": "## Framework and limits\nA services engagement combines commercial promises with rights, confidentiality, and operational dependencies. Define whether the customer is buying a result, access to a platform, staff time, or a combination. Ordinary contract formation and remedies are largely governed by state law. Federal copyright questions may affect software and other deliverables, but ownership language does not resolve every contractual issue.\n\nSeparate pre-existing tools, newly created materials, third-party components, client data, and general know-how. Copyright work-made-for-hire rules do not automatically vest every commissioned deliverable in the customer. A promise to assign all rights may be impossible where the work includes licensed components. Security commitments should describe real practices and measurable responsibilities rather than unsupported claims of complete protection.\n\n## Practical review\nBuild an acceptance matrix linking deliverables to objective criteria, test data, reviewer, decision date, and correction process. Record dependencies on client access, decisions, integrations, and supplied materials. Define how requested changes affect price, schedule, testing, and ownership. Preserve approval history so a later dispute can distinguish a defect from a newly requested feature.\n\nPrepare a handoff inventory containing source code or export rights, deployment instructions, credentials transferred through approved channels, license notices, operational documentation, support obligations, and remaining defects. Clarify who may reuse components and whether subcontractors granted necessary permissions. Review termination assistance and data return before signing, when both parties still have leverage to resolve gaps.\n\n## Example\nA consulting firm builds a client portal using its own library, open-source dependencies, and a subcontractor's design. The client demands ownership of everything and refuses payment after requesting a new integration. Frame should separate the rights inventory from the acceptance history, identify the disputed scope change, and prepare questions for negotiation. It should not conclude that an invoice, repository access, or the phrase work for hire settles the entire dispute.\n\n## Counsel questions and next steps\nAsk what assignment or license is needed for each asset, which limitations survive termination, and whether the liability allocation matches the risk and insurance. Confirm confidentiality obligations for both teams and any professional licensing restrictions. Use a written change log and explicit acceptance decisions rather than informal assumptions. Before escalation, collect the signed documents, versioned deliverables, test results, and communications into a chronology that distinguishes agreed obligations from each party's later expectations.",
+      "sources": [
+        {
+          "title": "Copyright Act: Chapter 1",
+          "url": "https://www.copyright.gov/title17/92chap1.html",
+          "locator": "17 USC 101–122; work-made-for-hire definition, exclusive rights, and statutory limitations."
+        },
+        {
+          "title": "Copyright Office: Copyright Basics",
+          "url": "https://www.copyright.gov/what-is-copyright/",
+          "locator": "Original expression, fixation, ownership, exclusive rights, and links to copyright circulars."
+        },
+        {
+          "title": "FTC: Protecting Personal Information",
+          "url": "https://www.ftc.gov/business-guidance/resources/protecting-personal-information-guide-business",
+          "locator": "Data inventory, minimization, access protection, disposal, and incident planning; guidance rather than a universal code."
+        }
+      ],
+      "description": "Client Scope, Acceptance & Rights Handoffs: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "secure-ai-services",
+      "title": "Secure Delivery, AI Features & Vendor Assurances",
+      "tags": [
+        "software",
+        "SaaS",
+        "AI",
+        "NIST",
+        "security",
+        "vendors",
+        "professional services"
+      ],
+      "applicability": "Technology suppliers and service firms; regulated customer data can add obligations beyond this general workflow.",
+      "text": "## Framework and limits\nNIST's Secure Software Development Framework and AI Risk Management Framework provide useful voluntary practices. They are not universal laws or a certification that a product is secure, accurate, or legally compliant. A contract or sector requirement can give particular controls additional significance. Verify the specific publication and status; a draft revision should not be described as an adopted requirement.\n\nFor AI, evaluate the intended use, affected people, data, outputs, and consequences of error. A tool that summarizes internal notes presents different questions from one that ranks applicants or influences medical care. Existing privacy, discrimination, consumer-protection, intellectual-property, and professional obligations still need attention. A vendor's general assurance does not answer those use-specific questions.\n\n## Practical review\nMaintain a system inventory with owners, dependencies, privileged access, release process, vulnerabilities, and recovery arrangements. For important releases, retain evidence of review, testing, known limitations, and rollback readiness. Ask suppliers what their attestations actually cover, who assessed them, and which services or time periods are excluded. Review operational evidence rather than counting badges.\n\nFor an AI feature, document approved inputs, prohibited data, output review, evaluation cases, monitoring, fallback, and a person who can stop the use. Evaluate failure modes using realistic scenarios and edge cases before production. Ensure customer-facing claims match the evaluation and deployment conditions. Assign responsibility for model or vendor changes that can alter behavior after initial approval.\n\n## Example\nA professional-services firm adds an AI assistant to draft client advice. The supplier promises enterprise privacy, but the contract permits retention of some logs and the firm has no output-review process. Frame should compare the actual data flow and terms with client confidentiality commitments, then propose a limited pilot using approved material and human review. It should not equate local hosting or an enterprise subscription with permission to process every client record.\n\n## Counsel questions and next steps\nAsk whether the use affects regulated decisions, what client disclosures or permissions are needed, and what contractual protections are realistic. Define an incident route for harmful or confidential outputs and preserve test evidence. Reassess after material changes in inputs, intended users, integrations, or vendor terms. Keep commercial claims specific: tested capabilities under stated conditions are more useful than broad promises that AI eliminates error or makes an organization compliant.",
+      "sources": [
+        {
+          "title": "NIST: Secure Software Development Framework 1.1",
+          "url": "https://csrc.nist.gov/pubs/sp/800/218/final",
+          "locator": "SP 800-218 final guidance; secure development vocabulary, supplier discussions, and vulnerability reduction."
+        },
+        {
+          "title": "NIST: AI Risk Management Framework",
+          "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+          "locator": "Voluntary framework for governing, mapping, measuring, and managing AI risks; not legal certification."
+        },
+        {
+          "title": "FTC: Advertising FAQs for Small Business",
+          "url": "https://www.ftc.gov/business-guidance/resources/advertising-faqs-guide-small-business",
+          "locator": "FTC Act truthfulness, substantiation, express and implied claims, and disclosures."
+        },
+        {
+          "title": "FTC: Protecting Personal Information",
+          "url": "https://www.ftc.gov/business-guidance/resources/protecting-personal-information-guide-business",
+          "locator": "Data inventory, minimization, access protection, disposal, and incident planning; guidance rather than a universal code."
+        }
+      ],
+      "description": "Secure Delivery, AI Features & Vendor Assurances: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

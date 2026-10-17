@@ -1,0 +1,81 @@
+{
+  "id": "us-workplace-safety-guide",
+  "title": "Federal Workplace Safety & Incident Response",
+  "description": "Hazard-based safety planning, shared-worksite coordination, and incident records with federal/state-plan distinctions.",
+  "pages": [
+    {
+      "id": "hazards-and-contractors",
+      "title": "Hazards, Controls & Shared Worksites",
+      "tags": [
+        "OSHA",
+        "safety",
+        "contractors",
+        "staffing",
+        "hazards",
+        "training"
+      ],
+      "applicability": "General employer planning; identify federal OSHA or the applicable state plan and industry-specific standards.",
+      "text": "## Framework and limits\nStart with jurisdiction and the actual activity. Federal OSHA standards, approved state plans, construction rules, and specialized requirements do not apply identically to every site. OSHA's recommended safety-program practices are useful management guidance, not a substitute for enforceable standards. A written policy also does not establish that equipment, training, or supervision met the relevant requirement.\n\nWorksites involving a host employer, contractor, staffing company, or several trades require coordination. A contract allocating safety tasks does not necessarily eliminate statutory responsibility. Identify who creates hazards, directs work, supplies equipment, trains people, and can correct a dangerous condition. Confirm the applicable enforcement framework with counsel rather than treating contractor status as immunity.\n\n## Practical review\nMake a task-based hazard register covering normal work, maintenance, startup, shutdown, foreseeable upset conditions, and visitors. Describe who can be exposed, the potential harm, existing controls, and how control effectiveness will be checked. Favor removing or engineering out hazards where feasible; training and personal protective equipment should not become an excuse to ignore stronger controls.\n\nBefore a contractor starts, exchange site hazards, emergency procedures, work restrictions, reporting routes, and qualifications needed for the task. Specify who authorizes changes and who has authority to stop unsafe work. Verify training in a language and format workers can understand. Inspect the work actually performed, including changes introduced by subcontractors or overtime shifts.\n\n## Example\nA warehouse hires temporary workers during a demand surge. The agency provides a general orientation, but the host introduces new loading equipment. A useful review asks who assessed the changed task, whether workers received equipment-specific instruction, and who supervised their first shifts. A signed onboarding form does not answer those questions. Frame can assemble a responsibility table and inspection checklist without presenting it as an OSHA certification.\n\n## Counsel questions and next steps\nAsk which standards apply, which parties retain duties, whether exposure monitoring or specialist assessment is necessary, and what records must be retained. Assign an owner, budget, and due date to each corrective action and verify closure through observation. Include workers in identifying practical failures; reward reporting rather than a low reported-injury count. For an imminent hazard, protect people and engage the responsible safety professional immediately instead of waiting for a complete legal memo.",
+      "sources": [
+        {
+          "title": "OSHA: Employer Responsibilities",
+          "url": "https://www.osha.gov/workers/employer-responsibilities",
+          "locator": "Workplace hazards, standards, training, records, reporting, and protection against retaliation."
+        },
+        {
+          "title": "OSHA: Recommended Practices for Safety and Health Programs",
+          "url": "https://www.osha.gov/safety-management/",
+          "locator": "Voluntary program framework; distinguish recommended practices from enforceable standards."
+        },
+        {
+          "title": "OSHA: Host Employer and Contractor Coordination",
+          "url": "https://www.osha.gov/safety-management/communication",
+          "locator": "Recommended communication and responsibility allocation at shared workplaces and staffing assignments."
+        }
+      ],
+      "description": "Hazards, Controls & Shared Worksites: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "incident-reporting",
+      "title": "Injury Reporting, Preservation & Corrective Action",
+      "tags": [
+        "OSHA",
+        "incident",
+        "injury",
+        "reporting",
+        "recordkeeping",
+        "preservation"
+      ],
+      "applicability": "Federal serious-event reporting and incident management; state plans can impose different or additional obligations.",
+      "text": "## Framework and limits\nOSHA recording and immediate reporting are different duties. An employer may have a serious-event reporting obligation even when exempt from routine injury logs. Under federal 29 CFR 1904.39, covered work-related fatalities generally have an eight-hour reporting clock; inpatient hospitalizations, amputations, and losses of an eye generally have a twenty-four-hour clock. The regulation contains event windows, knowledge rules, and exceptions. Emergency-room treatment alone is not the same as inpatient admission for care or treatment. Check the full rule and applicable state-plan requirements promptly.\n\nDo not let a debate about ultimate fault delay an assessment of reporting. Record when the organization learned of the event and later medical developments. Workers' compensation notice, insurer notice, OSHA reporting, and internal investigation serve different purposes. One does not automatically satisfy another.\n\n## Practical review\nFirst arrange emergency assistance and isolate continuing hazards. Assign one coordinator to record known facts, preserve the scene as safety permits, and maintain a chronology. Secure photographs, machine settings, maintenance records, schedules, training records, and witness contact information. Preserve original versions rather than retrospectively completing missing forms. Avoid collecting unnecessary medical details or circulating them beyond the investigation team.\n\nUse a reporting worksheet with jurisdiction, event type, occurrence date, discovery date, admission facts if relevant, deadline calculation, responsible person, and submission confirmation. If facts remain incomplete, seek prompt professional guidance and record the uncertainty. Do not assume an unanswered voicemail meets a required reporting method. Coordinate with emergency responders and regulators without obstructing their work.\n\n## Example\nA worker is treated after a loading accident and later admitted to the hospital. Management initially describes the incident as minor. The review must capture the later admission information and determine what it means under the applicable reporting rule. Frame should flag the issue for immediate verification, not calculate a deadline solely from the first internal email or conclude that no report is needed because the employee walked away initially.\n\n## Counsel questions and next steps\nAsk what notices are due, how to preserve evidence while restarting operations safely, and how interview materials should be handled. Separate root-cause learning from unsupported blame. Corrective actions should address equipment, staffing, incentives, and supervision where relevant. Assign verification steps and recheck the work after changes. Monitor for retaliation against injured workers or witnesses; discouraging reports undermines both factual reliability and prevention.",
+      "sources": [
+        {
+          "title": "OSHA: Severe-Injury Reporting Standard",
+          "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1904/1904.39",
+          "locator": "29 CFR 1904.39; reportable events, timing, knowledge, exclusions, and event windows."
+        },
+        {
+          "title": "OSHA: Employer Responsibilities",
+          "url": "https://www.osha.gov/workers/employer-responsibilities",
+          "locator": "Workplace hazards, standards, training, records, reporting, and protection against retaliation."
+        },
+        {
+          "title": "OSHA: Recommended Practices for Safety and Health Programs",
+          "url": "https://www.osha.gov/safety-management/",
+          "locator": "Voluntary program framework; distinguish recommended practices from enforceable standards."
+        }
+      ],
+      "description": "Injury Reporting, Preservation & Corrective Action: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

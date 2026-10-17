@@ -1,0 +1,81 @@
+{
+  "id": "industry-healthcare-guide",
+  "title": "Healthcare & Medical Practice Operations",
+  "description": "HIPAA role mapping, vendor incidents, billing integrity, referral arrangements, and compliance escalation.",
+  "pages": [
+    {
+      "id": "health-data",
+      "title": "Health Data, Business Associates & Incidents",
+      "tags": [
+        "healthcare",
+        "medical practice",
+        "HIPAA",
+        "PHI",
+        "business associate",
+        "breach"
+      ],
+      "applicability": "Provider and service-vendor operations; clinical advice, state medical privacy, and specialized records need separate review.",
+      "text": "## Framework and limits\nIdentify whether the organization is a HIPAA covered entity or business associate before deciding which duties apply. Healthcare providers meet the covered-entity definition only under the relevant transaction conditions; health plans and clearinghouses have their own definitions. A vendor's access, functions, and relationship determine whether business-associate requirements apply. A signed business associate agreement is not proof that the actual service is configured appropriately.\n\nHIPAA privacy, security, and breach-notification rules address different obligations. Security Rule duties concern electronic protected health information. Unauthorized access or disclosure needs an assessment under the applicable breach framework, including relevant exceptions and risk factors. Other health information may fall under FTC or state rules even where HIPAA does not apply. Specialized records can add further restrictions.\n\n## Practical review\nMap scheduling, billing, portal, transcription, analytics, imaging, support, and backup workflows. Record who receives data, the permitted purpose, minimum access needed, subcontractors, and incident contacts. Match contracts to actual configurations and disable optional data uses until appropriately reviewed. Maintain risk analysis and risk-management evidence, access reviews, workforce training, and tested recovery arrangements.\n\nFor an incident, preserve logs and affected-data inventories, contain continuing exposure, and coordinate with the privacy/security officer and counsel. Separate the incident date, discovery date, assessment, and notification decisions. Require vendor cooperation sufficient to evaluate the organization's own duties. Do not conclude that a vendor handled everything merely because it offered a template notification.\n\n## Example\nA practice enables an AI transcription feature through an existing software vendor. The original agreement covers billing support but the new feature sends recordings to a different processor. Frame should identify the changed data path, contractual scope, access, retention, and clinical review responsibilities. Existing vendor approval does not automatically approve the new use. The output should be a gap list and decision record, not a claim that the feature is HIPAA certified.\n\n## Counsel questions and next steps\nAsk whether business-associate or subcontractor terms are needed, what authorizations or restrictions apply, and whether an incident is reportable under each relevant regime. Confirm the status of any proposed rule before treating it as binding. Maintain a controlled inventory of approved services and a review gate for new features. Preserve patient access and continuity of care during security changes, with clinical professionals directing patient-care decisions.",
+      "sources": [
+        {
+          "title": "HHS: Covered Entities and Business Associates",
+          "url": "https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html",
+          "locator": "45 CFR 160.103 coverage; provider transaction condition, health plans, clearinghouses, and business associates."
+        },
+        {
+          "title": "HHS: HIPAA Security Rule",
+          "url": "https://www.hhs.gov/hipaa/for-professionals/security/index.html",
+          "locator": "45 CFR Part 164 Subpart C, electronic PHI safeguards and assessment resources; distinguish proposals from final rules."
+        },
+        {
+          "title": "HHS: HIPAA Breach Notification Rule",
+          "url": "https://www.hhs.gov/hipaa/for-professionals/breach-notification/index.html",
+          "locator": "45 CFR 164.400–414; unsecured PHI, breach assessment, exceptions, and notification responsibilities."
+        },
+        {
+          "title": "FTC: Health Breach Notification Rule",
+          "url": "https://www.ftc.gov/legal-library/browse/rules/health-breach-notification-rule",
+          "locator": "16 CFR Part 318; personal health record vendors and related entities outside HIPAA; final-rule links."
+        }
+      ],
+      "description": "Health Data, Business Associates & Incidents: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "billing-and-referrals",
+      "title": "Billing Integrity, Referral Relationships & Compliance",
+      "tags": [
+        "healthcare",
+        "medical practice",
+        "False Claims Act",
+        "Stark",
+        "Anti-Kickback",
+        "billing"
+      ],
+      "applicability": "Healthcare business arrangements and claims; program participation, services, intent, and statutory exceptions matter.",
+      "text": "## Framework and limits\nFederal healthcare fraud-and-abuse laws are not interchangeable. The False Claims Act, Anti-Kickback Statute, physician self-referral law commonly called Stark, exclusion rules, and civil monetary penalty provisions have different elements and exceptions. A payment that looks commercially reasonable may still require specialized analysis. State fee-splitting, licensing, ownership, and payer requirements add separate questions.\n\nThe HHS OIG General Compliance Program Guidance is voluntary guidance for organizing compliance work. It does not create a universal safe harbor for a practice that follows a checklist. Evaluate actual arrangements and claims with qualified healthcare counsel and billing expertise. Do not treat fair-market-value language alone as proof that every legal condition is satisfied.\n\n## Practical review\nInventory compensation, marketing, referral, space, equipment, management, and ownership arrangements. Record parties, services actually delivered, payment formulas, referral connections, federal-program exposure, written terms, and changes over time. Look for payments tied to volume or value of business without jumping directly to a conclusion. Preserve valuation support and evidence that contracted services occurred.\n\nFor billing, compare orders, clinical documentation, coding, payer rules, submitted claims, denials, and refunds. Sample areas with repeated overrides or unexplained revenue changes. Provide a confidential escalation route for staff and protect against retaliation. When a potential overpayment or false claim is identified, involve the appropriate specialists promptly; do not wait for the next annual audit or silently change records to match billing.\n\n## Example\nA clinic proposes paying a marketing partner per patient booked, including patients whose care may be reimbursed by federal programs. Frame should gather the services, payment basis, participants, and payer mix, then flag the need for legal analysis before signing. It should not declare the arrangement lawful because the contract calls the payment advertising, or unlawful without examining the actual facts and applicable protections.\n\n## Counsel questions and next steps\nAsk which laws govern, whether an exception or safe harbor actually fits, what reporting or repayment obligations may arise, and how to preserve documents appropriately. Assign corrective actions with accountable owners and follow-up testing. Track whether training, contract changes, or billing edits address the root cause. Frame should produce a factual issue list and counsel packet; it should not select billing codes, certify medical necessity, or promise that a corrective payment resolves all enforcement risk.",
+      "sources": [
+        {
+          "title": "HHS OIG: Fraud and Abuse Laws",
+          "url": "https://oig.hhs.gov/compliance/physician-education/fraud-abuse-laws/",
+          "locator": "False Claims Act, Anti-Kickback Statute, Stark law, exclusions, and civil monetary penalties; distinct legal elements."
+        },
+        {
+          "title": "HHS OIG: General Compliance Program Guidance",
+          "url": "https://oig.hhs.gov/compliance/general-compliance-program-guidance/",
+          "locator": "Voluntary healthcare compliance program guidance, governance, reporting, monitoring, and corrective action."
+        }
+      ],
+      "description": "Billing Integrity, Referral Relationships & Compliance: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

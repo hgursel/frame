@@ -1,0 +1,86 @@
+{
+  "id": "industry-real-estate-guide",
+  "title": "Real Estate & Property Management",
+  "description": "Housing screening, accommodations, property work, accessibility, and evidence preparation for local counsel.",
+  "pages": [
+    {
+      "id": "housing-screening",
+      "title": "Fair Housing, Screening & Accommodations",
+      "tags": [
+        "real estate",
+        "housing",
+        "tenant",
+        "FCRA",
+        "fair housing",
+        "screening"
+      ],
+      "applicability": "Residential housing providers and managers; exemptions, funded-program duties, and local protections require review.",
+      "text": "## Framework and limits\nThe Fair Housing Act addresses discrimination in housing based on protected characteristics. Other federal civil-rights duties may apply to funded programs. Scope and exemptions require specific review; state and local laws can protect additional groups and regulate screening, fees, deposits, or termination. Do not assume commercial leasing and residential housing follow identical rules.\n\nUsing a consumer report for a rental decision triggers FCRA responsibilities. A report can include a screening recommendation rather than only a credit score. Adverse action can include less favorable terms, not just rejection, and notice may be required when the report was only part of the reason. Credit-score use can add disclosures. Fair-housing analysis remains separate from FCRA notice compliance.\n\n## Practical review\nDocument screening criteria, permissible use of reports, vendor controls, decision reasons, notices, and dispute handling. Check that staff apply criteria consistently and can explain exceptions. Avoid letting a vendor's automated score replace the organization's responsibility to evaluate its process. Retain the criteria and report version used at the time, subject to appropriate security and retention limits.\n\nProvide an accessible process for disability-related requests. Distinguish a policy accommodation from a physical modification and identify who has authority to evaluate it. Seek only information appropriate to the actual issue. Track requests, communications, options, and decisions without disclosing unnecessary disability details to maintenance or leasing staff. Do not automatically treat assistance animals as ordinary pets or assume all animal requests must be accepted without assessment.\n\n## Example\nA property manager requires a larger deposit after a screening report flags a disputed debt. The applicant also requests a change to a parking policy because of disability. Frame should separate the consumer-report notice question from the accommodation process and local deposit limits. A single generic rejection letter would not necessarily address all three issues. The useful output is a factual decision map with missing evidence and assigned reviewers.\n\n## Counsel questions and next steps\nAsk which housing laws apply, whether criteria or exceptions need revision, what notices are required, and how to handle inaccurate reports. Before eviction or nonrenewal, obtain local advice on substantive grounds and procedure; this federal pack supplies no universal termination notice. Preserve relevant applications, communications, and policy versions, and review vendor agreements for access to the evidence needed to explain decisions.",
+      "sources": [
+        {
+          "title": "HUD: Fair Housing Rights and Obligations",
+          "url": "https://www.hud.gov/stat/fheo/rights-obligations",
+          "locator": "Fair Housing Act protected characteristics and overlapping civil rights obligations for funded programs."
+        },
+        {
+          "title": "HUD: Information for Persons with Disabilities",
+          "url": "https://www.hud.gov/helping-americans/disabilities",
+          "locator": "Links to reasonable accommodation and modification guidance; distinguish housing from public accommodations."
+        },
+        {
+          "title": "FTC: Consumer Reports for Landlords",
+          "url": "https://www.ftc.gov/business-guidance/resources/using-consumer-reports-what-landlords-need-know",
+          "locator": "FCRA permissible purpose, adverse action, credit-score disclosures, investigative reports, and disposal."
+        }
+      ],
+      "description": "Fair Housing, Screening & Accommodations: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "property-work-access",
+      "title": "Property Work, Access & Contractor Oversight",
+      "tags": [
+        "property management",
+        "real estate",
+        "ADA",
+        "renovation",
+        "lead",
+        "maintenance"
+      ],
+      "applicability": "Property operations; residential housing, public accommodations, and commercial facilities have different requirements.",
+      "text": "## Framework and limits\nMap the use of each space before choosing a legal framework. Residential accommodation duties, public-accommodation access, commercial-facility design requirements, building codes, and lease obligations can overlap without being identical. Under ADA Title III, allocating accessibility work in a lease does not necessarily remove obligations to the public. Existing facilities, alterations, and new construction can involve different standards.\n\nRenovation may introduce federal lead requirements for covered work in older housing or child-occupied facilities. EPA's RRP program has scope conditions, exceptions, certification, work-practice, and record requirements. A general contractor license or an owner's consent does not automatically satisfy them. State-authorized programs and local permits may impose additional duties.\n\n## Practical review\nMaintain a property register showing age, use, occupancy, known hazards, access features, inspection history, leases, and responsible parties. Before work, define the task, affected occupants, materials disturbed, permits, qualified contractors, and interim protections. Verify certifications and insurance relevant to the actual activity. Preserve work orders, inspection findings, testing, and completion evidence.\n\nFor accessibility, document the barrier and the applicable evaluation rather than simply labeling a building grandfathered. Review routes, entries, counters, communications, and service procedures as well as physical dimensions. Engage qualified design or access professionals for technical determinations. Coordinate repairs with tenant or customer communications and alternatives needed during disruption.\n\n## Example\nA landlord leases ground-floor space to a clinic and hires a painter to refresh an older residential unit upstairs. The team assumes all compliance belongs to the tenants. Frame should separate the clinic's public-access issues from the residential renovation and identify owner, operator, and contractor responsibilities. It should not infer that a lease clause or small job size eliminates every federal requirement.\n\n## Counsel questions and next steps\nAsk which parties remain responsible, whether the planned work triggers an alteration or lead rule, and what notices, permits, or qualified assessments are required. Review indemnity and insurance as risk allocation, not a substitute for safe work. Track deficiencies through verified closure and preserve records of recurring conditions. Local habitability, rent regulation, entry notices, and construction remedies require additional jurisdiction-specific advice. Frame should prepare the property facts and coordination plan so counsel and technical professionals can resolve the actual duties efficiently.",
+      "sources": [
+        {
+          "title": "DOJ: ADA Title III Regulations",
+          "url": "https://www.ada.gov/law-and-regs/regulations/title-iii-regulations/",
+          "locator": "28 CFR Part 36; coverage, owner/tenant duties, modifications, communication, and accessibility."
+        },
+        {
+          "title": "HUD: Information for Persons with Disabilities",
+          "url": "https://www.hud.gov/helping-americans/disabilities",
+          "locator": "Links to reasonable accommodation and modification guidance; distinguish housing from public accommodations."
+        },
+        {
+          "title": "EPA: Renovation, Repair and Painting — Contractors",
+          "url": "https://www.epa.gov/lead/renovation-repair-and-painting-program-contractors",
+          "locator": "Lead RRP requirements for covered renovations, certifications, practices, and exemptions."
+        },
+        {
+          "title": "EPA: Small Entity Guide to Renovate Right",
+          "url": "https://www.epa.gov/lead/small-entity-compliance-guide-renovate-right",
+          "locator": "March 2026 guide to the RRP rule; scope, work practices, documentation, and compliance planning."
+        }
+      ],
+      "description": "Property Work, Access & Contractor Oversight: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}

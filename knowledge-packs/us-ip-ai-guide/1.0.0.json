@@ -1,0 +1,76 @@
+{
+  "id": "us-ip-ai-guide",
+  "title": "Federal Copyright, Trademarks & AI Use",
+  "description": "Rights provenance, licenses, brand clearance, and responsible AI-output review for ordinary business activities.",
+  "pages": [
+    {
+      "id": "copyright-and-ai",
+      "title": "Copyright Ownership, Licensing & AI Outputs",
+      "tags": [
+        "copyright",
+        "AI",
+        "license",
+        "ownership",
+        "work made for hire",
+        "training"
+      ],
+      "applicability": "Business content and software rights triage; patents, publicity, trade secrets, and state contract rules need separate review.",
+      "text": "## Framework and limits\nCopyright protects qualifying original expression, not every idea, fact, style, or method. Ownership and permission are separate from whether material is accessible online. Payment for a deliverable does not automatically answer who owns the copyright. Work-made-for-hire treatment has specific statutory conditions; commissioned work is not universally covered merely because an agreement uses that phrase.\n\nAI creates several different questions: rights in inputs, authorization for training or processing, protectability of output, similarity to existing work, and contractual allocation of risk. Copyright Office reports explain its analysis but do not themselves enact new law or resolve every pending dispute. Human contribution and the circumstances of creation matter; neither all AI-assisted work is unprotectable nor all output is safely exclusive.\n\n## Practical review\nBuild a rights ledger for important deliverables. Identify creators, employment or contractor status, source assets, licenses, assignments, permitted uses, territories, duration, modification rights, and sublicensing. Save the actual license version and proof of permission. For software, include dependencies and license obligations; an open repository is not the same as unrestricted use.\n\nFor AI-assisted work, record the tool and terms used, approved input sources, human edits, and review performed. Do not send client materials into a service merely because staff can access them. Check confidentiality and data-use permissions separately from copyright. Where ownership or uniqueness is important, preserve the human creative process and consider alternatives that provide clearer provenance.\n\n## Example\nA design agency delivers an AI-assisted campaign incorporating a stock photo and a contractor's illustration. The client requests exclusive worldwide rights. Frame should identify the separate assets and whether each license permits the requested use, then distinguish assignable rights from third-party limitations. It should not promise exclusivity across the entire campaign because the agency generated the final file.\n\n## Counsel questions and next steps\nAsk whether assignments or additional permissions are needed, whether a proposed use may qualify for a limitation such as fair use, and what registration or enforcement steps are appropriate. Fair use requires a fact-specific assessment; there is no universal safe percentage. Review indemnity and liability language against the provider's actual ability to stand behind the work. For disputed material, preserve provenance and seek advice before publishing, making an accusation, or issuing a takedown.",
+      "sources": [
+        {
+          "title": "Copyright Office: Copyright Basics",
+          "url": "https://www.copyright.gov/what-is-copyright/",
+          "locator": "Original expression, fixation, ownership, exclusive rights, and links to copyright circulars."
+        },
+        {
+          "title": "Copyright Act: Chapter 1",
+          "url": "https://www.copyright.gov/title17/92chap1.html",
+          "locator": "17 USC 101–122; work-made-for-hire definition, exclusive rights, and statutory limitations."
+        },
+        {
+          "title": "Copyright Office: Artificial Intelligence Study",
+          "url": "https://copyright.gov/policy/artificial-intelligence/",
+          "locator": "Reports on digital replicas, output copyrightability, and training; reports do not themselves enact law."
+        }
+      ],
+      "description": "Copyright Ownership, Licensing & AI Outputs: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    },
+    {
+      "id": "brand-clearance",
+      "title": "Trademark Clearance, Brand Use & Launch Decisions",
+      "tags": [
+        "trademark",
+        "brand",
+        "USPTO",
+        "clearance",
+        "domain",
+        "marketing"
+      ],
+      "applicability": "U.S. brand selection and use; foreign markets, disputes, and specialized marks require additional research.",
+      "text": "## Framework and limits\nA trademark identifies source in relation to goods or services. Registering a domain or business name does not establish that a proposed brand is available. USPTO clearance guidance recommends looking beyond exact matches in the federal database. Similar appearance, sound, meaning, and related goods or services can matter, as can rights arising outside federal registration.\n\nRegistration review and real-world infringement analysis are related but not identical. A search is evidence for a judgment, not a guarantee. Descriptive wording, weak distinctiveness, crowded markets, geography, and how consumers encounter the mark can change the risk. Different spelling alone does not necessarily avoid confusion.\n\n## Practical review\nDefine the proposed mark precisely: words, design, slogan, goods and services, customers, channels, and planned expansion. Search variants, pronunciations, translations where relevant, related goods, marketplace use, and state or common-law sources. Save dated results and distinguish active use from abandoned filings or unrelated references. Do not rely solely on a model's memory or an empty search result.\n\nPrepare a launch memo comparing candidate names, potential conflicts, rebranding cost, and remaining uncertainty. Have counsel review material conflicts before investing in signage, packaging, domains, or advertising. For licensed brands, verify ownership, scope, quality-control obligations, approval rights, and what happens at termination. Give marketing teams an approved-use guide that matches the license and actual registration status.\n\n## Example\nA regional property-services company selects a name that differs by one letter from a national maintenance platform. Its team finds no identical domain and assumes it is clear. Frame should ask about related services, customer overlap, pronunciation, and marketplace use. A useful output compares the proposed name with alternatives and records unanswered clearance questions rather than issuing a definitive infringement opinion.\n\n## Counsel questions and next steps\nAsk whether a broader search is necessary, which goods or services should be covered, and whether the proposed mark is distinctive enough for the intended protection. Confirm filing strategy and permissible symbols before launch. For a demand letter, preserve the correspondence and usage history, verify who owns the asserted rights, and route response deadlines to counsel. Do not automatically admit infringement, abandon a valuable brand, or threaten a counterclaim. Periodically review changes in products and markets because a clearance analysis prepared for one business model may not cover a later expansion.",
+      "sources": [
+        {
+          "title": "USPTO: Why Search for Similar Trademarks?",
+          "url": "https://www.uspto.gov/trademarks/basics/why-search-similar-trademarks",
+          "locator": "Comprehensive clearance, federal and other sources, related goods/services, and common-law considerations."
+        },
+        {
+          "title": "USPTO: Likelihood of Confusion",
+          "url": "https://www.uspto.gov/trademarks/search/likelihood-confusion",
+          "locator": "Registration conflicts involving similar marks and related goods or services; search analysis limits."
+        }
+      ],
+      "description": "Trademark Clearance, Brand Use & Launch Decisions: legal framework, fact development, practical analysis, and questions for counsel.",
+      "kind": "review-workflow",
+      "effectiveDate": null
+    }
+  ],
+  "version": "1.0.0",
+  "jurisdiction": [
+    "United States — federal; state and local overlays require separate review"
+  ],
+  "reviewedAt": "2026-10-17",
+  "rights": "Original Frame-authored analysis and workflows; permission is granted to use, modify, and redistribute this pack with this notice. External publications remain with their respective rights holders and are linked, not reproduced. No agency or guild endorsement. Not legal advice or a complete statement of law; no attorney review has been performed. No collective bargaining agreement content is included. Source check means the cited publisher pages were consulted on the stated date, not that every rule or later amendment was independently validated."
+}
