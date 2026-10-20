@@ -298,7 +298,10 @@ try {
   const capture = page.getByRole('button', { name: 'Capture selection' });
   await capture.click();
   const send = async (text: string) => {
+    // The background composer is inert until the asynchronous review action closes its modal.
+    await expect(page.getByRole('dialog')).not.toBeVisible();
     await page.getByLabel('Ask Frame').fill(text);
+    await expect(page.getByLabel('Ask Frame')).toHaveValue(text);
     await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
       timeout: 5000,
     });
@@ -349,6 +352,14 @@ try {
   await page.getByRole('button', { name: 'Apply changes' }).click();
   await expect(page.getByRole('alert')).toContainText('captured cells');
   assert.equal(await page.evaluate(() => (window as any).fakeExcel.writes.length), 0);
+  // Exercise a slow rejection acknowledgment so the next message cannot race the closing modal.
+  await page.route('**/api/excel/sessions/*/proposals/*', async (route) => {
+    if (route.request().method() !== 'POST' || route.request().postDataJSON()?.action !== 'reject')
+      return route.continue();
+    const response = await route.fetch();
+    await new Promise((r) => setTimeout(r, 500));
+    await route.fulfill({ response });
+  });
   await page.getByRole('button', { name: 'Reject', exact: true }).click();
   await send('Try again with the current values');
   await page.evaluate(() => {
