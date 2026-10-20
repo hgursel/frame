@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { createServer, request } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { randomUUID } from 'node:crypto';
+import { installExcelMock } from './excel-office.js';
 const { createApp } = await import(new URL('../dist/server/app.js', import.meta.url).href);
 const root = await mkdtemp(path.join(tmpdir(), 'frame-excel-browser-'));
 let changes: any = {
@@ -20,12 +21,17 @@ let changes: any = {
   formulas: [{ row: 1, column: 1, formula: '=A2*3' }],
 };
 let calls = 0;
+let workbookCalls: { name: string; args: unknown }[] | undefined;
+let workbookStep = 0;
+const workbookMessages: any[] = [];
 const model = createServer(async (req, res) => {
   let raw = '';
   for await (const c of req) raw += c;
   const b = JSON.parse(raw);
   calls++;
-  const tool = b.messages.at(-1).role !== 'tool';
+  if (workbookCalls) workbookMessages.push(b);
+  const planned = workbookCalls ? workbookCalls[workbookStep++] : undefined;
+  const tool = workbookCalls ? !!planned : b.messages.at(-1).role !== 'tool';
   res.writeHead(200, { 'Content-Type': 'text/event-stream' });
   const delta = tool
     ? {
@@ -34,7 +40,10 @@ const model = createServer(async (req, res) => {
             index: 0,
             id: `excel-${calls}`,
             type: 'function',
-            function: { name: 'excel_propose_changes', arguments: JSON.stringify(changes) },
+            function: {
+              name: planned?.name || 'excel_propose_changes',
+              arguments: JSON.stringify(planned?.args || changes),
+            },
           },
         ],
       }
@@ -132,156 +141,7 @@ try {
       body: '// Office host is simulated for this test.',
     }),
   );
-  const officeMock = () => {
-    const w = window as any;
-    const fake: any = {
-      writes: [],
-      protected: false,
-      merged: false,
-      spill: false,
-      table: false,
-      failWrite: false,
-      writesUntilFailure: null,
-      sheets: [],
-    };
-    const sheet = (id: string, name: string, values: any[][]) => {
-      const s: any = {
-        id,
-        name,
-        values,
-        formulas: structuredClone(values),
-        formats: values.map((r) => r.map(() => 'General')),
-        load() {},
-        protection: {
-          load() {},
-          get protected() {
-            return fake.protected;
-          },
-        },
-        activate() {
-          fake.active = id;
-        },
-        tables: {
-          add() {
-            fake.writes.push('table');
-          },
-        },
-        charts: {
-          add() {
-            fake.writes.push('chart');
-            return { title: {}, setPosition() {} };
-          },
-        },
-      };
-      const range = (row: number, col: number, rows: number, cols: number): any => ({
-        worksheet: s,
-        rowIndex: row,
-        columnIndex: col,
-        rowCount: rows,
-        columnCount: cols,
-        address: `${s.name}!A1:B2`,
-        load() {},
-        get values() {
-          return structuredClone(
-            s.values.slice(row, row + rows).map((r: any[]) => r.slice(col, col + cols)),
-          );
-        },
-        get formulas() {
-          return structuredClone(
-            s.formulas.slice(row, row + rows).map((r: any[]) => r.slice(col, col + cols)),
-          );
-        },
-        get numberFormat() {
-          return structuredClone(
-            s.formats.slice(row, row + rows).map((r: any[]) => r.slice(col, col + cols)),
-          );
-        },
-        get hasSpill() {
-          return fake.spill;
-        },
-        getMergedAreasOrNullObject() {
-          return { isNullObject: !fake.merged };
-        },
-        getTables() {
-          return { load() {}, items: fake.table ? [{ name: 'Existing' }] : [] };
-        },
-        set valuesAsJson(v: any[][]) {
-          fake.writes.push({ id, values: v });
-          if (fake.failWrite) throw new Error('Simulated write failure');
-          if (fake.writesUntilFailure !== null && fake.writesUntilFailure-- === 0)
-            throw new Error('Simulated interruption after a completed block');
-          for (let r = 0; r < v.length; r++) {
-            s.values[row + r] ||= [];
-            s.formulas[row + r] ||= [];
-            s.formats[row + r] ||= [];
-            for (let c = 0; c < v[r]!.length; c++) {
-              s.values[row + r][col + c] = v[r]![c].basicValue ?? '';
-              s.formulas[row + r][col + c] = v[r]![c].basicValue ?? '';
-              s.formats[row + r][col + c] ||= 'General';
-            }
-          }
-        },
-        getCell(r: number, c: number) {
-          return {
-            set formulas(v: any[][]) {
-              fake.writes.push({ formula: v[0][0] });
-              s.formulas[row + r][col + c] = v[0][0];
-            },
-          };
-        },
-        format: { autofitColumns() {} },
-      });
-      s.getRangeByIndexes = range;
-      s.getCell = (r: number, c: number) => range(r, c, 1, 1);
-      fake.sheets.push(s);
-      return s;
-    };
-    fake.source = sheet('sheet-1', 'Input', [
-      ['Value', 'Total'],
-      [2, 4],
-    ]);
-    fake.source.formulas[1][1] = '=A2*2';
-    const workbook = {
-      protection: { load() {}, protected: false },
-      getSelectedRange() {
-        return fake.source.getRangeByIndexes(
-          0,
-          0,
-          fake.source.values.length,
-          fake.source.values[0].length,
-        );
-      },
-      worksheets: {
-        getItem(id: string) {
-          const s = fake.sheets.find((s: any) => s.id === id || s.name === id);
-          if (!s) throw new Error('Missing worksheet');
-          return s;
-        },
-        getItemOrNullObject(name: string) {
-          return {
-            isNullObject: !fake.sheets.some(
-              (s: any) => s.name.toLowerCase() === name.toLowerCase(),
-            ),
-          };
-        },
-        add(name: string) {
-          fake.writes.push('sheet');
-          return sheet(`sheet-${fake.sheets.length + 1}`, name, []);
-        },
-      },
-    };
-    w.fakeExcel = fake;
-    w.Office = {
-      onReady: async () => ({ host: 'Excel' }),
-      HostType: { Excel: 'Excel' },
-      context: { requirements: { isSetSupported: () => true } },
-    };
-    w.Excel = {
-      run: async (fn: any) => fn({ workbook, sync: async () => {} }),
-      ChartType: { columnClustered: 'column', barClustered: 'bar', line: 'line', pie: 'pie' },
-      ChartSeriesBy: { columns: 'columns' },
-    };
-  };
+  const officeMock = installExcelMock;
   // tsx preserves function names using this helper inside serialized browser callbacks.
   await context.addInitScript({
     content: `globalThis.__name = (fn) => fn; (${officeMock.toString()})();`,
@@ -295,8 +155,7 @@ try {
   await page.getByLabel('Frame administrator password').fill('excel-browser-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('button', { name: 'Start Excel conversation' }).click();
-  const capture = page.getByRole('button', { name: 'Capture selection' });
-  await capture.click();
+  await expect(page.getByRole('button', { name: 'Capture selection' })).toHaveCount(0);
   const send = async (text: string) => {
     // The background composer is inert until the asynchronous review action closes its modal.
     await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -366,7 +225,7 @@ try {
     (window as any).fakeExcel.protected = true;
   });
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByRole('alert')).toContainText('protected sheets');
+  await expect(page.getByRole('alert')).toContainText('protected');
   await page.evaluate(() => {
     (window as any).fakeExcel.protected = false;
   });
@@ -494,6 +353,121 @@ try {
     'unknown',
   );
   assert.equal(ctx.knowledge.list(project.id).length, 0);
+  await page.evaluate(async () => {
+    const fake = (window as any).fakeExcel;
+    fake.addSheet('Blank', [['']]);
+    await fake.select({ sheet: 'Blank', row: 0, column: 0, rows: 1, columns: 1 });
+  });
+  await page.getByRole('button', { name: 'Start Excel conversation' }).click();
+  await expect(page.getByText('Selected: Blank!A1:A1')).toBeVisible();
+  workbookCalls = [
+    { name: 'excel_read_workbook', args: { kind: 'read_range', sheet: 'Input', range: 'A1:B2' } },
+    {
+      name: 'excel_edit_workbook',
+      args: {
+        summary: 'Build on this blank sheet',
+        actions: [
+          {
+            kind: 'write',
+            sheet: 'Blank',
+            range: 'A1:B3',
+            values: [
+              ['Name', 'Amount'],
+              ['One', 10],
+              ['Two', 20],
+            ],
+          },
+          { kind: 'format', sheet: 'Blank', range: 'B2:B3', format: { numberFormat: '$#,##0.00' } },
+          { kind: 'table', sheet: 'Blank', range: 'A1:B3', name: 'Results', mode: 'create' },
+          {
+            kind: 'chart',
+            sheet: 'Blank',
+            range: 'A1:B3',
+            name: 'Amounts',
+            chartType: 'column',
+            mode: 'create',
+          },
+        ],
+      },
+    },
+  ];
+  workbookStep = 0;
+  await send('Read Input and build a table and chart on this blank worksheet');
+  assert.equal(
+    await page.evaluate(() => (window as any).fakeExcel.writes.length),
+    0,
+    'Automatic workbook reads and preview never write',
+  );
+  await expect(page.getByRole('dialog')).toContainText('Blank!A1:B3');
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace(/\.png$/, '-excel-workbook.png'),
+    });
+  await page.evaluate(async () => {
+    await (window as any).fakeExcel.select({
+      sheet: 'Input',
+      row: 1,
+      column: 0,
+      rows: 1,
+      columns: 1,
+    });
+  });
+  await page.getByRole('button', { name: 'Apply changes' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  assert.deepEqual(
+    await page.evaluate(
+      () => (window as any).fakeExcel.sheets.find((s: any) => s.name === 'Blank').values,
+    ),
+    [
+      ['Name', 'Amount'],
+      ['One', 10],
+      ['Two', 20],
+    ],
+  );
+  assert.equal(
+    await page.evaluate(() => (window as any).fakeExcel.sheets.length),
+    2,
+    'Work stays on existing sheets',
+  );
+  const sameConversation = ctx.store.conversations().find((c: any) => ctx.excel.has(c.id)).id;
+  workbookCalls = [
+    {
+      name: 'excel_edit_workbook',
+      args: {
+        summary: 'Fix the existing formula',
+        actions: [
+          {
+            kind: 'write',
+            sheet: 'Input',
+            range: 'B2',
+            formulas: [{ row: 0, column: 0, formula: '=A2*5' }],
+          },
+        ],
+      },
+    },
+  ];
+  workbookStep = 0;
+  await send('Now use my other selection and fix the existing total');
+  assert.equal(
+    ctx.store.conversations().find((c: any) => ctx.excel.has(c.id)).id,
+    sameConversation,
+  );
+  assert(
+    JSON.stringify(workbookMessages.at(-1)).includes('Read Input and build a table'),
+    'Earlier conversation remains available',
+  );
+  assert(
+    JSON.stringify(workbookMessages.at(-1)).includes('Blank!A1:A1'),
+    'Earlier selection snapshot is retained',
+  );
+  await page.getByRole('button', { name: 'Apply changes' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  assert.equal(await page.evaluate(() => (window as any).fakeExcel.source.formulas[1][1]), '=A2*5');
+  assert.equal(await page.evaluate(() => (window as any).fakeExcel.source.values[1][0]), 2);
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace(/\.png$/, '-excel-conversation.png'),
+    });
   await page.setViewportSize({ width: 1100, height: 850 });
   await page.goto(origin);
   await page.getByRole('button', { name: 'Settings', exact: false }).click();

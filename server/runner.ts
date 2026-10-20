@@ -299,6 +299,13 @@ export class Runner extends EventEmitter {
                 throw new Error('Workbook tools require an Excel session.');
               return this.excel.propose(id, runId, excel.selection, event.args);
             }
+            if (event.action === 'excel_read_workbook' || event.action === 'excel_edit_workbook') {
+              if (!excel || !this.excel)
+                throw new Error('Workbook tools require an Excel session.');
+              return event.action === 'excel_read_workbook'
+                ? this.excel.readWorkbook(id, runId, event.args, active.pluginAbort.signal)
+                : this.excel.proposeWorkbook(id, runId, event.args, active.pluginAbort.signal);
+            }
             if (event.action === 'excel_read_selection') {
               if (!excel || !this.excel)
                 throw new Error('Workbook tools require an Excel session.');

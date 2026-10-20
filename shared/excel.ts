@@ -150,6 +150,7 @@ export type ExcelProposalSummary = Pick<
   target: string;
   rows: number;
   columns: number;
+  operations?: number;
 };
 export interface ExcelSection {
   row: number;

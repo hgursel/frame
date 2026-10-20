@@ -10,7 +10,16 @@ import {
   type ExcelProposalSummary,
   type ExcelInspection,
 } from '../../shared/excel.js';
-import { captureSelection, verifyProposal, applyProposal } from './workbook.js';
+import { captureSelection, verifyProposal, applyProposal, watchSelection } from './workbook.js';
+import { handleWorkbookRequest } from './operations.js';
+import {
+  actionLabel,
+  isStructural,
+  isWorkbookProposal,
+  type AnyExcelProposal,
+  type WorkbookProposal,
+  type WorkbookRequest,
+} from '../../shared/excel-workbook.js';
 import { ConversationMessages } from '../ConversationMessages.js';
 import { LibraryReader } from '../Library.js';
 import { QuestionCard } from '../QuestionCard.js';
@@ -22,6 +31,7 @@ type State = {
   snapshot: ChatSnapshot;
   proposals: ExcelProposalSummary[];
   inspection?: ExcelInspection;
+  workbookRequest?: { id: string; runId: string };
 };
 async function sessionApi<T>(
   session: Session,
@@ -49,7 +59,15 @@ async function sessionApi<T>(
   if (data === undefined) throw new Error('The server returned an unreadable response.');
   return data;
 }
-function Preview({ proposal }: { proposal: ExcelProposal }) {
+function Preview({
+  proposal,
+  formulasOnly = false,
+  readOnly = false,
+}: {
+  proposal: ExcelProposal;
+  formulasOnly?: boolean;
+  readOnly?: boolean;
+}) {
   const [page, setPage] = useState(0);
   const [columnPage, setColumnPage] = useState(0);
   const change = proposal.change;
@@ -62,9 +80,11 @@ function Preview({ proposal }: { proposal: ExcelProposal }) {
   return (
     <details className="excel-preview" open>
       <summary>
-        {change.target === 'new_sheet'
-          ? `New sheet: ${change.sheetName}`
-          : `Replace ${proposal.baseline.address}`}
+        {readOnly
+          ? `Current cells: ${proposal.baseline.address}`
+          : change.target === 'new_sheet'
+            ? `New sheet: ${change.sheetName}`
+            : `Replace ${proposal.baseline.address}`}
       </summary>
       <p>
         {change.values.length} rows × {change.values[0]!.length} columns
@@ -72,10 +92,11 @@ function Preview({ proposal }: { proposal: ExcelProposal }) {
         {change.chart ? ` · ${change.chart} chart` : ''}
       </p>
       {proposal.sourceNotice && <p>{proposal.sourceNotice}</p>}
-      {change.target === 'selection' && (
+      {change.target === 'selection' && !readOnly && (
         <p className="excel-warning">
-          Replaces all values and formulas in this range. Formatting is retained. Review formulas as
-          well as values.
+          {formulasOnly
+            ? 'Updates only the listed formula cells. Other cells are retained.'
+            : 'Replaces values and formulas in this rectangle. Formatting is retained.'}
         </p>
       )}
       <div className="excel-grid-scroll">
@@ -96,7 +117,7 @@ function Preview({ proposal }: { proposal: ExcelProposal }) {
                   const c = firstColumn + offset;
                   const formula = formulas.get(`${start + r}:${c}`);
                   const previous =
-                    change.target === 'selection'
+                    change.target === 'selection' && !readOnly
                       ? proposal.baseline.formulas[start + r]?.[c]
                       : undefined;
                   return (
@@ -151,6 +172,112 @@ function Preview({ proposal }: { proposal: ExcelProposal }) {
     </details>
   );
 }
+function WorkbookPreview({ proposal: p }: { proposal: WorkbookProposal }) {
+  return (
+    <div>
+      {p.sourceNotice && <p>{p.sourceNotice}</p>}
+      {p.plan.actions.map((a, i) => {
+        const baseline = p.checks[i]!.selection;
+        const beforeFormulas =
+          a.kind === 'write' || isStructural(a)
+            ? baseline.formulas.flatMap((row, r) =>
+                row.flatMap((f, c) =>
+                  typeof f === 'string' && f.startsWith('=') && f !== baseline.values[r]?.[c]
+                    ? [{ row: r, column: c, formula: f }]
+                    : [],
+                ),
+              )
+            : [];
+        const formulas =
+          a.kind === 'write'
+            ? a.values
+              ? a.formulas
+              : [
+                  ...beforeFormulas.filter(
+                    (f) =>
+                      !a.formulas.some((next) => next.row === f.row && next.column === f.column),
+                  ),
+                  ...a.formulas,
+                ]
+            : beforeFormulas;
+        const values = a.kind === 'write' && a.values ? a.values : baseline.values;
+        return (
+          <section key={i} className="excel-operation">
+            <h3>
+              {i + 1}. {actionLabel(a)}
+            </h3>
+            {a.kind === 'format' && (
+              <dl>
+                {Object.entries(a.format).map(([key, value]) => (
+                  <React.Fragment key={key}>
+                    <dt>{key.replace(/([A-Z])/g, ' $1')}</dt>
+                    <dd>{String(value)}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+            )}
+            {a.kind === 'table' && (
+              <p>
+                {a.mode === 'create' ? 'Create' : 'Update'} table “{a.name}”
+                {a.style ? ` · ${a.style}` : ''}
+                {a.showTotals !== undefined ? ` · totals ${a.showTotals ? 'shown' : 'hidden'}` : ''}
+              </p>
+            )}
+            {a.kind === 'chart' && (
+              <p>
+                {a.mode === 'create' ? 'Create' : 'Update'} {a.chartType} chart “{a.name}”
+                {a.title ? ` · ${a.title}` : ''}
+                {a.position ? ` · position ${a.position}` : ''}. Source: {a.range}.
+              </p>
+            )}
+            {a.kind === 'sort' && (
+              <p>
+                Sort {a.hasHeaders ? 'below the header' : 'all rows'}:{' '}
+                {a.fields
+                  .map((f) => `column ${f.column + 1} ${f.ascending ? 'ascending' : 'descending'}`)
+                  .join(', ')}
+                . Entire rows within this rectangle move together.
+              </p>
+            )}
+            {a.kind === 'filter' && (
+              <p>
+                Show rows where column {a.column + 1} matches: {a.values.join(', ')}.
+              </p>
+            )}
+            {a.kind === 'clear_filter' && <p>Clear filter criteria for this table or worksheet.</p>}
+            {isStructural(a) && (
+              <p className="excel-warning">
+                This changes entire worksheet rows or columns, including cells outside the displayed
+                rectangle. Excel may adjust formulas and move other content. Review the current used
+                cells below.
+              </p>
+            )}
+            {(a.kind === 'write' || isStructural(a)) && (
+              <Preview
+                formulasOnly={a.kind === 'write' && !a.values}
+                readOnly={a.kind !== 'write'}
+                proposal={{
+                  id: p.id,
+                  runId: p.runId,
+                  summary: p.summary,
+                  status: p.status,
+                  baseline,
+                  change: {
+                    summary: p.summary,
+                    target: 'selection',
+                    values,
+                    formulas,
+                    table: false,
+                  },
+                }}
+              />
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
 function ReviewPanel({
   proposal,
   busy,
@@ -161,7 +288,7 @@ function ReviewPanel({
   onApply,
   onReject,
 }: {
-  proposal: ExcelProposal;
+  proposal: AnyExcelProposal;
   busy: boolean;
   running: boolean;
   error: string;
@@ -191,7 +318,11 @@ function ReviewPanel({
         </button>
       </div>
       <div className="excel-review-body">
-        <Preview proposal={proposal} />
+        {isWorkbookProposal(proposal) ? (
+          <WorkbookPreview proposal={proposal} />
+        ) : (
+          <Preview proposal={proposal} />
+        )}
       </div>
       <footer className="excel-review-footer">
         {error && (
@@ -201,8 +332,8 @@ function ReviewPanel({
         )}
         {notice && <p role="status">{notice}</p>}
         <p className="excel-small">
-          Apply rechecks the captured cells. Large batches can have partial effects if interrupted;
-          save a copy before substantial edits.
+          Apply rechecks the destination cells. Large batches can have partial effects if
+          interrupted; save a copy before substantial edits.
         </p>
         {proposal.status === 'pending' ? (
           <div className="excel-actions">
@@ -231,13 +362,15 @@ function App() {
     [project, setProject] = useState('');
   const [session, setSession] = useState<Session>(),
     [state, setState] = useState<State>();
-  const [selection, setSelection] = useState<ExcelSelection>(),
-    [text, setText] = useState('');
+  const [text, setText] = useState('');
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState('');
   const [limits, setLimits] = useState<ExcelLimits>(DEFAULT_EXCEL_LIMITS);
-  const [review, setReview] = useState<ExcelProposal>();
+  const [review, setReview] = useState<AnyExcelProposal>();
+  const [selectedAddress, setSelectedAddress] = useState('Current cell');
+  const workbookBusy = useRef(false);
+  const workbookReplies = useRef(new Map<string, { result?: unknown; error?: string }>());
   const [connected, setConnected] = useState(true);
   const scroll = useRef<HTMLDivElement>(null),
     pinned = useRef(true);
@@ -288,6 +421,21 @@ function App() {
         .catch((e) => setError(e.message));
   }, [signedIn]);
   useEffect(() => {
+    if (!ready) return;
+    let alive = true,
+      stop: (() => Promise<void>) | undefined;
+    void watchSelection(setSelectedAddress)
+      .then((dispose) => {
+        if (alive) stop = dispose;
+        else void dispose();
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+      void stop?.();
+    };
+  }, [ready]);
+  useEffect(() => {
     if (pinned.current && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
   }, [state]);
   useEffect(() => {
@@ -297,9 +445,34 @@ function App() {
       const version = ++pollVersion.current;
       try {
         const data = await sessionApi<State>(session);
+        for (const id of workbookReplies.current.keys())
+          if (id !== data.workbookRequest?.id) workbookReplies.current.delete(id);
         if (alive && version === pollVersion.current) {
           setState(data);
           setConnected(true);
+        }
+        if (alive && ready && data.workbookRequest && !workbookBusy.current) {
+          const id = data.workbookRequest.id;
+          workbookBusy.current = true;
+          try {
+            let response = workbookReplies.current.get(id);
+            if (!response) {
+              const request = await sessionApi<WorkbookRequest>(session, `/workbook/${id}`);
+              try {
+                response = { result: await handleWorkbookRequest(request) };
+              } catch (e) {
+                response = { error: (e as Error).message.slice(0, 1000) };
+              }
+              workbookReplies.current.set(id, response);
+            }
+            await sessionApi(session, `/workbook/${id}`, 'POST', response);
+            workbookReplies.current.delete(id);
+          } catch (e) {
+            if ((e as { status?: number }).status === 409) workbookReplies.current.delete(id);
+            else if (alive) setError((e as Error).message);
+          } finally {
+            workbookBusy.current = false;
+          }
         }
       } catch (e) {
         if (alive) {
@@ -314,7 +487,7 @@ function App() {
       alive = false;
       clearInterval(timer);
     };
-  }, [session, signedIn]);
+  }, [session, signedIn, ready]);
   const action = async (work: () => Promise<void>) => {
     setBusy(true);
     setError('');
@@ -334,7 +507,7 @@ function App() {
       if (v === pollVersion.current) setState(data);
     }
   };
-  const execute = async (proposal: ExcelProposal) => {
+  const execute = async (proposal: AnyExcelProposal) => {
     if (!session || applying.current) return;
     applying.current = true;
     try {
@@ -362,7 +535,7 @@ function App() {
           'Excel completed the change, but Frame did not acknowledge the receipt. Do not apply it again. Inspect the workbook and start a fresh session if needed.',
         );
       }
-      setNotice(`${result} Send a follow-up with a fresh selection to continue.`);
+      setNotice(`${result} Continue here; your next message uses the cells selected in Excel.`);
       setReview(undefined);
     } finally {
       applying.current = false;
@@ -479,7 +652,6 @@ function App() {
                     onClick={() => {
                       setSession(undefined);
                       setState(undefined);
-                      setSelection(undefined);
                       setText('');
                       outbox.current = undefined;
                     }}
@@ -492,36 +664,24 @@ function App() {
                 </div>
                 <section className="excel-context">
                   <strong>Workbook context</strong>
-                  <p>
-                    {selection
-                      ? `${selection.address} · ${selection.values.length} × ${selection.values[0]!.length} cells`
-                      : 'Select cells in Excel, then capture the selection.'}
-                  </p>
-                  <button
-                    disabled={!ready || busy || state?.snapshot.running || pending}
-                    onClick={() =>
-                      void action(async () => setSelection(await captureSelection(limits)))
-                    }
-                  >
-                    Capture selection
-                  </button>
+                  <p>Selected: {selectedAddress}</p>
                   <p className="excel-small">
-                    Up to {limits.maxCells.toLocaleString()} cells /{' '}
-                    {limits.maxColumns.toLocaleString()} columns. Refreshed on Send. Large
-                    selections are read in sections as needed.
+                    Selected cells are included automatically when you send. Blank sheets work too.
+                    You can switch ranges or sheets in this conversation. Frame can read other
+                    sheets as needed.
                   </p>
                   {state?.inspection && (
                     <details className="excel-inspection">
                       <summary>
-                        Sections supplied to model · {state.inspection.ranges.length}
+                        Initial selection details · {state.inspection.ranges.length} sections
                       </summary>
                       <p>
                         {state.inspection.address} · {state.inspection.rows.toLocaleString()} ×{' '}
                         {state.inspection.columns.toLocaleString()} captured
                       </p>
                       <p>
-                        Positions below are relative to the selection. Unlisted cells have not been
-                        supplied in this turn.
+                        Positions below are relative to the initial selection. Additional live
+                        workbook reads appear in activity. Conversation history is retained.
                       </p>
                       <ul>
                         {state.inspection.ranges.map((r, i) => (
@@ -560,13 +720,18 @@ function App() {
                       <span className="excel-badge">{p.status}</span>
                     </div>
                     <p>
-                      {p.target} · {p.rows.toLocaleString()} × {p.columns.toLocaleString()} cells
+                      {p.target} ·{' '}
+                      {p.operations
+                        ? `${p.operations} operation${p.operations === 1 ? '' : 's'}`
+                        : `${p.rows.toLocaleString()} × ${p.columns.toLocaleString()} cells`}
                     </p>
                     <button
                       disabled={busy}
                       onClick={() =>
                         void action(async () => {
-                          setReview(await sessionApi<ExcelProposal>(session, `/proposals/${p.id}`));
+                          setReview(
+                            await sessionApi<AnyExcelProposal>(session, `/proposals/${p.id}`),
+                          );
                         })
                       }
                     >
@@ -631,7 +796,6 @@ function App() {
               void action(async () => {
                 if (!outbox.current) {
                   const current = await captureSelection(limits);
-                  setSelection(current);
                   outbox.current = { requestId: crypto.randomUUID(), text, selection: current };
                 }
                 try {
@@ -663,9 +827,7 @@ function App() {
             </label>
             <button
               className="primary"
-              disabled={
-                !ready || busy || !text.trim() || !selection || pending || state?.snapshot.running
-              }
+              disabled={!ready || busy || !text.trim() || pending || state?.snapshot.running}
             >
               {outbox.current ? 'Retry original request' : 'Send'}
             </button>

@@ -107,13 +107,15 @@ The registered-script plugin with per-operation JSON inputs, approvals, and `.en
 
 ## Frame for Excel (implemented pilot; Windows acceptance pending)
 
+- Automatic selection input with blank-sheet support; no Capture button. Selection snapshots remain historical conversation context across cell/sheet changes. A pane-bound read-only bridge provides on-demand reads of any sheet in the current workbook. Existing-sheet proposals cover partial values/formulas, formatting, table/chart creation and updates, sorting/filtering, and separate whole-row/column insertion/deletion batches with explicit destinations and Apply.
+
 - Larger configurable captures (default 100,000 cells / 1,024 columns), compact model context, on-demand scoped section reads, visible supplied ranges, and bounded Excel read/write batches. Stored proposal summaries avoid transferring or parsing large validation snapshots during polling. Grouped activity reuses Frame's web renderer; the composer and review-panel actions remain visible while their content scrolls.
 
 - Windows Microsoft 365 task pane, local XML manifest download in Settings, and a self-signed HTTPS/hosts/shared-folder installation guide. No tenant deployment or Microsoft Copilot dependency.
 - Selection-scoped context, project knowledge, read-only SQL, formulas, selection replacement, and new worksheets with tables/native charts. Literal data uses typed cells; supported formulas are explicit.
 - Preview before Apply, pane-bound sessions, one-time claims, stale-cell/protection checks, and uncertain-outcome recovery without replay. Workbook history stays separate from automatic project learning.
 - Automated schema/API/SDK and simulated Office-host checks do not establish real Excel, certificate trust, coauthoring, or local-model correctness. Complete the [Windows acceptance checklist](FRAME_FOR_EXCEL.md) before relying on the pilot.
-- Deferred: whole-workbook discovery, existing-table edits, macros, arbitrary functions, multi-user access, Mac/Web Excel, and organization-wide distribution.
+- Deferred: macros, arbitrary functions/code, full native Undo/transactional rollback, multi-user access, Mac/Web Excel, and organization-wide distribution. Real Windows acceptance is still required for native table, chart, and structural-edit behavior.
 
 ## Next — Complete V1
 

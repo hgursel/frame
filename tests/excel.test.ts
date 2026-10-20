@@ -7,6 +7,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { createApp } from '../server/app.js';
 import { ExcelSessions } from '../server/excel/service.js';
+import { isWorkbookProposal } from '../shared/excel-workbook.js';
 import { excelManifest, excelIcon } from '../server/excel/manifest.js';
 import {
   proposalSchema,
@@ -143,10 +144,9 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
       /unavailable/,
     );
     const imported = f.excel.propose(a.conversationId, randomUUID(), selection, sql);
-    assert.deepEqual(f.excel.get(a.conversationId, imported.id).change.values, [
-      ['Value'],
-      ['=HYPERLINK("bad")'],
-    ]);
+    const importedCells = f.excel.get(a.conversationId, imported.id);
+    assert(!isWorkbookProposal(importedCells));
+    assert.deepEqual(importedCells.change.values, [['Value'], ['=HYPERLINK("bad")']]);
     assert.match(f.excel.get(a.conversationId, imported.id).sourceNotice!, /partial/);
     f.excel.cancel(a.conversationId);
     assert.equal(f.excel.get(a.conversationId, imported.id).status, 'rejected');
@@ -178,7 +178,9 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
       'applied',
     );
     assert.equal(restarted.summaries(b.conversationId)[0]!.status, 'unknown');
-    assert.equal(restarted.get(a.conversationId, proposed.id).change.formulas[0]!.formula, '=A2*3');
+    const legacy = restarted.get(a.conversationId, proposed.id);
+    assert(!isWorkbookProposal(legacy));
+    assert.equal(legacy.change.formulas[0]!.formula, '=A2*3');
     f.store.db.prepare('DELETE FROM conversations WHERE id=?').run(a.conversationId);
     assert.equal(
       f.store.db.prepare('SELECT 1 FROM excel_sources WHERE id=?').get(operation),
@@ -261,7 +263,9 @@ test('large Excel captures use compact, bounded sections and lightweight proposa
       target: 'selection',
       values,
     });
-    assert(f.excel.get(id, proposed.id).baseline.values.length === 500);
+    const largeProposal = f.excel.get(id, proposed.id);
+    assert(!isWorkbookProposal(largeProposal));
+    assert(largeProposal.baseline.values.length === 500);
     assert(
       jsonBytes(f.excel.summaries(id)) < 1000,
       'Status polling omits values and validation snapshots',
@@ -413,6 +417,44 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
     key = created.clientKey;
     const id = created.conversationId,
       url = `/api/excel/sessions/${id}`;
+    const bridgeController = new AbortController();
+    const bridgeResult = f.excel.bridge.request(
+      id,
+      {
+        runId: randomUUID(),
+        limits: f.excel.limits(),
+        task: { kind: 'read', query: { kind: 'list_sheets', offset: 0 }, maxBytes: 1000 },
+      },
+      bridgeController.signal,
+    );
+    const bridgeId = f.excel.bridge.peek(id)!.id;
+    assert.equal(
+      (await call(`${url}/workbook/${bridgeId}`, 'GET', undefined, { 'x-frame-excel-key': 'bad' }))
+        .statusCode,
+      403,
+    );
+    assert.equal(
+      (
+        await call(
+          `${url}/workbook/${bridgeId}`,
+          'POST',
+          { result: { sheets: [] } },
+          { 'x-frame-excel-key': 'bad' },
+        )
+      ).statusCode,
+      403,
+    );
+    assert.equal((await call(`${url}/workbook/${bridgeId}`)).json().task.kind, 'read');
+    assert.equal(
+      (await call(`${url}/workbook/${bridgeId}`, 'POST', { result: { sheets: [] } })).statusCode,
+      200,
+    );
+    assert.deepEqual(await bridgeResult, { sheets: [] });
+    assert.equal(
+      (await call(`${url}/workbook/${bridgeId}`, 'POST', { result: { sheets: [] } })).statusCode,
+      409,
+      'Expired requests cannot be replayed',
+    );
     assert.equal(
       (await call(url, 'GET', undefined, { 'x-frame-excel-key': 'bad' })).statusCode,
       403,
@@ -455,6 +497,8 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
     for (const name of [
       'excel_propose_changes',
       'excel_read_selection',
+      'excel_read_workbook',
+      'excel_edit_workbook',
       'read_knowledge',
       'search_knowledge',
       'mssql_query',
@@ -508,6 +552,7 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
     assert.equal(driver.calls.length, 1);
     assert.equal(driver.calls[0]!.login, 'read');
     const imported = f.excel.list(id)[0]!;
+    assert(!isWorkbookProposal(imported));
     assert.equal(imported.change.sourceOperationId, sourceId);
     assert.deepEqual(imported.change.values, [
       ['id', 'value'],

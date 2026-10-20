@@ -133,7 +133,8 @@ export function ExcelSettings() {
             </li>
             <li>
               Home → Add-ins → Advanced → Shared Folder → Frame for Excel → Add. Sign in, select a
-              project, and capture a range.
+              project, and send a message. The selected cells are included automatically; blank
+              sheets work too.
             </li>
           </ol>
           <div className="library-catalog-actions">

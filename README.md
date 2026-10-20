@@ -43,7 +43,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 
 ### Frame for Excel (Windows pilot)
 
-Use Frame in an Excel Desktop task pane: explain or repair formulas, clean a selected range, import saved read-only SQL results, and prepare new sheets with tables and native charts. Project knowledge remains available. Every workbook batch has a preview and explicit **Apply** button, with changed-cell checks and no automatic replay.
+Use Frame in an Excel Desktop task pane: start on a blank sheet, explain or repair formulas, clean data, import saved read-only SQL results, and work directly on existing worksheets. Selected cells are included automatically with each message. Frame can read other sheets as needed and preview changes to values, formulas, formatting, tables, charts, sorting, filters, and worksheet rows/columns. Project knowledge remains available. Every workbook batch has a preview and explicit **Apply** button, with changed-cell checks and no automatic replay.
 
 Excel selections now default to **100,000 cells / 1,024 columns**, with configurable limits, context-budgeted section reads, and visible supplied-range details. Grouped thinking/tool activity, a fixed-bottom composer, and a separate paginated review panel keep long conversations usable. Large writes are batched with progress and retain the same explicit approval controls.
 

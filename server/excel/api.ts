@@ -79,8 +79,35 @@ export function excelApi(
       snapshot: runner.snapshot(request.params.id),
       proposals: excel.summaries(request.params.id),
       inspection: excel.inspection(request.params.id),
+      workbookRequest: excel.bridge.peek(request.params.id),
     };
   });
+  app.get<{ Params: { id: string; request: string } }>(
+    '/api/excel/sessions/:id/workbook/:request',
+    async (request) => {
+      auth(request.params.id, request.headers['x-frame-excel-key']);
+      z.uuid().parse(request.params.request);
+      return excel.bridge.get(request.params.id, request.params.request);
+    },
+  );
+  app.post<{ Params: { id: string; request: string } }>(
+    '/api/excel/sessions/:id/workbook/:request',
+    { bodyLimit: MAX_SELECTION_BYTES + 100000 },
+    async (request) => {
+      auth(request.params.id, request.headers['x-frame-excel-key']);
+      z.uuid().parse(request.params.request);
+      const b = z
+        .object({ result: z.unknown().optional(), error: z.string().min(1).max(1000).optional() })
+        .strict()
+        .refine(
+          (b) => (b.result !== undefined) !== (b.error !== undefined),
+          'Provide a workbook result or an error.',
+        )
+        .parse(request.body);
+      excel.bridge.respond(request.params.id, request.params.request, b.result, b.error);
+      return { ok: true };
+    },
+  );
   app.get<{ Params: { id: string; proposal: string } }>(
     '/api/excel/sessions/:id/proposals/:proposal',
     async (request) => {
