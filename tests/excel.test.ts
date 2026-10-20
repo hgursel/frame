@@ -13,6 +13,8 @@ import {
   selectionSchema,
   formulaSchema,
   excelCellValue,
+  selectionSection,
+  jsonBytes,
   type ExcelSelection,
 } from '../shared/excel.js';
 import { config, FakeSql } from './sql-fixture.js';
@@ -52,7 +54,15 @@ test('Excel schema bounds inputs and keeps formula-like source text literal', ()
   assert.throws(() => selectionSchema.parse({ ...selection, row: 1048575 }));
   assert.throws(() => selectionSchema.parse({ ...selection, formulas: [[1]] }));
   assert.throws(() => selectionSchema.parse({ ...selection, values: [[1], [1, 2]] }));
-  assert.throws(() => selectionSchema.parse({ ...selection, values: [Array(101).fill(1)] }));
+  const tooWide = [Array(4097).fill(1)];
+  assert.throws(() =>
+    selectionSchema.parse({
+      ...selection,
+      values: tooWide,
+      formulas: tooWide,
+      numberFormat: [Array(4097).fill('General')],
+    }),
+  );
   assert.throws(() =>
     proposalSchema.parse({ ...change, formulas: [{ row: 2, column: 1, formula: '=1' }] }),
   );
@@ -143,7 +153,7 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
     const huge = randomUUID();
     f.excel.capture(a.conversationId, huge, {
       columns: ['Value'],
-      rows: Array(10000).fill([1]),
+      rows: Array(100000).fill([1]),
       affected: 0,
       truncated: false,
     });
@@ -158,9 +168,17 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
     const pending = f.excel.propose(a.conversationId, randomUUID(), selection, change);
     const claimed = f.excel.propose(b.conversationId, randomUUID(), selection, change);
     f.excel.transition(b.conversationId, claimed.id, { action: 'claim' });
+    // An existing pilot database has no lightweight summary column yet.
+    f.store.db.exec('ALTER TABLE excel_proposals DROP COLUMN summary');
     const restarted = new ExcelSessions(f.store);
     assert.equal(restarted.get(a.conversationId, pending.id).status, 'rejected');
     assert.equal(restarted.get(b.conversationId, claimed.id).status, 'unknown');
+    assert.equal(
+      restarted.summaries(a.conversationId).find((p) => p.id === proposed.id)!.status,
+      'applied',
+    );
+    assert.equal(restarted.summaries(b.conversationId)[0]!.status, 'unknown');
+    assert.equal(restarted.get(a.conversationId, proposed.id).change.formulas[0]!.formula, '=A2*3');
     f.store.db.prepare('DELETE FROM conversations WHERE id=?').run(a.conversationId);
     assert.equal(
       f.store.db.prepare('SELECT 1 FROM excel_sources WHERE id=?').get(operation),
@@ -173,6 +191,122 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
     assert.match(manifest, /https:\/\/frame.test:8443\/excel.html/);
     assert.match(manifest, /DefaultMinVersion="1.16"/);
     assert.equal(excelIcon(32).readUInt32BE(16), 32);
+  } finally {
+    await f.cleanup();
+  }
+});
+
+test('large Excel captures use compact, bounded sections and lightweight proposal polling', async () => {
+  const f = await appFixture('excel-large');
+  try {
+    const p = f.store.createProject({ name: 'Large', instructions: '', toolsEnabled: false });
+    const session = f.excel.create(p.id),
+      id = session.conversationId,
+      runId = randomUUID();
+    const values = Array.from({ length: 500 }, (_, r) =>
+      Array.from({ length: 200 }, (_, c) => r * 200 + c),
+    );
+    const large = selectionSchema.parse({
+      ...selection,
+      values,
+      formulas: values,
+      numberFormat: values.map((row) => row.map(() => 'General')),
+    });
+    assert.deepEqual(f.excel.limits(), { maxCells: 100000, maxColumns: 1024 });
+    const turn = f.excel.turn(id, large),
+      model = f.excel.context(id, runId, turn, 4096);
+    assert.equal(model.selection.rows, 500);
+    assert.equal(model.selection.columns, 200);
+    assert.equal(model.initial!.completeSelection, false);
+    assert(jsonBytes(model.initial) <= 4096);
+    assert(!JSON.stringify(model).includes('numberFormat'));
+    assert.deepEqual(model.initial!.formulas, []);
+    const section = f.excel.read(id, runId, large, {
+      row: 499,
+      column: 190,
+      rows: 1,
+      columns: 10,
+      maxBytes: 2048,
+    });
+    assert.deepEqual(section.values, [values[499]!.slice(190)]);
+    assert.equal(f.excel.inspection(id)!.ranges.length, 2);
+    assert.throws(
+      () =>
+        f.excel.read(id, randomUUID(), large, {
+          row: 0,
+          column: 0,
+          rows: 1,
+          columns: 1,
+          maxBytes: 1000,
+        }),
+      /another run/,
+    );
+    assert.throws(
+      () =>
+        f.excel.read(id, runId, large, {
+          row: 500,
+          column: 0,
+          rows: 1,
+          columns: 1,
+          maxBytes: 1000,
+        }),
+      /outside/,
+    );
+    assert.throws(
+      () => f.excel.read(id, runId, large, { row: 0, column: 0, rows: 1, columns: 1, maxBytes: 0 }),
+      /context/,
+    );
+    const proposed = f.excel.propose(id, runId, large, {
+      summary: 'Large replacement',
+      target: 'selection',
+      values,
+    });
+    assert(f.excel.get(id, proposed.id).baseline.values.length === 500);
+    assert(
+      jsonBytes(f.excel.summaries(id)) < 1000,
+      'Status polling omits values and validation snapshots',
+    );
+    f.excel.transition(id, proposed.id, { action: 'reject' });
+    f.excel.setLimits({ maxCells: 2000, maxColumns: 100 });
+    assert.throws(() => f.excel.turn(id, large), /configured limits/);
+    assert.throws(() => f.excel.setLimits({ maxCells: 500001, maxColumns: 4096 }));
+    f.excel.setLimits({ maxCells: 500000, maxColumns: 4096 });
+    assert.equal(f.excel.turn(id, large).selection.values.length, 500);
+    const unicode = {
+      ...selection,
+      values: [
+        ['😀'.repeat(100), 1],
+        [2, 4],
+      ],
+      formulas: [
+        ['😀'.repeat(100), 1],
+        [2, '=A2*2'],
+      ],
+    };
+    const compact = selectionSection(unicode, 0, 0, 2, 2, 1000);
+    assert(jsonBytes(compact) <= 1000);
+    assert.deepEqual(compact.formulas, [{ row: 1, column: 1, formula: '=A2*2' }]);
+    const literal = selectionSection(
+      {
+        ...selection,
+        values: [
+          ['=1', 1],
+          [2, 4],
+        ],
+        formulas: [
+          ['=1', 1],
+          [2, 4],
+        ],
+      },
+      0,
+      0,
+      2,
+      2,
+      1000,
+    );
+    assert.deepEqual(literal.formulas, []);
+    f.store.db.prepare('DELETE FROM conversations WHERE id=?').run(id);
+    assert.equal(f.excel.inspection(id), undefined);
   } finally {
     await f.cleanup();
   }
@@ -193,15 +327,17 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
     let tool: { name: string; args: unknown } | undefined;
     if (turn++ === 0)
       tool =
-        mode === 'proposal'
-          ? { name: 'excel_propose_changes', args: change }
-          : {
-              name: 'mssql_query',
-              args: {
-                database: 'Dev',
-                sql: mode === 'write' ? 'DELETE FROM dbo.t' : 'SELECT id,value FROM dbo.t',
-              },
-            };
+        mode === 'section'
+          ? { name: 'excel_read_selection', args: { row: 499, column: 190, rows: 1, columns: 10 } }
+          : mode === 'proposal'
+            ? { name: 'excel_propose_changes', args: change }
+            : {
+                name: 'mssql_query',
+                args: {
+                  database: 'Dev',
+                  sql: mode === 'write' ? 'DELETE FROM dbo.t' : 'SELECT id,value FROM dbo.t',
+                },
+              };
     else if (mode === 'read' && turn === 2) {
       const result = JSON.parse(body.messages.findLast((m: any) => m.role === 'tool').content);
       sourceId = result.operationId;
@@ -301,10 +437,10 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
       ).statusCode,
       409,
     );
-    const run = async () => {
+    const run = async (captured = selection) => {
       turn = 0;
       const requestId = randomUUID();
-      const b = { requestId, text: 'Please help with this selection.', selection };
+      const b = { requestId, text: 'Please help with this selection.', selection: captured };
       const started = await call(`${url}/messages`, 'POST', b);
       assert.equal(started.statusCode, 202, started.body);
       assert.equal((await call(`${url}/messages`, 'POST', b)).json().duplicate, true);
@@ -318,6 +454,7 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
     const names = requests[0].tools.map((t: any) => t.function.name);
     for (const name of [
       'excel_propose_changes',
+      'excel_read_selection',
       'read_knowledge',
       'search_knowledge',
       'mssql_query',
@@ -378,6 +515,40 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
       [2, 'hello'],
     ]);
     assert.deepEqual(f.knowledge.list(p.id), []);
+    f.excel.cancel(id);
+    const values = Array.from({ length: 500 }, () => Array(200).fill(1));
+    values[499]![199] = 'tail-sentinel';
+    const large = {
+      ...selection,
+      values,
+      formulas: values,
+      numberFormat: values.map((r) => r.map(() => 'General')),
+    };
+    mode = 'section';
+    const before = requests.length;
+    await run(large);
+    assert(!JSON.stringify(requests[before].messages).includes('tail-sentinel'));
+    assert(JSON.stringify(requests.at(-1).messages).includes('tail-sentinel'));
+    assert(f.excel.inspection(id)!.ranges.some((r) => r.row === 499 && r.column === 190));
+    const polled = await call(url);
+    assert(!polled.body.includes('numberFormat'));
+    assert.equal(
+      (
+        await call(`${url}/proposals/${pending.id}`, 'GET', undefined, {
+          'x-frame-excel-key': 'bad',
+        })
+      ).statusCode,
+      403,
+    );
+    assert.equal(
+      (await call('/api/excel/config', 'PUT', { maxCells: 200000, maxColumns: 2048 })).statusCode,
+      200,
+    );
+    assert.equal((await call('/api/excel/config')).json().limits.maxCells, 200000);
+    assert.equal(
+      (await call('/api/excel/config', 'PUT', { maxCells: 900000, maxColumns: 2048 })).statusCode,
+      400,
+    );
     await (f.maintenance as any).conversation(
       { projectId: p.id, kind: 'conversation', id },
       new AbortController().signal,

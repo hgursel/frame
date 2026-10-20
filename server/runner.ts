@@ -1,5 +1,6 @@
 import type { Knowledge } from './knowledge.js';
 import type { ExcelSessions } from './excel/service.js';
+import type { ExcelTurn } from '../shared/excel.js';
 import { classify, commandSchema } from './plugins/mssql/policy.js';
 import { z } from 'zod';
 import { Questions } from './questions.js';
@@ -150,7 +151,7 @@ export class Runner extends EventEmitter {
     operation: WorkerInput['operation'] = 'prompt',
     reference?: WorkerInput['reference'],
     images?: WorkerInput['images'],
-    excel?: WorkerInput['excel'],
+    excel?: ExcelTurn,
   ) {
     const existing = this.store.db
       .prepare('SELECT conversationId, status FROM runs WHERE id=?')
@@ -194,6 +195,23 @@ export class Runner extends EventEmitter {
     const history = conversation.incognito
       ? this.snapshot(id).messages
       : readHistory(this.store.sessionFile(id));
+    // Keep the full validation snapshot in the parent. Only a bounded, deduplicated section goes to Pi.
+    const excelContext =
+      excel &&
+      this.excel?.context(
+        id,
+        runId,
+        excel,
+        Math.max(
+          0,
+          Math.min(
+            64000,
+            Math.floor((settings.contextWindow - settings.maxTokens) * 0.25) -
+              JSON.stringify([history, reference, settings.instructions, project.instructions])
+                .length,
+          ),
+        ),
+      );
     this.store.db
       .prepare('INSERT INTO runs VALUES (?, ?, ?, NULL, ?)')
       .run(runId, id, 'running', Date.now());
@@ -280,6 +298,11 @@ export class Runner extends EventEmitter {
               if (!excel || !this.excel)
                 throw new Error('Workbook tools require an Excel session.');
               return this.excel.propose(id, runId, excel.selection, event.args);
+            }
+            if (event.action === 'excel_read_selection') {
+              if (!excel || !this.excel)
+                throw new Error('Workbook tools require an Excel session.');
+              return this.excel.read(id, runId, excel.selection, event.args);
             }
             if (event.action === 'ask_user_question') {
               if (this.questions.get(id)) throw new Error('Answer the pending questions first.');
@@ -460,7 +483,7 @@ export class Runner extends EventEmitter {
         prompt,
         documents,
         images,
-        excel,
+        excel: excelContext,
         pythonPath,
         // Metadata only: page text is served through knowledge_search/knowledge_read.
         knowledge: knowledge.map(({ text: _, ...entry }) => entry),

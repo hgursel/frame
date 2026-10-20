@@ -1,6 +1,11 @@
 import {
   excelCellValue,
   MAX_SELECTION_CELLS,
+  MAX_COLUMNS,
+  MAX_SELECTION_BYTES,
+  DEFAULT_EXCEL_LIMITS,
+  jsonBytes,
+  type ExcelLimits,
   sameSelection,
   selectionSchema,
   type ExcelSelection,
@@ -10,14 +15,42 @@ import {
 async function snapshot(
   context: Excel.RequestContext,
   range: Excel.Range,
+  limits: ExcelLimits = { maxCells: MAX_SELECTION_CELLS, maxColumns: MAX_COLUMNS },
 ): Promise<ExcelSelection> {
   range.load('rowIndex,columnIndex,rowCount,columnCount,address');
   const sheet = range.worksheet;
   sheet.load('id,name');
   await context.sync();
-  if (range.rowCount * range.columnCount > MAX_SELECTION_CELLS || range.columnCount > 100)
-    throw new Error('Select one rectangle of up to 2,000 cells and 100 columns.');
-  range.load('values,formulas,numberFormat');
+  if (range.rowCount * range.columnCount > limits.maxCells || range.columnCount > limits.maxColumns)
+    throw new Error(
+      `Select one rectangle of up to ${limits.maxCells.toLocaleString()} cells and ${limits.maxColumns.toLocaleString()} columns. Configure limits in Frame settings.`,
+    );
+  const values: ExcelSelection['values'] = Array.from({ length: range.rowCount }, () => []);
+  const formulas: ExcelSelection['formulas'] = Array.from({ length: range.rowCount }, () => []);
+  const numberFormat: string[][] = Array.from({ length: range.rowCount }, () => []);
+  let bytes = 0;
+  const width = Math.min(range.columnCount, 256),
+    height = Math.max(1, Math.floor(5000 / width));
+  for (let row = 0; row < range.rowCount; row += height)
+    for (let col = 0; col < range.columnCount; col += width) {
+      const block = sheet.getRangeByIndexes(
+        range.rowIndex + row,
+        range.columnIndex + col,
+        Math.min(height, range.rowCount - row),
+        Math.min(width, range.columnCount - col),
+      );
+      block.load('values,formulas,numberFormat');
+      await context.sync();
+      bytes += jsonBytes([block.values, block.formulas, block.numberFormat]);
+      if (bytes > MAX_SELECTION_BYTES)
+        throw new Error('Selection exceeds the 12 MiB transfer ceiling. Select a smaller range.');
+      for (let r = 0; r < block.values.length; r++) {
+        values[row + r]!.push(...block.values[r]!);
+        formulas[row + r]!.push(...block.formulas[r]!);
+        numberFormat[row + r]!.push(...block.numberFormat[r]!);
+      }
+    }
+  sheet.load('id,name');
   await context.sync();
   return selectionSchema.parse({
     sheetId: sheet.id,
@@ -25,13 +58,15 @@ async function snapshot(
     address: range.address,
     row: range.rowIndex,
     column: range.columnIndex,
-    values: range.values,
-    formulas: range.formulas,
-    numberFormat: range.numberFormat,
+    values,
+    formulas,
+    numberFormat,
   });
 }
-export function captureSelection() {
-  return Excel.run(async (context) => snapshot(context, context.workbook.getSelectedRange()));
+export function captureSelection(limits = DEFAULT_EXCEL_LIMITS) {
+  return Excel.run(async (context) =>
+    snapshot(context, context.workbook.getSelectedRange(), limits),
+  );
 }
 function sourceRange(context: Excel.RequestContext, s: ExcelSelection) {
   return context.workbook.worksheets
@@ -74,7 +109,7 @@ export function verifyProposal(proposal: ExcelProposal) {
   return Excel.run((context) => checkProposal(context, proposal));
 }
 /** Call only after a successful, one-time server claim. No automatic retries or rollback. */
-export function applyProposal(proposal: ExcelProposal) {
+export function applyProposal(proposal: ExcelProposal, progress?: (message: string) => void) {
   return Excel.run(async (context) => {
     await checkProposal(context, proposal);
     const c = proposal.change;
@@ -87,8 +122,60 @@ export function applyProposal(proposal: ExcelProposal) {
         ? sheet.getRangeByIndexes(0, 0, c.values.length, c.values[0]!.length)
         : sourceRange(context, proposal.baseline);
     // Typed strings cannot be interpreted as formulas, including SQL values starting with '='.
-    range.valuesAsJson = c.values.map((row) => row.map(excelCellValue));
-    for (const f of c.formulas) range.getCell(f.row, f.column).formulas = [[f.formula]];
+    let done = 0;
+    const total = c.values.length * c.values[0]!.length;
+    const formulasByRow = new Map<number, typeof c.formulas>();
+    for (const formula of c.formulas) {
+      const row = formulasByRow.get(formula.row) || [];
+      row.push(formula);
+      formulasByRow.set(formula.row, row);
+    }
+    const write = async (
+      row: number,
+      column: number,
+      rows: number,
+      columns: number,
+    ): Promise<void> => {
+      const cells = c.values
+        .slice(row, row + rows)
+        .map((r) => r.slice(column, column + columns).map(excelCellValue));
+      if (jsonBytes(cells) > 512000 && rows * columns > 1) {
+        if (rows > 1) {
+          const half = Math.floor(rows / 2);
+          await write(row, column, half, columns);
+          await write(row + half, column, rows - half, columns);
+        } else {
+          const half = Math.floor(columns / 2);
+          await write(row, column, rows, half);
+          await write(row, column + half, rows, columns - half);
+        }
+        return;
+      }
+      const block = sheet.getRangeByIndexes(
+        (c.target === 'selection' ? proposal.baseline.row : 0) + row,
+        (c.target === 'selection' ? proposal.baseline.column : 0) + column,
+        rows,
+        columns,
+      );
+      block.valuesAsJson = cells;
+      for (let r = row; r < row + rows; r++)
+        for (const f of formulasByRow.get(r) || [])
+          if (f.column >= column && f.column < column + columns)
+            block.getCell(f.row - row, f.column - column).formulas = [[f.formula]];
+      await context.sync();
+      done += rows * columns;
+      progress?.(`Applying ${done.toLocaleString()} of ${total.toLocaleString()} cells…`);
+    };
+    const width = Math.min(c.values[0]!.length, 256),
+      height = Math.max(1, Math.floor(5000 / width));
+    for (let row = 0; row < c.values.length; row += height)
+      for (let col = 0; col < c.values[0]!.length; col += width)
+        await write(
+          row,
+          col,
+          Math.min(height, c.values.length - row),
+          Math.min(width, c.values[0]!.length - col),
+        );
     if (c.table) sheet.tables.add(range, true);
     if (c.chart) {
       const types = {

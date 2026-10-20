@@ -90,7 +90,7 @@ export interface ChatMetrics {
   };
 }
 export interface WorkerInput {
-  excel?: import('./excel.js').ExcelTurn;
+  excel?: import('./excel.js').ExcelModelContext;
   skills?: SkillEntry[];
   operation?: 'prompt' | 'compact';
   reference?: {

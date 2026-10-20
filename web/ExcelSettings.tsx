@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api.js';
+import type { ExcelLimits } from '../shared/excel.js';
+type Config = { origin: string; https: boolean; limits: ExcelLimits; contextWindow: number };
 export function ExcelSettings() {
-  const [config, setConfig] = useState<{ origin: string; https: boolean }>();
+  const [config, setConfig] = useState<Config>();
   const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false),
+    [busy, setBusy] = useState(false);
   useEffect(() => {
-    void api<{ origin: string; https: boolean }>('/excel/config')
+    void api<Config>('/excel/config')
       .then(setConfig)
       .catch((e) => setError(e.message));
   }, []);
@@ -37,6 +41,78 @@ export function ExcelSettings() {
             <dt>Access</dt>
             <dd>One administrator. Sign in inside Excel with your Frame password.</dd>
           </dl>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              setSaved(false);
+              try {
+                const result = await api<{ limits: ExcelLimits }>(
+                  '/excel/config',
+                  'PUT',
+                  config.limits,
+                );
+                setConfig({ ...config, limits: result.limits });
+                setSaved(true);
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <h3>Workbook limits</h3>
+            <p>
+              Model context configured in Frame: {config.contextWindow.toLocaleString()} tokens.
+              Large selections are supplied in compact sections, with room reserved for history and
+              the response.
+            </p>
+            <label>
+              Maximum cells per selection or proposal
+              <input
+                type="number"
+                min={2000}
+                max={500000}
+                step={1}
+                required
+                value={config.limits.maxCells}
+                onChange={(e) => {
+                  setSaved(false);
+                  setConfig({
+                    ...config,
+                    limits: { ...config.limits, maxCells: Number(e.target.value) },
+                  });
+                }}
+              />
+            </label>
+            <label>
+              Maximum columns
+              <input
+                type="number"
+                min={100}
+                max={4096}
+                step={1}
+                required
+                value={config.limits.maxColumns}
+                onChange={(e) => {
+                  setSaved(false);
+                  setConfig({
+                    ...config,
+                    limits: { ...config.limits, maxColumns: Number(e.target.value) },
+                  });
+                }}
+              />
+            </label>
+            <p className="muted small">
+              Recommended: 100,000 cells and 1,024 columns. Limits also apply to saved SQL imports.
+              Selection transfers are capped at 12 MiB; SQL source data at 8 MiB. Model-generated
+              output must still fit the response budget. Reopen the Excel pane after changing
+              limits.
+            </p>
+            <button disabled={busy}>{busy ? 'Saving…' : 'Save Excel limits'}</button>
+            {saved && <p role="status">Excel limits saved.</p>}
+          </form>
           <ol>
             <li>
               Use a stable LAN hostname, such as <code>frame.test</code>, and add it to your Windows

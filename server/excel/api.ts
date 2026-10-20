@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { Runner } from '../runner.js';
 import type { ExcelSessions } from './service.js';
-import { selectionSchema } from '../../shared/excel.js';
+import { selectionSchema, MAX_SELECTION_BYTES } from '../../shared/excel.js';
 import { excelIcon, excelManifest } from './manifest.js';
 import type { WorkerInput, KnowledgePage } from '../../shared/types.js';
 import { readFile } from 'node:fs/promises';
@@ -31,7 +31,10 @@ export function excelApi(
     https: origin.startsWith('https:'),
     name: 'Frame for Excel',
     pilot: true,
+    limits: excel.limits(),
+    contextWindow: excel.store.settings().contextWindow,
   }));
+  app.put('/api/excel/config', async (request) => ({ limits: excel.setLimits(request.body) }));
   app.get('/api/excel/manifest', async (_request, reply) =>
     reply
       .header('Content-Disposition', 'attachment; filename="frame-excel-manifest.xml"')
@@ -74,12 +77,21 @@ export function excelApi(
     auth(request.params.id, request.headers['x-frame-excel-key']);
     return {
       snapshot: runner.snapshot(request.params.id),
-      proposals: excel.list(request.params.id),
+      proposals: excel.summaries(request.params.id),
+      inspection: excel.inspection(request.params.id),
     };
   });
+  app.get<{ Params: { id: string; proposal: string } }>(
+    '/api/excel/sessions/:id/proposals/:proposal',
+    async (request) => {
+      auth(request.params.id, request.headers['x-frame-excel-key']);
+      z.uuid().parse(request.params.proposal);
+      return excel.get(request.params.id, request.params.proposal);
+    },
+  );
   app.post<{ Params: { id: string } }>(
     '/api/excel/sessions/:id/messages',
-    { bodyLimit: 150000 },
+    { bodyLimit: MAX_SELECTION_BYTES + 100000 },
     async (request, reply) => {
       const id = request.params.id;
       auth(id, request.headers['x-frame-excel-key']);
@@ -131,7 +143,8 @@ export function excelApi(
         throw Object.assign(new Error('Wait for the response to finish before applying.'), {
           statusCode: 409,
         });
-      return excel.transition(id, proposal, request.body);
+      const result = excel.transition(id, proposal, request.body);
+      return { id: result.id, status: result.status, result: result.result };
     },
   );
 }

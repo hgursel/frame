@@ -4,6 +4,13 @@ import type { Store } from '../store.js';
 import type { SqlResult } from '../../shared/plugins.js';
 import {
   MAX_IMPORT_CELLS,
+  DEFAULT_EXCEL_LIMITS,
+  excelLimitsSchema,
+  jsonBytes,
+  selectionSection,
+  type ExcelInspection,
+  type ExcelModelContext,
+  type ExcelProposalSummary,
   proposalSchema,
   scalar,
   type ExcelProposal,
@@ -14,13 +21,41 @@ import {
 const fail = (message: string, statusCode = 409) =>
   Object.assign(new Error(message), { statusCode });
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
+const summarize = (p: ExcelProposal): ExcelProposalSummary => ({
+  id: p.id,
+  runId: p.runId,
+  summary: p.summary,
+  status: p.status,
+  result: p.result,
+  sourceNotice: p.sourceNotice,
+  target:
+    p.change.target === 'new_sheet'
+      ? `New sheet: ${p.change.sheetName}`
+      : `Replace ${p.baseline.address}`,
+  rows: p.change.values.length,
+  columns: p.change.values[0]!.length,
+});
 export class ExcelSessions {
   constructor(readonly store: Store) {
     store.db
       .exec(`CREATE TABLE IF NOT EXISTS excel_sessions(conversationId TEXT PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE, clientHash TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS excel_proposals(id TEXT PRIMARY KEY, conversationId TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, payload TEXT NOT NULL, at INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS excel_sources(id TEXT PRIMARY KEY, conversationId TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, payload TEXT NOT NULL);`);
-    for (const row of store.db.prepare('SELECT id,payload FROM excel_proposals').all() as {
+      CREATE TABLE IF NOT EXISTS excel_sources(id TEXT PRIMARY KEY, conversationId TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, payload TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS excel_inspections(conversationId TEXT PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE, payload TEXT NOT NULL);`);
+    if (
+      !(store.db.prepare('PRAGMA table_info(excel_proposals)').all() as { name: string }[]).some(
+        (c) => c.name === 'summary',
+      )
+    )
+      store.db.exec('ALTER TABLE excel_proposals ADD COLUMN summary TEXT');
+    store.db.exec(
+      'CREATE INDEX IF NOT EXISTS excel_proposals_conversation ON excel_proposals(conversationId,at DESC)',
+    );
+    for (const row of store.db
+      .prepare(
+        "SELECT id,payload FROM excel_proposals WHERE summary IS NULL OR json_extract(summary,'$.status') IN ('pending','applying')",
+      )
+      .all() as {
       id: string;
       payload: string;
     }[]) {
@@ -28,8 +63,8 @@ export class ExcelSessions {
       if (p.status === 'pending' || p.status === 'applying') {
         p.status = p.status === 'applying' ? 'unknown' : 'rejected';
         p.result = 'Frame restarted. Inspect the workbook; this proposal will not be replayed.';
-        this.save(p);
       }
+      this.save(p);
     }
   }
   create(projectId: string) {
@@ -46,6 +81,100 @@ export class ExcelSessions {
   }
   has(id: string) {
     return !!this.store.db.prepare('SELECT 1 FROM excel_sessions WHERE conversationId=?').get(id);
+  }
+  limits() {
+    return excelLimitsSchema.parse(
+      JSON.parse(this.store.meta('excel:limits') || JSON.stringify(DEFAULT_EXCEL_LIMITS)),
+    );
+  }
+  setLimits(input: unknown) {
+    const limits = excelLimitsSchema.parse(input);
+    this.store.setMeta('excel:limits', JSON.stringify(limits));
+    return limits;
+  }
+  summaries(id: string): ExcelProposalSummary[] {
+    const rows = this.store.db
+      .prepare(
+        'SELECT summary FROM excel_proposals WHERE conversationId=? ORDER BY at DESC,rowid DESC LIMIT 20',
+      )
+      .all(id) as { summary: string }[];
+    return rows.map((r) => JSON.parse(r.summary));
+  }
+  inspection(id: string): ExcelInspection | undefined {
+    const row = this.store.db
+      .prepare('SELECT payload FROM excel_inspections WHERE conversationId=?')
+      .get(id) as { payload: string } | undefined;
+    return row && JSON.parse(row.payload);
+  }
+  private record(id: string, data: ExcelInspection) {
+    this.store.db
+      .prepare('INSERT OR REPLACE INTO excel_inspections VALUES (?,?)')
+      .run(id, JSON.stringify(data));
+  }
+  context(id: string, runId: string, turn: ExcelTurn, maxBytes: number): ExcelModelContext {
+    const s = turn.selection;
+    let initial;
+    try {
+      initial = selectionSection(
+        s,
+        0,
+        0,
+        s.values.length,
+        s.values[0]!.length,
+        Math.max(0, maxBytes),
+      );
+    } catch {
+      /* A large first cell can be read explicitly if context becomes available. */
+    }
+    this.record(id, {
+      runId,
+      address: s.address,
+      rows: s.values.length,
+      columns: s.values[0]!.length,
+      ranges: initial ? [{ row: 0, column: 0, rows: initial.rows, columns: initial.columns }] : [],
+    });
+    return {
+      captureId: runId,
+      selection: {
+        sheetId: s.sheetId,
+        sheetName: s.sheetName,
+        address: s.address,
+        row: s.row,
+        column: s.column,
+        rows: s.values.length,
+        columns: s.values[0]!.length,
+      },
+      initial,
+      recent: turn.recent,
+      limits: this.limits(),
+    };
+  }
+  read(id: string, runId: string, s: ExcelSelection, input: unknown) {
+    const b = z
+      .object({
+        row: z.number().int().min(0),
+        column: z.number().int().min(0),
+        rows: z.number().int().min(1).max(MAX_IMPORT_CELLS),
+        columns: z.number().int().min(1).max(4096),
+        maxBytes: z.number().int().min(0).max(64000),
+      })
+      .strict()
+      .parse(input);
+    const inspection = this.inspection(id);
+    if (!inspection || inspection.runId !== runId) throw fail('Selection belongs to another run.');
+    if (inspection.ranges.length >= 256)
+      throw fail(
+        'Section-read limit reached. Continue with a focused selection in the next message.',
+      );
+    const section = selectionSection(s, b.row, b.column, b.rows, b.columns, b.maxBytes);
+    inspection.ranges.push({
+      row: section.row,
+      column: section.column,
+      rows: section.rows,
+      columns: section.columns,
+    });
+    this.record(id, inspection);
+    return { captureId: runId, ...section };
   }
   authorize(id: string, key: unknown) {
     const row = this.store.db
@@ -72,26 +201,41 @@ export class ExcelSessions {
     ).map((r) => JSON.parse(r.payload));
   }
   turn(id: string, selection: ExcelSelection): ExcelTurn {
-    if (this.list(id).some((p) => p.status === 'pending' || p.status === 'applying'))
+    const limits = this.limits();
+    if (
+      selection.values.length * selection.values[0]!.length > limits.maxCells ||
+      selection.values[0]!.length > limits.maxColumns
+    )
+      throw fail(
+        `Selection exceeds configured limits (${limits.maxCells.toLocaleString()} cells / ${limits.maxColumns.toLocaleString()} columns).`,
+        400,
+      );
+    if (this.summaries(id).some((p) => p.status === 'pending' || p.status === 'applying'))
       throw fail('Apply or reject the waiting proposal before sending another message.');
     return {
       selection,
-      recent: this.list(id)
+      recent: this.summaries(id)
         .slice(0, 5)
         .map(({ summary, status, result }) => ({ summary, status, result })),
     };
   }
   capture(conversationId: string, operation: string, result: SqlResult) {
     if (!this.has(conversationId)) return;
+    const limits = this.limits();
+    if (
+      (result.rows.length + 1) * result.columns.length > limits.maxCells ||
+      result.columns.length > limits.maxColumns
+    )
+      return;
     const clean = (v: unknown) =>
       scalar.parse(v instanceof Date ? v.toISOString() : typeof v === 'bigint' ? String(v) : v);
     const values = [result.columns.map(clean), ...result.rows.map((r) => r.map(clean))];
     if (
       !values[0]!.length ||
       values.some((r) => r.length !== values[0]!.length) ||
-      values[0]!.length > 100 ||
+      values[0]!.length > limits.maxColumns ||
       values.length * values[0]!.length > MAX_IMPORT_CELLS ||
-      JSON.stringify(values).length > 200000
+      jsonBytes(values) > 8 * 1024 * 1024
     )
       return;
     this.store.db
@@ -100,7 +244,7 @@ export class ExcelSessions {
   }
   propose(id: string, runId: string, selection: ExcelSelection, args: unknown) {
     if (!this.has(id)) throw fail('Workbook tools require an Excel session.', 403);
-    if (this.list(id).some((p) => p.status === 'pending' || p.status === 'applying'))
+    if (this.summaries(id).some((p) => p.status === 'pending' || p.status === 'applying'))
       throw fail('One batch is already waiting for review. Stop and let the user review it.');
     const change = proposalSchema.parse(args);
     let values = change.values;
@@ -111,13 +255,19 @@ export class ExcelSessions {
         .get(change.sourceOperationId, id) as { payload: string } | undefined;
       if (!source)
         throw fail(
-          'Saved SQL result unavailable or exceeds the 10,000-cell/200 KB pilot limit. Query a smaller result; never reconstruct rows from a preview.',
+          'Saved SQL result unavailable or exceeds the configured cell/column limits or 8 MiB import ceiling. Query a smaller result; never reconstruct rows from a preview.',
         );
       const parsed = JSON.parse(source.payload);
       values = parsed.values;
       sourceNotice = `SQL operation ${change.sourceOperationId}. ${parsed.truncated ? 'Row limit reached: this is a partial query result.' : 'All rows returned by this query.'}`;
     }
     if (!values) throw fail('No proposed values.');
+    const limits = this.limits();
+    if (
+      values.length * values[0]!.length > limits.maxCells ||
+      values[0]!.length > limits.maxColumns
+    )
+      throw fail('Proposal exceeds configured Excel cell/column limits.');
     if (
       change.target === 'selection' &&
       (values.length !== selection.values.length ||
@@ -145,8 +295,16 @@ export class ExcelSessions {
       sourceNotice,
     };
     this.store.db
-      .prepare('INSERT INTO excel_proposals VALUES (?,?,?,?)')
-      .run(proposal.id, id, JSON.stringify(proposal), Date.now());
+      .prepare(
+        'INSERT INTO excel_proposals(id,conversationId,payload,at,summary) VALUES (?,?,?,?,?)',
+      )
+      .run(
+        proposal.id,
+        id,
+        JSON.stringify(proposal),
+        Date.now(),
+        JSON.stringify(summarize(proposal)),
+      );
     return {
       id: proposal.id,
       status: 'pending',
@@ -163,8 +321,8 @@ export class ExcelSessions {
   }
   private save(p: ExcelProposal) {
     this.store.db
-      .prepare('UPDATE excel_proposals SET payload=? WHERE id=?')
-      .run(JSON.stringify(p), p.id);
+      .prepare('UPDATE excel_proposals SET payload=?,summary=? WHERE id=?')
+      .run(JSON.stringify(p), JSON.stringify(summarize(p)), p.id);
   }
   transition(id: string, proposalId: string, input: unknown) {
     const { action, result } = z
@@ -189,7 +347,9 @@ export class ExcelSessions {
     return p;
   }
   cancel(id: string) {
-    for (const p of this.list(id)) {
+    for (const summary of this.summaries(id)) {
+      if (summary.status !== 'pending') continue;
+      const p = this.get(id, summary.id);
       if (p.status === 'pending') {
         p.status = 'rejected';
         p.result = 'Task stopped.';

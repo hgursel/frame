@@ -1,4 +1,6 @@
 const labels: Record<string, string> = {
+  excel_read_selection: 'Read selected cells',
+  excel_propose_changes: 'Prepare Excel changes',
   reports_sources: 'Find report content',
   reports_create: 'Create PDF report',
   charts_create: 'Create chart',
@@ -40,6 +42,7 @@ export function statusLabel(status: string) {
     Import: 'Importing',
     Calculate: 'Calculating',
     Draft: 'Drafting',
+    Prepare: 'Preparing',
   };
   return label.replace(/^\w+/, (verb) => verbs[verb] || `Running ${verb}`);
 }
