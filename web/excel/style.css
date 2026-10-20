@@ -242,3 +242,176 @@ td small {
 .rich-markdown img {
   max-width: 100%;
 }
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+.excel-app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.excel-app > header {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+}
+.excel-app > header h1 {
+  font-size: 16px;
+}
+.excel-session > header p {
+  display: none;
+}
+.excel-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 14px 16px;
+  scrollbar-gutter: stable;
+}
+.excel-dock {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line);
+  background: var(--canvas);
+  padding: 6px 14px 12px;
+}
+.excel-dock > p {
+  margin: 2px 0;
+  font-size: 11px;
+}
+.excel-composer {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.excel-composer label {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+}
+.excel-composer textarea {
+  display: block;
+  min-height: 60px;
+  height: 74px;
+  max-height: min(160px, 25dvh);
+  resize: vertical;
+  font-weight: 400;
+}
+.excel-composer > button {
+  flex: 0 0 auto;
+  margin-bottom: 1px;
+}
+.excel-context {
+  margin: 10px 0;
+  padding: 8px 10px;
+}
+.excel-inspection {
+  margin-top: 8px;
+  font-size: 11px;
+}
+.excel-inspection ul {
+  max-height: 140px;
+  overflow: auto;
+  padding-left: 18px;
+}
+.excel-messages .message {
+  margin: 14px 0;
+  min-width: 0;
+}
+.excel-messages .message.user {
+  background: var(--panel);
+  padding: 10px 12px;
+  border-radius: 9px;
+}
+.excel-messages .message-author {
+  font-size: 10px;
+  color: var(--subtle);
+  font-weight: 600;
+}
+.excel-messages .response-turn {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+.excel-messages .message-actions {
+  display: flex;
+  gap: 8px;
+}
+.excel-messages .message-actions button {
+  font-size: 11px;
+  padding: 3px 7px;
+}
+.excel-messages .markdown-table {
+  overflow: auto;
+}
+.excel-proposal {
+  padding: 10px;
+  margin: 10px 0;
+}
+.excel-proposal p {
+  font-size: 12px;
+}
+.excel-review {
+  width: min(900px, calc(100vw - 12px));
+  height: calc(100dvh - 12px);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--canvas);
+}
+.excel-review[open] {
+  display: flex;
+  flex-direction: column;
+}
+.excel-review::backdrop {
+  background: rgb(10 25 18 / 45%);
+}
+.excel-review-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+.excel-review-heading h2 {
+  flex: 1;
+  margin: 0;
+}
+.excel-review-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+.excel-review-footer {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  max-height: 42dvh;
+  overflow: auto;
+}
+.excel-review-footer .excel-actions {
+  margin: 6px 0 0;
+  justify-content: flex-end;
+}
+.excel-review-footer .excel-small {
+  margin: 0;
+  font-size: 11px;
+}
+.excel-review .excel-grid-scroll {
+  max-height: none;
+}
+.excel-review .excel-preview > summary {
+  font-weight: 600;
+}

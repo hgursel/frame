@@ -1,13 +1,24 @@
 import { z } from 'zod';
 
-export const MAX_SELECTION_CELLS = 2000;
-export const MAX_IMPORT_CELLS = 10000;
-export const scalar = z.union([z.string().max(4000), z.number().finite(), z.boolean(), z.null()]);
+export const MAX_SELECTION_CELLS = 500000;
+export const MAX_COLUMNS = 4096;
+export const MAX_SELECTION_BYTES = 12 * 1024 * 1024;
+export const MAX_IMPORT_CELLS = MAX_SELECTION_CELLS;
+export const excelLimitsSchema = z
+  .object({
+    maxCells: z.number().int().min(2000).max(MAX_SELECTION_CELLS),
+    maxColumns: z.number().int().min(100).max(MAX_COLUMNS),
+  })
+  .strict();
+export type ExcelLimits = z.infer<typeof excelLimitsSchema>;
+export const DEFAULT_EXCEL_LIMITS: ExcelLimits = { maxCells: 100000, maxColumns: 1024 };
+export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
+export const scalar = z.union([z.string().max(32767), z.number().finite(), z.boolean(), z.null()]);
 export type ExcelScalar = z.infer<typeof scalar>;
 const matrix = z
-  .array(z.array(scalar).min(1).max(100))
+  .array(z.array(scalar).min(1).max(MAX_COLUMNS))
   .min(1)
-  .max(2000)
+  .max(MAX_SELECTION_CELLS)
   .refine((rows) => rows.every((r) => r.length === rows[0]!.length), 'Use a rectangular matrix.');
 export const selectionSchema = z
   .object({
@@ -19,9 +30,9 @@ export const selectionSchema = z
     values: matrix,
     formulas: matrix,
     numberFormat: z
-      .array(z.array(z.string().max(300)).min(1).max(100))
+      .array(z.array(z.string().max(300)).min(1).max(MAX_COLUMNS))
       .min(1)
-      .max(2000),
+      .max(MAX_SELECTION_CELLS),
   })
   .strict()
   .superRefine((s, ctx) => {
@@ -34,11 +45,12 @@ export const selectionSchema = z
       [s.formulas, s.numberFormat].some(
         (m) => m.length !== rows || m.some((r) => r.length !== cols),
       ) ||
-      JSON.stringify(s).length > 64000
+      jsonBytes(s) > MAX_SELECTION_BYTES
     )
       ctx.addIssue({
         code: 'custom',
-        message: 'Select a smaller rectangular range (up to 2,000 cells and 64 KB).',
+        message:
+          'Selection exceeds the 500,000-cell or 12 MiB transfer ceiling, or has inconsistent dimensions.',
       });
   });
 export type ExcelSelection = z.infer<typeof selectionSchema>;
@@ -89,7 +101,7 @@ export const proposalSchema = z
           })
           .strict(),
       )
-      .max(2000)
+      .max(MAX_SELECTION_CELLS)
       .default([]),
     sourceOperationId: z.uuid().optional(),
     table: z.boolean().default(false),
@@ -106,7 +118,7 @@ export const proposalSchema = z
     if (p.sourceOperationId && p.formulas.length)
       bad('SQL imports preserve source values; do not supply formulas.');
     if (p.values && p.values.length * p.values[0]!.length > MAX_SELECTION_CELLS)
-      bad('Generated proposals are limited to 2,000 cells.');
+      bad('Generated proposals exceed the 500,000-cell ceiling.');
     if (new Set(p.formulas.map((f) => `${f.row}:${f.column}`)).size !== p.formulas.length)
       bad('Duplicate formula destinations.');
     if (
@@ -114,7 +126,7 @@ export const proposalSchema = z
       p.formulas.some((f) => f.row >= p.values!.length || f.column >= p.values![0]!.length)
     )
       bad('Formula falls outside the proposed range.');
-    if (JSON.stringify(p).length > 100000) bad('Proposal is too large.');
+    if (jsonBytes(p) > MAX_SELECTION_BYTES) bad('Proposal exceeds the 12 MiB transfer ceiling.');
   });
 export type ExcelChange = z.infer<typeof proposalSchema>;
 export interface ExcelProposal {
@@ -130,6 +142,94 @@ export interface ExcelProposal {
 export interface ExcelTurn {
   selection: ExcelSelection;
   recent: { summary: string; status: string; result?: string }[];
+}
+export type ExcelProposalSummary = Pick<
+  ExcelProposal,
+  'id' | 'runId' | 'summary' | 'status' | 'result' | 'sourceNotice'
+> & {
+  target: string;
+  rows: number;
+  columns: number;
+};
+export interface ExcelSection {
+  row: number;
+  column: number;
+  rows: number;
+  columns: number;
+  values: ExcelScalar[][];
+  formulas: { row: number; column: number; formula: string }[];
+  completeSelection: boolean;
+  truncated: boolean;
+}
+export interface ExcelInspection {
+  runId: string;
+  address: string;
+  rows: number;
+  columns: number;
+  ranges: { row: number; column: number; rows: number; columns: number }[];
+}
+export interface ExcelModelContext {
+  captureId: string;
+  selection: Pick<ExcelSelection, 'sheetId' | 'sheetName' | 'address' | 'row' | 'column'> & {
+    rows: number;
+    columns: number;
+  };
+  initial?: ExcelSection;
+  recent: ExcelTurn['recent'];
+  limits: ExcelLimits;
+}
+
+/** Only actual formulas travel to the model; literal formula-like strings stay literal values. */
+export function selectionSection(
+  s: ExcelSelection,
+  row: number,
+  column: number,
+  rows: number,
+  columns: number,
+  maxBytes: number,
+): ExcelSection {
+  if (maxBytes < 128)
+    throw new Error(
+      'Insufficient model context for another section. Start a fresh conversation or focus the selection.',
+    );
+  if (row >= s.values.length || column >= s.values[0]!.length)
+    throw new Error('Requested section is outside the captured selection.');
+  const requestedRows = Math.min(rows, s.values.length - row),
+    requestedColumns = Math.min(columns, s.values[0]!.length - column);
+  rows = requestedRows;
+  columns = requestedColumns;
+  for (;;) {
+    const values = s.values.slice(row, row + rows).map((r) => r.slice(column, column + columns));
+    const formulas: ExcelSection['formulas'] = [];
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < columns; c++) {
+        const formula = s.formulas[row + r]![column + c];
+        if (
+          typeof formula === 'string' &&
+          formula.startsWith('=') &&
+          formula !== s.values[row + r]![column + c]
+        )
+          formulas.push({ row: row + r, column: column + c, formula });
+      }
+    const result = {
+      row,
+      column,
+      rows,
+      columns,
+      values,
+      formulas,
+      completeSelection:
+        row === 0 && column === 0 && rows === s.values.length && columns === s.values[0]!.length,
+      truncated: rows < requestedRows || columns < requestedColumns,
+    };
+    if (jsonBytes(result) <= maxBytes && rows * columns <= 10000) return result;
+    if (rows > 1) rows = Math.max(1, Math.floor(rows / 2));
+    else if (columns > 1) columns = Math.max(1, Math.floor(columns / 2));
+    else
+      throw new Error(
+        'This cell exceeds the remaining model context budget. Select less text or start a fresh conversation.',
+      );
+  }
 }
 // Literal data, including SQL text, must never become executable formulas.
 export function excelCellValue(

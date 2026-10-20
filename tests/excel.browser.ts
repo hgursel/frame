@@ -7,6 +7,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createServer, request } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
+import { randomUUID } from 'node:crypto';
 const { createApp } = await import(new URL('../dist/server/app.js', import.meta.url).href);
 const root = await mkdtemp(path.join(tmpdir(), 'frame-excel-browser-'));
 let changes: any = {
@@ -140,6 +141,7 @@ try {
       spill: false,
       table: false,
       failWrite: false,
+      writesUntilFailure: null,
       sheets: [],
     };
     const sheet = (id: string, name: string, values: any[][]) => {
@@ -180,13 +182,19 @@ try {
         address: `${s.name}!A1:B2`,
         load() {},
         get values() {
-          return structuredClone(s.values);
+          return structuredClone(
+            s.values.slice(row, row + rows).map((r: any[]) => r.slice(col, col + cols)),
+          );
         },
         get formulas() {
-          return structuredClone(s.formulas);
+          return structuredClone(
+            s.formulas.slice(row, row + rows).map((r: any[]) => r.slice(col, col + cols)),
+          );
         },
         get numberFormat() {
-          return structuredClone(s.formats);
+          return structuredClone(
+            s.formats.slice(row, row + rows).map((r: any[]) => r.slice(col, col + cols)),
+          );
         },
         get hasSpill() {
           return fake.spill;
@@ -200,8 +208,18 @@ try {
         set valuesAsJson(v: any[][]) {
           fake.writes.push({ id, values: v });
           if (fake.failWrite) throw new Error('Simulated write failure');
-          s.values = v.map((r) => r.map((v) => v.basicValue ?? ''));
-          s.formulas = structuredClone(s.values);
+          if (fake.writesUntilFailure !== null && fake.writesUntilFailure-- === 0)
+            throw new Error('Simulated interruption after a completed block');
+          for (let r = 0; r < v.length; r++) {
+            s.values[row + r] ||= [];
+            s.formulas[row + r] ||= [];
+            s.formats[row + r] ||= [];
+            for (let c = 0; c < v[r]!.length; c++) {
+              s.values[row + r][col + c] = v[r]![c].basicValue ?? '';
+              s.formulas[row + r][col + c] = v[r]![c].basicValue ?? '';
+              s.formats[row + r][col + c] ||= 'General';
+            }
+          }
         },
         getCell(r: number, c: number) {
           return {
@@ -226,7 +244,12 @@ try {
     const workbook = {
       protection: { load() {}, protected: false },
       getSelectedRange() {
-        return fake.source.getRangeByIndexes(0, 0, 2, 2);
+        return fake.source.getRangeByIndexes(
+          0,
+          0,
+          fake.source.values.length,
+          fake.source.values[0].length,
+        );
       },
       worksheets: {
         getItem(id: string) {
@@ -275,8 +298,17 @@ try {
   const capture = page.getByRole('button', { name: 'Capture selection' });
   await capture.click();
   const send = async (text: string) => {
+    // The background composer is inert until the asynchronous review action closes its modal.
+    await expect(page.getByRole('dialog')).not.toBeVisible();
     await page.getByLabel('Ask Frame').fill(text);
+    await expect(page.getByLabel('Ask Frame')).toHaveValue(text);
+    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
+      timeout: 5000,
+    });
     await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await page
+      .getByRole('button', { name: 'Review changes', exact: true })
+      .click({ timeout: 25000 });
     await expect(page.getByRole('button', { name: 'Apply changes' })).toBeEnabled({
       timeout: 25000,
     });
@@ -284,6 +316,26 @@ try {
   await send('Fix the total');
   assert.equal(await page.evaluate(() => (window as any).fakeExcel.writes.length), 0);
   await expect(page.getByText('=A2*3', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close review' }).click();
+  assert.equal(
+    await page.locator('.activity').count(),
+    1,
+    'Tool work shares one collapsed activity row',
+  );
+  const composer = await page.getByLabel('Ask Frame').boundingBox();
+  assert(
+    composer && composer.y + composer.height < 900 && composer.y > 650,
+    'Composer stays at bottom',
+  );
+  await page.locator('.excel-scroll').evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  assert.deepEqual(
+    await page.getByLabel('Ask Frame').boundingBox(),
+    composer,
+    'History scroll never moves composer',
+  );
+  await page.getByRole('button', { name: 'Review changes', exact: true }).click();
   await page.setViewportSize({ width: 320, height: 900 });
   assert(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -300,6 +352,14 @@ try {
   await page.getByRole('button', { name: 'Apply changes' }).click();
   await expect(page.getByRole('alert')).toContainText('captured cells');
   assert.equal(await page.evaluate(() => (window as any).fakeExcel.writes.length), 0);
+  // Exercise a slow rejection acknowledgment so the next message cannot race the closing modal.
+  await page.route('**/api/excel/sessions/*/proposals/*', async (route) => {
+    if (route.request().method() !== 'POST' || route.request().postDataJSON()?.action !== 'reject')
+      return route.continue();
+    const response = await route.fetch();
+    await new Promise((r) => setTimeout(r, 500));
+    await route.fulfill({ response });
+  });
   await page.getByRole('button', { name: 'Reject', exact: true }).click();
   await send('Try again with the current values');
   await page.evaluate(() => {
@@ -334,13 +394,92 @@ try {
     type: 'String',
     basicValue: '=HYPERLINK("bad")',
   });
-  changes = { ...changes, summary: 'Uncertain change', sheetName: 'Uncertain' };
-  await send('Create another summary');
   await page.evaluate(() => {
-    (window as any).fakeExcel.failWrite = true;
+    const source = (window as any).fakeExcel.source;
+    source.values = Array.from({ length: 500 }, (_, r) =>
+      Array.from({ length: 200 }, (_, c) => r * 200 + c),
+    );
+    source.formulas = structuredClone(source.values);
+    source.formats = source.values.map((row: any[]) => row.map(() => 'General'));
+  });
+  changes = {
+    summary: 'Large capture verified',
+    target: 'new_sheet',
+    sheetName: 'Capture summary',
+    values: [
+      ['Rows', 'Columns'],
+      [500, 200],
+    ],
+  };
+  await send('Capture this larger selection and summarize its dimensions');
+  const conversationId = ctx.store.conversations().find((c: any) => ctx.excel.has(c.id)).id;
+  const largeCapture = ctx.excel.list(conversationId)[0].baseline;
+  assert.equal(largeCapture.values.length, 500);
+  assert.equal(largeCapture.values[499][199], 99999, 'Client capture reads every block');
+  await page.getByRole('button', { name: 'Reject', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  const operation = randomUUID();
+  ctx.excel.capture(conversationId, operation, {
+    columns: Array.from({ length: 200 }, (_, c) => `Column ${c + 1}`),
+    rows: largeCapture.values.slice(1),
+    affected: 0,
+    truncated: false,
+  });
+  const proposeImport = (sheetName: string) =>
+    ctx.excel.propose(conversationId, randomUUID(), largeCapture, {
+      summary: `Import ${sheetName}`,
+      target: 'new_sheet',
+      sheetName,
+      sourceOperationId: operation,
+    });
+  proposeImport('Large import');
+  await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('500 rows × 200 columns');
+  await page.getByRole('button', { name: 'Next columns' }).click();
+  await page.getByRole('button', { name: 'Next rows' }).click();
+  const applyBounds = await page.getByRole('button', { name: 'Apply changes' }).boundingBox();
+  await page.locator('.excel-review-body').evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  assert.deepEqual(
+    await page.getByRole('button', { name: 'Apply changes' }).boundingBox(),
+    applyBounds,
+    'Review scrolling never moves approval controls',
+  );
+  await page.getByRole('button', { name: 'Apply changes' }).click();
+  await expect(page.getByText('Created worksheet Large import.', { exact: true })).toBeVisible({
+    timeout: 25000,
+  });
+  const largeWritten = await page.evaluate(() => {
+    const fake = (window as any).fakeExcel,
+      sheet = fake.sheets.find((s: any) => s.name === 'Large import');
+    return {
+      last: sheet.values[499][199],
+      blocks: fake.writes
+        .filter((v: any) => v.id === sheet.id)
+        .map((v: any) => v.values.length * v.values[0].length),
+    };
+  });
+  assert.equal(largeWritten.last, 99999);
+  assert.equal(
+    largeWritten.blocks.reduce((a: number, b: number) => a + b, 0),
+    100000,
+  );
+  assert(largeWritten.blocks.length > 1 && largeWritten.blocks.every((n: number) => n <= 5000));
+  proposeImport('Uncertain');
+  await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+  await page.evaluate(() => {
+    (window as any).fakeExcel.writesUntilFailure = 1;
   });
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByText('unknown', { exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toContainText('unknown');
+  assert.equal(
+    await page.evaluate(
+      () => (window as any).fakeExcel.sheets.find((s: any) => s.name === 'Uncertain').values.length,
+    ),
+    25,
+    'Only the first block completed before interruption',
+  );
   const beforeReload = await page.evaluate(() => (window as any).fakeExcel.writes.length);
   assert(beforeReload > written.length);
   await page.reload();
@@ -366,6 +505,11 @@ try {
   const setup = await context.request.get(`${origin}/excel-setup`);
   assert.equal(setup.status(), 200);
   assert.match(await setup.text(), /hosts.*without.*\.txt/);
+  await page.getByLabel('Maximum cells per selection or proposal').fill('200000');
+  await page.getByLabel('Maximum columns', { exact: true }).fill('2048');
+  await page.getByRole('button', { name: 'Save Excel limits' }).click();
+  await expect(page.getByText('Excel limits saved.')).toBeVisible();
+  assert.equal(ctx.excel.limits().maxCells, 200000);
   assert.deepEqual(errors, []);
   console.log(
     'Excel simulated-host browser checks passed: preview, stale/protected guards, explicit Apply, typed text, table/chart, uncertain failure, and reload. Real Excel acceptance remains required.',

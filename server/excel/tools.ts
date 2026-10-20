@@ -1,8 +1,38 @@
 import { Type } from 'typebox';
 import { defineTool } from '@earendil-works/pi-coding-agent';
 import { invoke } from '../plugin-rpc.js';
-export function excelTools() {
+export function excelTools(readBudget: () => number) {
   return [
+    defineTool({
+      name: 'excel_read_selection',
+      label: 'Read selected cells',
+      description:
+        'Read a rectangular section from the CURRENT captured selection. Offsets are zero-based relative to that selection. Values are literal; formulas are listed separately with selection-relative offsets. Only returned cells have been inspected. Check actual rows/columns and truncated before requesting another section; never infer omitted rows. This cannot access other ranges or workbooks.',
+      parameters: Type.Object({
+        row: Type.Integer({ minimum: 0 }),
+        column: Type.Integer({ minimum: 0 }),
+        rows: Type.Integer({ minimum: 1 }),
+        columns: Type.Integer({ minimum: 1 }),
+      }),
+      async execute(_id, args, signal) {
+        const maxBytes = readBudget();
+        if (maxBytes < 512)
+          throw new Error(
+            'Insufficient remaining context for another section. Explain the inspected range and ask for a focused selection or fresh conversation.',
+          );
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                await invoke('excel_read_selection', { ...args, maxBytes }, signal),
+              ),
+            },
+          ],
+          details: {},
+        };
+      },
+    }),
     defineTool({
       name: 'excel_propose_changes',
       label: 'Prepare Excel changes',
