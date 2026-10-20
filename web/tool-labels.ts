@@ -1,5 +1,7 @@
 const labels: Record<string, string> = {
   excel_read_selection: 'Read selected cells',
+  excel_read_workbook: 'Read workbook',
+  excel_edit_workbook: 'Prepare worksheet edits',
   excel_propose_changes: 'Prepare Excel changes',
   reports_sources: 'Find report content',
   reports_create: 'Create PDF report',

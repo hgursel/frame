@@ -11,8 +11,9 @@ import {
   type ExcelSelection,
   type ExcelProposal,
 } from '../../shared/excel.js';
+import { isWorkbookProposal, type AnyExcelProposal } from '../../shared/excel-workbook.js';
 
-async function snapshot(
+export async function snapshot(
   context: Excel.RequestContext,
   range: Excel.Range,
   limits: ExcelLimits = { maxCells: MAX_SELECTION_CELLS, maxColumns: MAX_COLUMNS },
@@ -68,12 +69,47 @@ export function captureSelection(limits = DEFAULT_EXCEL_LIMITS) {
     snapshot(context, context.workbook.getSelectedRange(), limits),
   );
 }
+export async function watchSelection(update: (address: string) => void) {
+  let alive = true;
+  const refresh = async () => {
+    try {
+      const address = await Excel.run(async (context) => {
+        const r = context.workbook.getSelectedRange();
+        r.load('address');
+        await context.sync();
+        return r.address;
+      });
+      if (alive) update(address);
+    } catch {
+      if (alive) update('Multiple areas selected');
+    }
+  };
+  const handlers = await Excel.run(async (context) => {
+    const handlers = [
+      context.workbook.onSelectionChanged.add(refresh),
+      context.workbook.worksheets.onActivated.add(refresh),
+    ];
+    await context.sync();
+    return handlers;
+  });
+  await refresh();
+  return async () => {
+    alive = false;
+    for (const handler of handlers)
+      await Excel.run(handler.context, async (context) => {
+        handler.remove();
+        await context.sync();
+      }).catch(() => {});
+  };
+}
 function sourceRange(context: Excel.RequestContext, s: ExcelSelection) {
   return context.workbook.worksheets
     .getItem(s.sheetId)
     .getRangeByIndexes(s.row, s.column, s.values.length, s.values[0]!.length);
 }
-export async function checkProposal(context: Excel.RequestContext, proposal: ExcelProposal) {
+export async function checkProposal(context: Excel.RequestContext, proposal: AnyExcelProposal) {
+  if (isWorkbookProposal(proposal))
+    return (await import('./operations.js')).checkWorkbookProposal(context, proposal);
   const source = sourceRange(context, proposal.baseline);
   if (!sameSelection(proposal.baseline, await snapshot(context, source)))
     throw new Error(
@@ -85,17 +121,10 @@ export async function checkProposal(context: Excel.RequestContext, proposal: Exc
     const merged = source.getMergedAreasOrNullObject();
     source.load('hasSpill');
     source.worksheet.protection.load('protected');
-    const tables = source.getTables(false);
-    tables.load('items/name');
     await context.sync();
-    if (
-      !merged.isNullObject ||
-      source.hasSpill !== false ||
-      source.worksheet.protection.protected ||
-      tables.items.length
-    )
+    if (!merged.isNullObject || source.hasSpill !== false || source.worksheet.protection.protected)
       throw new Error(
-        'This pilot cannot replace merged/spill cells, protected sheets, or cells inside Excel tables. Ask for a new worksheet instead.',
+        'The destination contains merged/spill cells or is protected. Choose the exact editable cells or adjust the worksheet in Excel.',
       );
   } else {
     const existing = context.workbook.worksheets.getItemOrNullObject(change.sheetName!);
@@ -105,11 +134,16 @@ export async function checkProposal(context: Excel.RequestContext, proposal: Exc
   }
   if (context.workbook.protection.protected) throw new Error('The workbook is protected.');
 }
-export function verifyProposal(proposal: ExcelProposal) {
+export function verifyProposal(proposal: AnyExcelProposal) {
   return Excel.run((context) => checkProposal(context, proposal));
 }
 /** Call only after a successful, one-time server claim. No automatic retries or rollback. */
-export function applyProposal(proposal: ExcelProposal, progress?: (message: string) => void) {
+export async function applyProposal(
+  proposal: AnyExcelProposal,
+  progress?: (message: string) => void,
+) {
+  if (isWorkbookProposal(proposal))
+    return (await import('./operations.js')).applyWorkbookProposal(proposal, progress);
   return Excel.run(async (context) => {
     await checkProposal(context, proposal);
     const c = proposal.change;

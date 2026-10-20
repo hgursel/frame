@@ -2,8 +2,20 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 import { z } from 'zod';
 import type { Store } from '../store.js';
 import type { SqlResult } from '../../shared/plugins.js';
+import { WorkbookBridge } from './bridge.js';
+import {
+  workbookPlanSchema,
+  workbookReadSchema,
+  workbookCheckSchema,
+  checkPlanLimits,
+  isWorkbookProposal,
+  rangeBounds,
+  type AnyExcelProposal,
+  type WorkbookProposal,
+} from '../../shared/excel-workbook.js';
 import {
   MAX_IMPORT_CELLS,
+  MAX_SELECTION_BYTES,
   DEFAULT_EXCEL_LIMITS,
   excelLimitsSchema,
   jsonBytes,
@@ -16,26 +28,34 @@ import {
   type ExcelProposal,
   type ExcelSelection,
   type ExcelTurn,
+  selectionSchema,
 } from '../../shared/excel.js';
 
 const fail = (message: string, statusCode = 409) =>
   Object.assign(new Error(message), { statusCode });
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
-const summarize = (p: ExcelProposal): ExcelProposalSummary => ({
+const summarize = (p: AnyExcelProposal): ExcelProposalSummary => ({
   id: p.id,
   runId: p.runId,
   summary: p.summary,
   status: p.status,
   result: p.result,
   sourceNotice: p.sourceNotice,
-  target:
-    p.change.target === 'new_sheet'
+  target: isWorkbookProposal(p)
+    ? p.plan.actions.map((a) => `${a.sheet}!${a.range}`).join('; ')
+    : p.change.target === 'new_sheet'
       ? `New sheet: ${p.change.sheetName}`
       : `Replace ${p.baseline.address}`,
-  rows: p.change.values.length,
-  columns: p.change.values[0]!.length,
+  rows: isWorkbookProposal(p)
+    ? p.plan.actions.reduce((n, a) => n + rangeBounds(a.range).rows, 0)
+    : p.change.values.length,
+  columns: isWorkbookProposal(p)
+    ? Math.max(...p.plan.actions.map((a) => rangeBounds(a.range).columns))
+    : p.change.values[0]!.length,
+  operations: isWorkbookProposal(p) ? p.plan.actions.length : undefined,
 });
 export class ExcelSessions {
+  readonly bridge = new WorkbookBridge();
   constructor(readonly store: Store) {
     store.db
       .exec(`CREATE TABLE IF NOT EXISTS excel_sessions(conversationId TEXT PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE, clientHash TEXT NOT NULL);
@@ -59,7 +79,7 @@ export class ExcelSessions {
       id: string;
       payload: string;
     }[]) {
-      const p: ExcelProposal = JSON.parse(row.payload);
+      const p: AnyExcelProposal = JSON.parse(row.payload);
       if (p.status === 'pending' || p.status === 'applying') {
         p.status = p.status === 'applying' ? 'unknown' : 'rejected';
         p.result = 'Frame restarted. Inspect the workbook; this proposal will not be replayed.';
@@ -191,7 +211,7 @@ export class ExcelSessions {
         403,
       );
   }
-  list(id: string): ExcelProposal[] {
+  list(id: string): AnyExcelProposal[] {
     return (
       this.store.db
         .prepare(
@@ -312,14 +332,95 @@ export class ExcelSessions {
         'Preview ready in Excel. Nothing has been changed. End your response and wait for the user to Apply or Reject; do not call this tool again this turn.',
     };
   }
-  get(id: string, proposalId: string): ExcelProposal {
+  async readWorkbook(id: string, runId: string, input: unknown, signal: AbortSignal) {
+    const b = z
+      .object({ query: workbookReadSchema, maxBytes: z.number().int().min(512).max(64000) })
+      .strict()
+      .parse(input);
+    const response = await this.bridge.request(
+      id,
+      { runId, limits: this.limits(), task: { kind: 'read', ...b } },
+      signal,
+    );
+    if (b.query.kind === 'read_range') {
+      const s = selectionSchema.parse(response);
+      const section = selectionSection(s, 0, 0, s.values.length, s.values[0]!.length, b.maxBytes);
+      return {
+        sheetId: s.sheetId,
+        sheetName: s.sheetName,
+        address: s.address,
+        origin: { row: s.row, column: s.column },
+        ...section,
+      };
+    }
+    if (jsonBytes(response) > b.maxBytes)
+      throw new Error(
+        'Worksheet metadata exceeds remaining context. Request a more focused range or fewer sheets.',
+      );
+    return response;
+  }
+  async proposeWorkbook(id: string, runId: string, args: unknown, signal: AbortSignal) {
+    if (!this.has(id)) throw fail('Workbook tools require an Excel session.', 403);
+    if (this.summaries(id).some((p) => p.status === 'pending' || p.status === 'applying'))
+      throw fail('One batch is already waiting for review.');
+    let plan = workbookPlanSchema.parse(args);
+    const notices: string[] = [];
+    for (const a of plan.actions)
+      if (a.kind === 'write' && a.sourceOperationId) {
+        const row = this.store.db
+          .prepare('SELECT payload FROM excel_sources WHERE id=? AND conversationId=?')
+          .get(a.sourceOperationId, id) as { payload: string } | undefined;
+        if (!row) throw fail('Saved SQL result unavailable in this conversation.');
+        const source = JSON.parse(row.payload);
+        notices.push(
+          `SQL operation ${a.sourceOperationId}: ${source.truncated ? 'partial result (query row limit reached)' : 'all returned rows'}.`,
+        );
+        a.values = source.values;
+        delete a.sourceOperationId;
+      }
+    plan = workbookPlanSchema.parse(plan);
+    checkPlanLimits(plan, this.limits());
+    const response = await this.bridge.request(
+      id,
+      { runId, limits: this.limits(), task: { kind: 'inspect', plan } },
+      signal,
+    );
+    const checks = z.array(workbookCheckSchema).length(plan.actions.length).parse(response);
+    if (signal.aborted) throw fail('Task stopped.');
+    if (this.summaries(id).some((p) => p.status === 'pending' || p.status === 'applying'))
+      throw fail('One batch is already waiting for review.');
+    if (jsonBytes(checks) > MAX_SELECTION_BYTES)
+      throw fail('Preview data exceeds the transfer ceiling. Split the batch.');
+    const p: WorkbookProposal = {
+      kind: 'workbook',
+      id: randomUUID(),
+      runId,
+      summary: plan.summary,
+      status: 'pending',
+      plan,
+      checks,
+      sourceNotice: notices.join('\n') || undefined,
+    };
+    this.store.db
+      .prepare(
+        'INSERT INTO excel_proposals(id,conversationId,payload,at,summary) VALUES (?,?,?,?,?)',
+      )
+      .run(p.id, id, JSON.stringify(p), Date.now(), JSON.stringify(summarize(p)));
+    return {
+      id: p.id,
+      status: 'pending',
+      message:
+        'Preview ready. End this response and wait for Apply or Reject. No cells have changed.',
+    };
+  }
+  get(id: string, proposalId: string): AnyExcelProposal {
     const row = this.store.db
       .prepare('SELECT payload FROM excel_proposals WHERE conversationId=? AND id=?')
       .get(id, proposalId) as { payload: string } | undefined;
     if (!row) throw fail('Proposal not found in this Excel session.', 404);
     return JSON.parse(row.payload);
   }
-  private save(p: ExcelProposal) {
+  private save(p: AnyExcelProposal) {
     this.store.db
       .prepare('UPDATE excel_proposals SET payload=?,summary=? WHERE id=?')
       .run(JSON.stringify(p), JSON.stringify(summarize(p)), p.id);
