@@ -1,0 +1,244 @@
+:root {
+  color-scheme: light;
+  --ink: #20332d;
+  --subtle: #65736c;
+  --line: #dbe2dd;
+  --canvas: #fff;
+  --panel: #f2f5f2;
+  --surface: #f2f5f2;
+  font:
+    14px/1.5 'Segoe UI',
+    system-ui,
+    sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+button {
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--ink);
+  border-radius: 7px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.primary {
+  color: white;
+  background: #254b3d;
+  border-color: #254b3d;
+}
+a {
+  color: #245b48;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: white;
+  color: var(--ink);
+}
+textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin: 12px 0;
+}
+h1 {
+  font-size: 18px;
+  margin: 0;
+}
+h2 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+p {
+  margin: 8px 0;
+}
+.excel-app {
+  max-width: 850px;
+  padding: 18px;
+  margin: auto;
+  overflow-wrap: anywhere;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+header p {
+  font-size: 11px;
+  color: var(--subtle);
+  margin: 0;
+}
+.excel-mark {
+  background: #254b3d;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 3px 11px;
+  border-radius: 8px;
+}
+.excel-badge {
+  font-size: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 2px 7px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.excel-small,
+.muted {
+  font-size: 12px;
+  color: var(--subtle);
+}
+.excel-context {
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0;
+}
+.excel-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.excel-error,
+.excel-warning,
+.excel-notice {
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.excel-error {
+  background: #fdebea;
+  color: #832d27;
+}
+.excel-warning {
+  background: #fff4d9;
+  color: #705018;
+}
+.excel-notice {
+  background: #eaf5ed;
+}
+.excel-message {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+.excel-message > strong {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--subtle);
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  max-height: 240px;
+  overflow: auto;
+}
+.excel-proposal {
+  border: 1px solid var(--line);
+  padding: 12px;
+  margin: 16px 0;
+  border-radius: 9px;
+}
+.excel-proposal-heading {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+}
+summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+.excel-grid-scroll,
+.markdown-table {
+  max-width: 100%;
+  overflow: auto;
+  margin: 10px 0;
+}
+table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th,
+td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+  min-width: 80px;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+th {
+  background: var(--panel);
+}
+td small {
+  color: var(--subtle);
+}
+.excel-formula {
+  font-family: monospace;
+  color: #176a46;
+}
+.excel-composer {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 8px;
+}
+.question-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.question-option input {
+  width: auto;
+}
+.question-option small {
+  display: block;
+}
+.question-tabs,
+.question-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.question-card fieldset {
+  border: 0;
+  padding: 0;
+}
+.library-reader {
+  max-width: calc(100vw - 16px);
+}
+.rich-markdown img {
+  max-width: 100%;
+}

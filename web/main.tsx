@@ -1,4 +1,5 @@
 import { QuestionCard } from './QuestionCard.js';
+import { ExcelSettings } from './ExcelSettings.js';
 import { ConversationPanel } from './ConversationPanel.js';
 import './workspace.css';
 import { useChatImages, ImagePreviews, type DraftImage } from './ChatImages.js';
@@ -1184,6 +1185,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
     'plugins',
     'knowledge',
     'library',
+    'excel',
   ] as const;
   const [tab, setTab] = useState<(typeof tabs)[number]>('model');
   const [key, setKey] = useState('');
@@ -1225,13 +1227,21 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
               }
             }}
           >
-            {name === 'library' ? 'Knowledge Library' : name[0]!.toUpperCase() + name.slice(1)}
+            {name === 'library'
+              ? 'Knowledge Library'
+              : name === 'excel'
+                ? 'Frame for Excel'
+                : name[0]!.toUpperCase() + name.slice(1)}
           </button>
         ))}
       </div>
       <form
         hidden={
-          tab === 'documents' || tab === 'plugins' || tab === 'knowledge' || tab === 'library'
+          tab === 'documents' ||
+          tab === 'plugins' ||
+          tab === 'knowledge' ||
+          tab === 'library' ||
+          tab === 'excel'
         }
         onSubmit={async (e) => {
           e.preventDefault();
@@ -1464,6 +1474,9 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         hidden={tab !== 'plugins'}
       >
         {tab === 'plugins' && <PluginCatalog />}
+      </div>
+      <div id="settings-excel" role="tabpanel" aria-labelledby="tab-excel" hidden={tab !== 'excel'}>
+        {tab === 'excel' && <ExcelSettings />}
       </div>
       <div
         id="settings-library"

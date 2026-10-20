@@ -41,6 +41,12 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Find files in one place.** Open **Files** for conversation Sources and generated Outputs in a separate panel.
 - **Give longer tasks time.** Runs allow 60 minutes of execution, pausing the timer while waiting for question answers.
 
+### Frame for Excel (Windows pilot)
+
+Use Frame in an Excel Desktop task pane: explain or repair formulas, clean a selected range, import saved read-only SQL results, and prepare new sheets with tables and native charts. Project knowledge remains available. Every workbook batch has a preview and explicit **Apply** button, with changed-cell checks and no automatic replay.
+
+Install locally using an XML manifest from **Settings → Frame for Excel**. This single-user pilot requires trusted HTTPS and Microsoft 365 Excel with ExcelApi 1.16; Microsoft 365 Integrated Apps deployment is unnecessary. Automated tests use a simulated Office host; real Windows Excel and local-model acceptance remain required. [Installation, self-signed certificate, and pilot limits →](docs/FRAME_FOR_EXCEL.md)
+
 ### SQL analysis with explicit controls
 
 The built-in **MSSQL plugin** lets you work with SQL Server through conversation:

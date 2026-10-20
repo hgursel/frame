@@ -13,6 +13,7 @@
     "start": "node --env-file-if-exists=.env dist/server/index.js",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:ui": "node --import tsx tests/browser.smoke.ts && node --import tsx tests/mssql.browser.ts && node --import tsx tests/reports.browser.ts && node --import tsx tests/maintenance.browser.ts && node --import tsx tests/library.browser.ts && node --import tsx tests/skills.browser.ts && FRAME_TEST_HTTP_LAN=true node --import tsx tests/browser.smoke.ts && node --import tsx tests/images.browser.ts && node --import tsx tests/workspace.browser.ts",
+    "test:excel": "node --import tsx tests/excel.browser.ts",
     "check": "tsc --noEmit",
     "packs:build": "node --import tsx knowledge-packs/build.ts",
     "packs:check": "node --import tsx knowledge-packs/build.ts --check",
@@ -42,6 +43,7 @@
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@types/node": "24.13.4",
+    "@types/office-js": "^1.0.613",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",

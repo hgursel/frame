@@ -105,6 +105,14 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 The registered-script plugin with per-operation JSON inputs, approvals, and `.env` redaction was removed in favor of Skills. Stored registrations are deleted on startup; external scripts and credentials are untouched.
 
+## Frame for Excel (implemented pilot; Windows acceptance pending)
+
+- Windows Microsoft 365 task pane, local XML manifest download in Settings, and a self-signed HTTPS/hosts/shared-folder installation guide. No tenant deployment or Microsoft Copilot dependency.
+- Selection-scoped context, project knowledge, read-only SQL, formulas, selection replacement, and new worksheets with tables/native charts. Literal data uses typed cells; supported formulas are explicit.
+- Preview before Apply, pane-bound sessions, one-time claims, stale-cell/protection checks, and uncertain-outcome recovery without replay. Workbook history stays separate from automatic project learning.
+- Automated schema/API/SDK and simulated Office-host checks do not establish real Excel, certificate trust, coauthoring, or local-model correctness. Complete the [Windows acceptance checklist](FRAME_FOR_EXCEL.md) before relying on the pilot.
+- Deferred: whole-workbook discovery, existing-table edits, macros, arbitrary functions, multi-user access, Mac/Web Excel, and organization-wide distribution.
+
 ## Next — Complete V1
 
 1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
