@@ -1,4 +1,6 @@
 import type { Knowledge } from './knowledge.js';
+import type { ExcelSessions } from './excel/service.js';
+import { classify, commandSchema } from './plugins/mssql/policy.js';
 import { z } from 'zod';
 import { Questions } from './questions.js';
 import { RunDeadline } from './run-deadline.js';
@@ -39,6 +41,7 @@ type ActiveRun = {
   pluginAbort: AbortController;
 };
 export class Runner extends EventEmitter {
+  excel?: ExcelSessions;
   readonly questions = new Questions();
   private revision = Date.now() * 1000;
   readonly ephemeral = new Map<string, { entries: unknown[]; snapshot?: ChatSnapshot }>();
@@ -147,6 +150,7 @@ export class Runner extends EventEmitter {
     operation: WorkerInput['operation'] = 'prompt',
     reference?: WorkerInput['reference'],
     images?: WorkerInput['images'],
+    excel?: WorkerInput['excel'],
   ) {
     const existing = this.store.db
       .prepare('SELECT conversationId, status FROM runs WHERE id=?')
@@ -158,9 +162,14 @@ export class Runner extends EventEmitter {
     }
     const conversation = this.store.conversation(id)!;
     const originalProject = this.store.project(conversation.projectId)!;
-    const project = conversation.incognito
-      ? { ...originalProject, toolsEnabled: false }
-      : originalProject;
+    if (this.excel?.has(id) && !excel && operation !== 'compact')
+      throw Object.assign(new Error('Continue this conversation in Frame for Excel.'), {
+        statusCode: 409,
+      });
+    const project =
+      conversation.incognito || excel
+        ? { ...originalProject, toolsEnabled: false }
+        : originalProject;
     if (this.reports?.busy(project.id))
       throw Object.assign(new Error('Wait for report operations to finish.'), { statusCode: 409 });
     if (this.mssql?.schema.jobs.has(project.id))
@@ -267,6 +276,11 @@ export class Runner extends EventEmitter {
         void Promise.resolve()
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
+            if (event.action === 'excel_propose') {
+              if (!excel || !this.excel)
+                throw new Error('Workbook tools require an Excel session.');
+              return this.excel.propose(id, runId, excel.selection, event.args);
+            }
             if (event.action === 'ask_user_question') {
               if (this.questions.get(id)) throw new Error('Answer the pending questions first.');
               deadline.pause();
@@ -335,6 +349,15 @@ export class Runner extends EventEmitter {
               return this.charts.create(id, event.args);
             if (event.action === 'charts_datasets' && this.charts) return this.charts.list(id);
             if (!this.mssql) throw new Error('Plugin unavailable');
+            if (
+              excel &&
+              event.action === 'query' &&
+              classify(commandSchema.parse(event.args), this.mssql.requireProject(project.id)) !==
+                'read'
+            )
+              throw new Error(
+                'Frame for Excel supports read-only SQL. Use Frame chat for database changes.',
+              );
             return this.mssql.invoke(id, runId, event.action, event.args);
           })
           .then(
@@ -391,6 +414,7 @@ export class Runner extends EventEmitter {
           : completed && code === 0 && !signal
             ? 'completed'
             : 'interrupted';
+      if (status !== 'completed') this.excel?.cancel(id);
       if (status === 'interrupted')
         error = `Agent process exited unexpectedly (${signal ? `signal ${signal}` : `exit code ${code ?? 'unknown'}`}). Review history before retrying.`;
       this.store.db
@@ -436,6 +460,7 @@ export class Runner extends EventEmitter {
         prompt,
         documents,
         images,
+        excel,
         pythonPath,
         // Metadata only: page text is served through knowledge_search/knowledge_read.
         knowledge: knowledge.map(({ text: _, ...entry }) => entry),
@@ -444,10 +469,10 @@ export class Runner extends EventEmitter {
         skills: project.toolsEnabled ? this.skills?.context(project.id) : undefined,
         operation,
         reports:
-          this.reports?.enabled() && this.reports.projectEnabled(project.id)
+          !excel && this.reports?.enabled() && this.reports.projectEnabled(project.id)
             ? this.reports.context(project.id)
             : undefined,
-        charts: !!this.charts?.enabled() && this.charts.projectEnabled(project.id),
+        charts: !excel && !!this.charts?.enabled() && this.charts.projectEnabled(project.id),
         mssql:
           this.mssql?.projectEnabled(project.id) && this.mssql.settings().enabled
             ? {
@@ -475,6 +500,7 @@ export class Runner extends EventEmitter {
         { statusCode: 409 },
       );
     if (run.stopRequested) return;
+    this.excel?.cancel(id);
     run.stopRequested = true;
     run.pluginAbort.abort();
     this.mssql?.cancelRun(run.runId);

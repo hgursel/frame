@@ -1,6 +1,8 @@
 import { chatFilesApi } from './chat-files-api.js';
 import { imagesSchema } from './images.js';
 import { KnowledgeLibrary, libraryApi } from './library/service.js';
+import { ExcelSessions } from './excel/service.js';
+import { excelApi } from './excel/api.js';
 import { libraryDownloadsApi } from './library/downloads.js';
 import { Skills, skillsApi } from './skills.js';
 import { recall, validSqlMethod } from './maintenance/recall.js';
@@ -106,6 +108,10 @@ export async function createApp(options: {
   store.db.prepare("DELETE FROM meta WHERE key='private-tools:settings'").run();
   store.db.prepare("DELETE FROM project_plugins WHERE plugin='private-tools'").run();
   const runner = new Runner(store, mssql, charts, reports, skills, knowledge);
+  const excel = new ExcelSessions(store);
+  runner.excel = excel;
+  mssql.captureExcelData = (conversation, operation, result) =>
+    excel.capture(conversation, operation, result);
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
@@ -154,7 +160,9 @@ export async function createApp(options: {
     reply.header('X-Frame-Options', 'DENY');
     reply.header(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'",
+      request.url.split('?')[0] === '/excel.html'
+        ? "default-src 'self'; script-src 'self' https://officeapis.public.onecdn.static.microsoft https://appsforoffice.microsoft.com; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"
+        : "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'",
     );
     if (request.headers.host !== new URL(origin).host)
       return reply.code(403).send({ error: 'Unexpected host' });
@@ -534,6 +542,17 @@ export async function createApp(options: {
   knowledgeApi(app, knowledge, wiki, runner);
   libraryApi(app, library, runner, knowledge);
   libraryDownloadsApi(app, library, options.libraryFetch);
+  excelApi(app, excel, runner, origin, async (projectId, query) => {
+    const catalog = [...(await wiki.catalog(projectId)), ...library.catalog(projectId)];
+    return recall(
+      maintenance.methods,
+      mssql,
+      projectId,
+      query,
+      catalog,
+      store.settings().contextWindow,
+    );
+  });
   mssqlApi(app, mssql, runner);
   projectPluginsApi(app, runner, mssql, charts, reports);
   skillsApi(app, skills);
@@ -569,6 +588,7 @@ export async function createApp(options: {
     runner,
     knowledge,
     library,
+    excel,
     wiki,
     python,
     mssql,

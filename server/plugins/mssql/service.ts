@@ -38,6 +38,7 @@ type Pending = {
   resolve: (approved: boolean) => void;
 };
 export class MssqlPlugin extends EventEmitter {
+  captureExcelData?: (conversation: string, operation: string, result: SqlResult) => void;
   readonly schema: SchemaCache;
   readonly notes: SchemaNotes;
   readonly pending = new Map<string, Pending>();
@@ -309,6 +310,11 @@ export class MssqlPlugin extends EventEmitter {
           'SQL completed, but its chart dataset could not be saved (size or storage limit). Do not repeat a change to recreate chart data.';
       }
       const csvName = `sql-${operation}.csv`;
+      try {
+        this.captureExcelData?.(conversation, operation, result);
+      } catch {
+        /* A capture failure must never repeat SQL. */
+      }
       const directory = this.store.artifacts(this.store.conversation(conversation)!);
       const cell = (value: unknown) => {
         let s = value == null ? '' : String(value);

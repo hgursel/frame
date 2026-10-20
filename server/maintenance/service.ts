@@ -504,7 +504,7 @@ export class Maintenance {
   }
   private async conversation(item: Item, signal: AbortSignal) {
     const c = this.store.conversation(item.id);
-    if (!c || c.incognito || this.runner.active.has(c.id)) return;
+    if (!c || c.incognito || this.runner.active.has(c.id) || this.runner.excel?.has(c.id)) return;
     // Chat uploads and any answers derived from them stay out of automatic project learning.
     if (
       this.store.db
