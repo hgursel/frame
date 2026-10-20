@@ -6,7 +6,7 @@ import { appFixture } from './helpers.js';
 import { WorkbookBridge } from '../server/excel/bridge.js';
 import { handleWorkbookRequest, applyWorkbookProposal } from '../web/excel/operations.js';
 import { captureSelection, verifyProposal } from '../web/excel/workbook.js';
-import { DEFAULT_EXCEL_LIMITS } from '../shared/excel.js';
+import { DEFAULT_EXCEL_LIMITS, jsonBytes } from '../shared/excel.js';
 import {
   workbookPlanSchema,
   rangeBounds,
@@ -271,6 +271,27 @@ test('worksheet operations read across sheets, preserve untouched cells, and edi
       before + (kind.startsWith('insert') ? 1 : -1),
     );
   }
+  const large = fake.addSheet(
+    'Formatting',
+    Array.from({ length: 100 }, () => Array(200).fill(1)),
+  );
+  const longFormat = '0.00' + ' '.repeat(290);
+  const largeFormat = await prepare([
+    {
+      kind: 'format',
+      sheet: 'Formatting',
+      range: 'A1:GR100',
+      format: { numberFormat: longFormat },
+    },
+  ]);
+  const before = fake.writes.length;
+  await applyWorkbookProposal(largeFormat);
+  const batches = fake.writes.slice(before).filter((w: any) => w.numberFormat);
+  assert(
+    batches.length > 1 && batches.every((w: any) => jsonBytes(w.numberFormat) < 512000),
+    'Number format matrices have bounded payloads',
+  );
+  assert.equal(large.formats[99][199], longFormat);
 });
 
 test('workbook proposals retain one-time approval and saved SQL scope on existing sheets', async () => {

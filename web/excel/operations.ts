@@ -260,10 +260,33 @@ export async function applyWorkbookProposal(p: WorkbookProposal, progress?: (s: 
         case 'format': {
           const f = a.format,
             b = rangeBounds(a.range);
-          if (f.numberFormat !== undefined)
-            range.numberFormat = Array.from({ length: b.rows }, () =>
-              Array(b.columns).fill(f.numberFormat),
+          if (f.numberFormat !== undefined) {
+            const width = Math.min(b.columns, 256);
+            const cellsPerBlock = Math.min(
+              5000,
+              Math.max(1, Math.floor(500000 / (jsonBytes(f.numberFormat) + 2))),
             );
+            const height = Math.max(1, Math.floor(cellsPerBlock / width));
+            let formatted = 0;
+            for (let row = 0; row < b.rows; row += height)
+              for (let column = 0; column < b.columns; column += width) {
+                const rows = Math.min(height, b.rows - row),
+                  columns = Math.min(width, b.columns - column);
+                sheet.getRangeByIndexes(
+                  b.row + row,
+                  b.column + column,
+                  rows,
+                  columns,
+                ).numberFormat = Array.from({ length: rows }, () =>
+                  Array(columns).fill(f.numberFormat),
+                );
+                await context.sync();
+                formatted += rows * columns;
+                progress?.(
+                  `Formatting ${a.sheet}!${a.range}: ${formatted.toLocaleString()} of ${(b.rows * b.columns).toLocaleString()} cells…`,
+                );
+              }
+          }
           if (f.bold !== undefined) range.format.font.bold = f.bold;
           if (f.italic !== undefined) range.format.font.italic = f.italic;
           if (f.fontSize !== undefined) range.format.font.size = f.fontSize;
