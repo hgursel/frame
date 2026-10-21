@@ -12,6 +12,7 @@ export function ContextPanel({
   canCompact,
   onCompact,
   onSettings,
+  settingsLabel = 'Settings',
 }: {
   metrics?: ChatMetrics;
   settings?: PublicSettings;
@@ -19,6 +20,7 @@ export function ContextPanel({
   canCompact: boolean;
   onCompact: () => void;
   onSettings: () => void;
+  settingsLabel?: string;
 }) {
   const c = metrics?.context;
   const window = c?.window ?? settings?.contextWindow ?? 32768;
@@ -104,7 +106,7 @@ export function ContextPanel({
           <button className="primary" disabled={!canCompact || running} onClick={onCompact}>
             Compact now
           </button>
-          <button onClick={onSettings}>Settings</button>
+          <button onClick={onSettings}>{settingsLabel}</button>
         </div>
       </div>
     </details>

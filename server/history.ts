@@ -39,6 +39,19 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
       thinking = [thinking, close < 0 ? raw : raw.slice(0, close)].filter(Boolean).join('\n');
       text = close < 0 ? '' : raw.slice(close + 8).trimStart();
     }
+    let excelProposalId: string | undefined;
+    if (
+      m.role === 'toolResult' &&
+      !m.isError &&
+      ['excel_propose_changes', 'excel_edit_workbook'].includes(String(m.toolName))
+    ) {
+      try {
+        const result = JSON.parse(text);
+        if (typeof result.id === 'string') excelProposalId = result.id;
+      } catch {
+        /* Failed or older non-JSON tool output has no proposal. */
+      }
+    }
     if (m.role === 'user') text = collapseSkillInvocation(text);
     const attached = m.role === 'user' ? attachments : undefined;
     if (m.role === 'user') attachments = undefined;
@@ -51,6 +64,7 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
         thinking: thinking ? thinking.slice(0, 100_000) : undefined,
         thinkingActive: m.role === 'assistant' && (openTag || activeThinking),
         attachments: attached,
+        ...(excelProposalId ? { excelProposalId } : {}),
         images:
           m.role === 'user' && Array.isArray(m.content)
             ? m.content

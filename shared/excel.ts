@@ -133,7 +133,7 @@ export interface ExcelProposal {
   id: string;
   runId: string;
   summary: string;
-  status: 'pending' | 'applying' | 'applied' | 'rejected' | 'failed' | 'unknown';
+  status: 'pending' | 'applying' | 'applied' | 'rejected' | 'superseded' | 'failed' | 'unknown';
   change: ExcelChange & { values: ExcelScalar[][] };
   baseline: ExcelSelection;
   sourceNotice?: string;

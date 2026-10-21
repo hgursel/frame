@@ -111,12 +111,18 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
     const proposed = f.excel.propose(a.conversationId, randomUUID(), selection, change);
     assert.equal(f.excel.get(a.conversationId, proposed.id).status, 'pending');
     assert.throws(() => f.excel.get(b.conversationId, proposed.id), /not found/);
-    assert.throws(() => f.excel.turn(a.conversationId, selection), /waiting proposal/);
+    assert.equal(f.excel.turn(a.conversationId, selection).recent[0]!.status, 'superseded');
+    assert.equal(
+      f.excel.get(a.conversationId, proposed.id).status,
+      'pending',
+      'Preparing a follow-up does not retire a proposal',
+    );
     assert.throws(
       () => f.excel.propose(a.conversationId, randomUUID(), selection, change),
       /already waiting/,
     );
     f.excel.transition(a.conversationId, proposed.id, { action: 'claim' });
+    assert.throws(() => f.excel.turn(a.conversationId, selection), /current workbook changes/);
     assert.throws(
       () => f.excel.transition(a.conversationId, proposed.id, { action: 'claim' }),
       /already handled/,
@@ -493,6 +499,12 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
       assert.equal(requests.length, count);
     };
     await run();
+    assert.notEqual(
+      f.runner.snapshot(id).metrics?.context.tokens,
+      null,
+      'Excel metrics persist after the run even when host tools are enabled on the project',
+    );
+    assert(f.runner.snapshot(id).metrics?.generation);
     const names = requests[0].tools.map((t: any) => t.function.name);
     for (const name of [
       'excel_propose_changes',
@@ -502,6 +514,8 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
       'read_knowledge',
       'search_knowledge',
       'mssql_query',
+      'mssql_schema_search',
+      'mssql_schema_read',
       'ask_user_question',
     ])
       assert(names.includes(name), name);
@@ -594,6 +608,92 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
       (await call('/api/excel/config', 'PUT', { maxCells: 900000, maxColumns: 2048 })).statusCode,
       400,
     );
+    // Follow-ups retire only pending proposals after a run is accepted. Invalid sends leave them intact.
+    mode = 'proposal';
+    await run();
+    const original = f.excel.list(id)[0]!;
+    const followup = { requestId: randomUUID(), text: 'Change the calculation', selection };
+    const originalModel = f.store.settings().modelId;
+    f.store.saveSettings({ ...f.store.settings(), modelId: '' });
+    assert.equal((await call(`${url}/messages`, 'POST', followup)).statusCode, 400);
+    assert.equal(f.excel.get(id, original.id).status, 'pending');
+    f.store.saveSettings({ ...f.store.settings(), modelId: originalModel });
+    turn = 0;
+    assert.equal((await call(`${url}/messages`, 'POST', followup)).statusCode, 202);
+    assert.equal(f.excel.get(id, original.id).status, 'superseded');
+    await waitUntil(() => !f.runner.snapshot(id).running);
+    const replacement = f.excel.list(id)[0]!;
+    assert.notEqual(replacement.id, original.id);
+    assert.equal(replacement.status, 'pending');
+    assert.equal((await call(`${url}/messages`, 'POST', followup)).json().duplicate, true);
+    assert.equal(
+      f.excel.get(id, replacement.id).status,
+      'pending',
+      'Retry cannot retire the replacement',
+    );
+    assert.equal(
+      (await call(`${url}/proposals/${original.id}`, 'POST', { action: 'claim' })).statusCode,
+      409,
+    );
+    assert(f.runner.snapshot(id).messages.some((m) => m.excelProposalId === original.id));
+    assert(f.runner.snapshot(id).messages.some((m) => m.excelProposalId === replacement.id));
+    await call(`${url}/proposals/${replacement.id}`, 'POST', { action: 'claim' });
+    assert.equal(
+      (await call(`${url}/messages`, 'POST', { ...followup, requestId: randomUUID() })).statusCode,
+      409,
+    );
+    await call(`${url}/proposals/${replacement.id}`, 'POST', { action: 'applied', result: 'Done' });
+
+    // The same attachment pipeline as Frame: project sources, chat-only files, and images.
+    const source = await f.knowledge.add(
+      p.id,
+      'schema-notes.txt',
+      Buffer.from('Schema sentinel: the total column is NetAmount.'),
+    );
+    const files = f.knowledge.forConversation(id);
+    const upload = await files.add(p.id, 'sample.csv', Buffer.from('Name,Amount\nExample,42'));
+    const foreign = await f.knowledge
+      .forConversation(other.conversationId)
+      .add(p.id, 'other.txt', Buffer.from('Private other chat'));
+    const attach = async (documentIds: string[], images: unknown[] = []) =>
+      call(`${url}/messages`, 'POST', {
+        requestId: randomUUID(),
+        text: '',
+        selection,
+        documentIds,
+        images,
+      });
+    assert.equal((await attach([foreign.id])).statusCode, 404);
+    assert.equal((await attach([source.id, source.id])).statusCode, 400);
+    assert.equal((await attach([], [{ mimeType: 'image/png', data: 'invalid' }])).statusCode, 400);
+    const image = {
+      mimeType: 'image/png',
+      data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a/yUAAAAASUVORK5CYII=',
+    };
+    turn = 0;
+    const beforeAttachments = requests.length;
+    assert.equal((await attach([source.id, upload.id], [image])).statusCode, 202);
+    await waitUntil(() => !f.runner.snapshot(id).running);
+    const sent = JSON.stringify(requests[beforeAttachments].messages);
+    assert(sent.includes('NetAmount'));
+    assert(sent.includes('Example,42'));
+    assert(sent.includes('image_url'));
+    const lastUser = f.runner
+      .snapshot(id)
+      .messages.filter((m) => m.role === 'user')
+      .at(-1)!;
+    assert.deepEqual(
+      lastUser.attachments?.map((d) => d.id),
+      [source.id, upload.id],
+    );
+    assert.equal(lastUser.images?.length, 1);
+    assert.deepEqual(
+      f.knowledge.list(p.id).map((d) => d.id),
+      [source.id],
+      'Upload did not enter project knowledge',
+    );
+    assert.equal(f.excel.get(id, replacement.id).status, 'applied');
+    f.excel.cancel(id);
     await (f.maintenance as any).conversation(
       { projectId: p.id, kind: 'conversation', id },
       new AbortController().signal,

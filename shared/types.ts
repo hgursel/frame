@@ -42,6 +42,7 @@ export interface DisplayMessage {
   attachments?: { id: string; name: string }[];
   images?: { id: string }[];
   proposal?: { title: string; text: string; targetId?: string; revision?: string };
+  excelProposalId?: string;
   knowledgeSourceId?: string;
   sqlResult?: SqlResult;
   chart?: ChartRef;

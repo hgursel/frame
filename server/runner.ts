@@ -466,7 +466,10 @@ export class Runner extends EventEmitter {
       if (active.snapshot.metrics && !conversation.incognito)
         this.store.setMeta(
           `metrics:${id}`,
-          JSON.stringify({ key: metricsKey(settings, project), metrics: active.snapshot.metrics }),
+          JSON.stringify({
+            key: metricsKey(settings, originalProject),
+            metrics: active.snapshot.metrics,
+          }),
         );
       this.active.delete(id);
       this.emit(id);
