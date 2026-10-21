@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { api } from '../api.js';
-import type { Project, ChatSnapshot } from '../../shared/types.js';
+import type {
+  Project,
+  ChatSnapshot,
+  PublicSettings,
+  KnowledgeDocument,
+} from '../../shared/types.js';
 import {
   DEFAULT_EXCEL_LIMITS,
   type ExcelLimits,
@@ -23,6 +28,10 @@ import {
 import { ConversationMessages } from '../ConversationMessages.js';
 import { LibraryReader } from '../Library.js';
 import { QuestionCard } from '../QuestionCard.js';
+import { ContextPanel, Throughput } from '../ContextPanel.js';
+import { AttachmentPicker } from '../AttachmentPicker.js';
+import { ImagePreviews, useChatImages } from '../ChatImages.js';
+import type { ChatImage } from '../../shared/images.js';
 import './style.css';
 import '../activity.css';
 
@@ -366,6 +375,13 @@ function App() {
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState('');
+  const [settings, setSettings] = useState<PublicSettings>();
+  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
+  const [chatFiles, setChatFiles] = useState<KnowledgeDocument[]>([]);
+  const [attached, setAttached] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const chatImages = useChatImages(session?.conversationId || '');
+  const working = useRef(false);
   const [limits, setLimits] = useState<ExcelLimits>(DEFAULT_EXCEL_LIMITS);
   const [review, setReview] = useState<AnyExcelProposal>();
   const [selectedAddress, setSelectedAddress] = useState('Current cell');
@@ -376,9 +392,16 @@ function App() {
     pinned = useRef(true);
   const applying = useRef(false),
     pollVersion = useRef(0);
-  const outbox = useRef<{ requestId: string; text: string; selection: ExcelSelection } | undefined>(
-    undefined,
-  );
+  const outbox = useRef<
+    | {
+        requestId: string;
+        text: string;
+        selection: ExcelSelection;
+        documentIds: string[];
+        images: ChatImage[];
+      }
+    | undefined
+  >(undefined);
   const loadProjects = async () => {
     const list = await api<Project[]>('/projects');
     setProjects(list);
@@ -420,6 +443,29 @@ function App() {
         .then((c) => setLimits(c.limits))
         .catch((e) => setError(e.message));
   }, [signedIn]);
+  useEffect(() => {
+    if (signedIn)
+      void api<PublicSettings>('/settings')
+        .then(setSettings)
+        .catch((e) => setError(e.message));
+  }, [signedIn]);
+  useEffect(() => {
+    setDocuments([]);
+    setChatFiles([]);
+    setAttached([]);
+    if (!session) return;
+    let live = true;
+    void api<KnowledgeDocument[]>(`/projects/${project}/documents`)
+      .then((docs) => {
+        if (live) setDocuments(docs);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [session, project]);
   useEffect(() => {
     if (!ready) return;
     let alive = true,
@@ -489,6 +535,8 @@ function App() {
     };
   }, [session, signedIn, ready]);
   const action = async (work: () => Promise<void>) => {
+    if (working.current) return;
+    working.current = true;
     setBusy(true);
     setError('');
     setNotice('');
@@ -497,6 +545,7 @@ function App() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      working.current = false;
       setBusy(false);
     }
   };
@@ -535,7 +584,7 @@ function App() {
           'Excel completed the change, but Frame did not acknowledge the receipt. Do not apply it again. Inspect the workbook and start a fresh session if needed.',
         );
       }
-      setNotice(`${result} Continue here; your next message uses the cells selected in Excel.`);
+      setNotice('');
       setReview(undefined);
     } finally {
       applying.current = false;
@@ -543,6 +592,115 @@ function App() {
     }
   };
   const pending = state?.proposals.some((p) => p.status === 'pending' || p.status === 'applying');
+  const applyingChanges = state?.proposals.some((p) => p.status === 'applying');
+  const attachmentBusy =
+    busy ||
+    uploading ||
+    chatImages.busy ||
+    !!outbox.current ||
+    !!state?.snapshot.running ||
+    !!applyingChanges;
+  const canSend =
+    ready &&
+    !busy &&
+    !uploading &&
+    !chatImages.busy &&
+    !applyingChanges &&
+    !state?.snapshot.running &&
+    (!!outbox.current || !!text.trim() || !!attached.length || !!chatImages.images.length);
+  const submit = () => {
+    if (!session || !canSend) return;
+    void action(async () => {
+      if (!outbox.current) {
+        const current = await captureSelection(limits);
+        outbox.current = {
+          requestId: crypto.randomUUID(),
+          text,
+          selection: current,
+          documentIds: [...attached],
+          images: chatImages.images.map(({ name: _, ...image }) => image),
+        };
+      }
+      try {
+        await sessionApi(session, '/messages', 'POST', outbox.current);
+      } catch (e) {
+        const status = (e as { status?: number }).status;
+        if (status && status >= 400 && status < 500) outbox.current = undefined;
+        else
+          throw new Error(
+            'Send was not acknowledged. Retry the original request safely using the same request ID.',
+          );
+        throw e;
+      }
+      outbox.current = undefined;
+      setText('');
+      setAttached([]);
+      chatImages.setImages([]);
+      pinned.current = true;
+      await refresh();
+    });
+  };
+  const linkedProposals = new Set(
+    state?.snapshot.messages.map((m) => m.excelProposalId).filter(Boolean),
+  );
+  const unlinked = state?.proposals.filter((p) => !linkedProposals.has(p.id)) || [];
+  const proposalCard = (p: ExcelProposalSummary) =>
+    session && (
+      <section
+        key={p.id}
+        data-proposal-id={p.id}
+        className={`excel-proposal ${p.status === 'pending' || p.status === 'applying' ? '' : 'excel-proposal-complete'}`}
+      >
+        <div className="excel-proposal-heading">
+          <h2>{p.summary}</h2>
+          <span className="excel-badge">{p.status === 'superseded' ? 'Replaced' : p.status}</span>
+        </div>
+        {(p.status === 'pending' || p.status === 'applying') && (
+          <p>
+            {p.target} ·{' '}
+            {p.operations
+              ? `${p.operations} operation${p.operations === 1 ? '' : 's'}`
+              : `${p.rows.toLocaleString()} × ${p.columns.toLocaleString()} cells`}
+          </p>
+        )}
+        <button
+          disabled={busy || (p.status === 'pending' && !!state?.snapshot.running)}
+          onClick={() =>
+            void action(async () => {
+              setReview(await sessionApi<AnyExcelProposal>(session, `/proposals/${p.id}`));
+            })
+          }
+        >
+          {p.status === 'pending' ? 'Review changes' : 'View changes'}
+        </button>
+        {p.status === 'pending' && (
+          <p className="excel-small">Send a follow-up to replace these pending changes.</p>
+        )}
+        {p.status === 'applying' && (
+          <div className="excel-warning">
+            <p>
+              Apply was claimed. If the connection failed, inspect the workbook; never replay this
+              batch.
+            </p>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void action(async () => {
+                  await sessionApi(session, `/proposals/${p.id}`, 'POST', {
+                    action: 'unknown',
+                    result:
+                      'User closed an uncertain Apply after inspecting the workbook. Do not replay.',
+                  });
+                  await refresh();
+                })
+              }
+            >
+              I inspected the workbook — close this batch
+            </button>
+          </div>
+        )}
+      </section>
+    );
   return (
     <main className={`excel-app ${signedIn && session ? 'excel-session' : ''}`}>
       <header>
@@ -551,7 +709,6 @@ function App() {
           <h1>Frame for Excel</h1>
           <p>Your knowledge. Your infrastructure.</p>
         </div>
-        <span className="excel-badge">Pilot</span>
       </header>
       <div
         className="excel-scroll"
@@ -648,7 +805,7 @@ function App() {
               <>
                 <div className="excel-actions">
                   <button
-                    disabled={busy || !!state?.snapshot.running || pending}
+                    disabled={attachmentBusy || pending}
                     onClick={() => {
                       setSession(undefined);
                       setState(undefined);
@@ -662,9 +819,8 @@ function App() {
                     Open Frame ↗
                   </a>
                 </div>
-                <section className="excel-context">
-                  <strong>Workbook context</strong>
-                  <p>Selected: {selectedAddress}</p>
+                <details className="excel-context">
+                  <summary>Selected: {selectedAddress}</summary>
                   <p className="excel-small">
                     Selected cells are included automatically when you send. Blank sheets work too.
                     You can switch ranges or sheets in this conversation. Frame can read other
@@ -693,8 +849,16 @@ function App() {
                       </ul>
                     </details>
                   )}
-                </section>
+                </details>
                 <section aria-label="Excel conversation" className="excel-messages">
+                  {unlinked.some((p) => p.status !== 'pending' && p.status !== 'applying') && (
+                    <details className="excel-earlier-changes">
+                      <summary>Earlier changes</summary>
+                      {unlinked
+                        .filter((p) => p.status !== 'pending' && p.status !== 'applying')
+                        .map(proposalCard)}
+                    </details>
+                  )}
                   {state && (
                     <ConversationMessages
                       snapshot={state.snapshot}
@@ -703,9 +867,20 @@ function App() {
                       stopping={state.snapshot.status === 'Stopping'}
                       canSave={false}
                       onSave={() => {}}
+                      renderTurnFooter={(messages) =>
+                        messages.flatMap(({ message }) => {
+                          const proposal = state.proposals.find(
+                            (p) => p.id === message.excelProposalId,
+                          );
+                          return proposal ? [proposalCard(proposal)] : [];
+                        })
+                      }
                     />
                   )}
                 </section>
+                {unlinked
+                  .filter((p) => p.status === 'pending' || p.status === 'applying')
+                  .map(proposalCard)}
                 {state?.snapshot.question && (
                   <QuestionCard
                     key={state.snapshot.question.id}
@@ -713,56 +888,6 @@ function App() {
                     chatId={session.conversationId}
                   />
                 )}
-                {state?.proposals.map((p) => (
-                  <section key={p.id} className="excel-proposal">
-                    <div className="excel-proposal-heading">
-                      <h2>{p.summary}</h2>
-                      <span className="excel-badge">{p.status}</span>
-                    </div>
-                    <p>
-                      {p.target} ·{' '}
-                      {p.operations
-                        ? `${p.operations} operation${p.operations === 1 ? '' : 's'}`
-                        : `${p.rows.toLocaleString()} × ${p.columns.toLocaleString()} cells`}
-                    </p>
-                    <button
-                      disabled={busy}
-                      onClick={() =>
-                        void action(async () => {
-                          setReview(
-                            await sessionApi<AnyExcelProposal>(session, `/proposals/${p.id}`),
-                          );
-                        })
-                      }
-                    >
-                      {p.status === 'pending' ? 'Review changes' : 'View changes'}
-                    </button>
-                    {p.status === 'applying' && (
-                      <div className="excel-warning">
-                        <p>
-                          Apply was claimed. If the connection failed, inspect the workbook; never
-                          replay this batch.
-                        </p>
-                        <button
-                          disabled={busy}
-                          onClick={() =>
-                            void action(async () => {
-                              await sessionApi(session, `/proposals/${p.id}`, 'POST', {
-                                action: 'unknown',
-                                result:
-                                  'User closed an uncertain Apply after inspecting the workbook. Do not replay.',
-                              });
-                              await refresh();
-                            })
-                          }
-                        >
-                          I inspected the workbook — close this batch
-                        </button>
-                      </div>
-                    )}
-                    {p.result && <p>{p.result}</p>}
-                  </section>
-                ))}
               </>
             )}
           </>
@@ -770,68 +895,162 @@ function App() {
       </div>
       {signedIn && session && (
         <footer className="excel-dock">
-          <p role="status" className="excel-small">
-            {state?.snapshot.status || 'Ready'}
-            {state?.snapshot.error ? ` · ${state.snapshot.error}` : ''}
-          </p>
-          {state?.snapshot.running && (
-            <button
-              disabled={busy}
-              onClick={() =>
-                void action(async () => {
-                  await api(`/conversations/${session.conversationId}/stop`, 'POST', {
-                    runId: state.snapshot.runId,
-                  });
-                  await refresh();
-                })
-              }
-            >
-              Stop
-            </button>
+          {state?.snapshot.error && (
+            <p role="alert" className="excel-error">
+              {state.snapshot.error}
+            </p>
           )}
           <form
             className="excel-composer"
             onSubmit={(e) => {
               e.preventDefault();
-              void action(async () => {
-                if (!outbox.current) {
-                  const current = await captureSelection(limits);
-                  outbox.current = { requestId: crypto.randomUUID(), text, selection: current };
-                }
-                try {
-                  await sessionApi(session, '/messages', 'POST', outbox.current);
-                } catch (e) {
-                  const status = (e as { status?: number }).status;
-                  if (status && status >= 400 && status < 500) outbox.current = undefined;
-                  else
-                    throw new Error(
-                      'Send was not acknowledged. Retry original request safely using the same request ID, or review history before starting another conversation.',
-                    );
-                  throw e;
-                }
-                outbox.current = undefined;
-                setText('');
-                await refresh();
-              });
+              submit();
             }}
           >
-            <label>
-              Ask Frame
-              <textarea
-                disabled={!!outbox.current}
-                placeholder="Explain a formula, reconcile data, or import a SQL result…"
-                maxLength={16000}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
+            {!!chatImages.images.length && (
+              <ImagePreviews
+                images={chatImages.images}
+                disabled={attachmentBusy}
+                onRemove={(index) =>
+                  chatImages.setImages((images) => images.filter((_, i) => i !== index))
+                }
               />
-            </label>
-            <button
-              className="primary"
-              disabled={!ready || busy || !text.trim() || pending || state?.snapshot.running}
-            >
-              {outbox.current ? 'Retry original request' : 'Send'}
-            </button>
+            )}
+            {!!attached.length && (
+              <div className="composer-attachments">
+                {attached.map((id) => {
+                  const name =
+                    [...documents, ...chatFiles].find((d) => d.id === id)?.name || 'Document';
+                  return (
+                    <span key={id}>
+                      {name}
+                      <button
+                        type="button"
+                        aria-label={`Remove attachment ${name}`}
+                        disabled={attachmentBusy}
+                        onClick={() => setAttached((ids) => ids.filter((value) => value !== id))}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <textarea
+              aria-label="Message Frame"
+              disabled={busy || !!outbox.current}
+              placeholder="Ask about your workbook…"
+              maxLength={16000}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onPaste={(e) => {
+                const files = [...e.clipboardData.items]
+                  .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+                  .map((item) => item.getAsFile())
+                  .filter((file): file is File => !!file);
+                if (!files.length) return;
+                e.preventDefault();
+                if (!attachmentBusy) void chatImages.add(files).catch((e) => setError(e.message));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+            />
+            <div className="excel-composer-actions">
+              <AttachmentPicker
+                key={session.conversationId}
+                projectId={project}
+                documents={documents}
+                attached={attached}
+                disabled={attachmentBusy}
+                onBusy={setUploading}
+                onImages={(files) => {
+                  void chatImages.add(files).catch((e) => setError(e.message));
+                }}
+                onToggle={(id) =>
+                  setAttached((ids) =>
+                    ids.includes(id) ? ids.filter((v) => v !== id) : [...ids, id].slice(0, 5),
+                  )
+                }
+                onUploadFiles={async (files) => {
+                  for (const file of files) {
+                    const form = new FormData();
+                    form.append('file', file);
+                    const doc = await api<KnowledgeDocument>(
+                      `/conversations/${session.conversationId}/files`,
+                      'POST',
+                      form,
+                    );
+                    setChatFiles((docs) => [doc, ...docs.filter((d) => d.id !== doc.id)]);
+                    setAttached((ids) => [...new Set([...ids, doc.id])].slice(0, 5));
+                  }
+                }}
+              />
+              {state?.snapshot.running ? (
+                <button
+                  type="button"
+                  className="excel-send"
+                  aria-label="Stop generation"
+                  title="Stop generation"
+                  disabled={busy || state.snapshot.status === 'Stopping'}
+                  onClick={() =>
+                    void action(async () => {
+                      await api(`/conversations/${session.conversationId}/stop`, 'POST', {
+                        runId: state.snapshot.runId,
+                      });
+                      await refresh();
+                    })
+                  }
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                    <rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  className="excel-send"
+                  disabled={!canSend}
+                  aria-label={outbox.current ? 'Retry original request' : 'Send message'}
+                  title={outbox.current ? 'Retry original request' : 'Send message'}
+                >
+                  {busy ? '…' : outbox.current ? '↻' : '↑'}
+                </button>
+              )}
+            </div>
           </form>
+          <div className="composer-metrics">
+            <ContextPanel
+              metrics={state?.snapshot.metrics}
+              settings={settings}
+              running={!!state?.snapshot.running || busy}
+              canCompact={
+                !attachmentBusy &&
+                !pending &&
+                !!state?.snapshot.messages.some((m) => m.role === 'assistant')
+              }
+              onCompact={() =>
+                void action(async () => {
+                  await api(`/conversations/${session.conversationId}/compact`, 'POST', {
+                    requestId: crypto.randomUUID(),
+                  });
+                  await refresh();
+                })
+              }
+              settingsLabel="Open Frame"
+              onSettings={() => window.open(`${location.origin}/`, '_blank', 'noopener,noreferrer')}
+            />
+            <Throughput
+              metrics={state?.snapshot.metrics}
+              running={
+                !!state?.snapshot.running &&
+                ['Responding', 'Thinking'].includes(state.snapshot.status)
+              }
+            />
+          </div>
         </footer>
       )}
       {review && session && (

@@ -23,6 +23,16 @@ Conversation history is saved in the selected Frame project using Pi sessions. W
 
 Excel conversations are excluded from automatic project learning. To retain a useful method or policy explanation, open its history in Frame and explicitly save the reviewed content to knowledge. If Send loses its acknowledgment, **Retry original request** reuses its original request ID; it does not automatically rerun an accepted task. If Apply remains uncertain, inspect the workbook before closing the batch using the recovery button.
 
+## Chat controls and attachments
+
+The composer has one send arrow that becomes a stop button during a run. Enter sends; Shift+Enter adds a line. Activity appears in the conversation. Expand **Selected: …** for workbook capture details.
+
+Review controls stay with the response that proposed the changes. After Apply or replacement, the compact entry offers **View changes**. To revise an unapplied proposal, send a follow-up: the accepted message marks the old proposal **Replaced**, with no workbook edits. Invalid or rejected submissions leave the old proposal available. A batch already being applied must finish or be resolved through its recovery control first.
+
+Use **+** to upload CSV, TXT, Markdown, PDF, or DOCX files; select project knowledge; or upload images. PNG/JPEG/WebP uploads and pasted screenshots use Frame's existing image conversion and limits. Images require a vision-capable local model. Files stay in this conversation and are sent with your next message; they do not automatically enter project knowledge or import rows into the workbook. Up to five file/knowledge attachments and four images can be sent per message, including attachment-only messages. Large files are supplied as bounded excerpts with readers for additional sections.
+
+Below the input, **Context** shows usage and the existing automatic compaction settings, plus **Compact now** when idle with no unresolved proposal. Compaction preserves visible history and does not replay workbook edits. **Open Frame** opens the main workspace, where context settings can be changed. Throughput shows the current/last response rate, marking estimates as in Frame. Project knowledge and database-schema retrieval behavior is unchanged.
+
 ## 1. Choose a hostname on your Windows computer
 
 Keep the Frame server's IP stable. Open Notepad **as administrator**, open `C:\Windows\System32\drivers\etc\hosts` with the All files filter, and add a line replacing this example IP:
@@ -63,7 +73,7 @@ server {
     ssl_certificate /etc/frame/tls/frame.test.crt;
     ssl_certificate_key /etc/frame/tls/frame.test.key;
     ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 16m;
+    client_max_body_size 32m;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -115,6 +125,9 @@ Automated tests use a simulated Office host and a local mock model. They do not 
 7. Test Stop, expired sign-in, lost network during generation/Apply, pane reload, Save As, and two workbook windows. Never retry a batch marked applying/unknown; inspect the workbook and start a new session. No changes should happen merely by reopening a pane or viewing Frame chat.
 8. Try 500 rows × 200 columns, then a wide selection up to 1,024 columns within the cell cap. Verify section bounds, representative values/formulas, paginated previews, composer visibility while scrolling, and the Apply footer at a narrow pane width. Confirm an interrupted multi-batch Apply is never replayed. Increase configurable limits only after testing performance on your Windows machine.
 9. In one conversation, start on a blank sheet, generate content larger than the selected cell, switch selections/sheets, and ask a follow-up referencing earlier data. Request a read from a different sheet. Verify destinations do not move when selection changes. Test number formats, table/chart creation and updates, table filters, sorting with headers, and separate row/column insertion/deletion batches on a disposable workbook. Compare native Excel formula adjustments and table behaviors with the preview; the simulated host does not reproduce Excel's full calculation or reference-update engine.
+
+10. Revise a pending proposal by sending a follow-up without Apply/Reject. Confirm the old proposal says Replaced, cannot be applied, and stays before the next turn. Verify applied changes also stay in history. Test an interrupted Send and retry: the replacement must not run twice.
+11. Attach a knowledge page, CSV/TXT file, and screenshot (upload and paste). Confirm the model receives them, earlier attachments remain readable, and uploads do not appear in project knowledge. Open Context and compact an idle chat; visible messages and workbook values must remain unchanged. Check menus and errors at a 320-pixel pane width.
 
 ## Microsoft references
 

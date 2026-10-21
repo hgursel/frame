@@ -144,8 +144,10 @@ export function ConversationMessages({
   stopping,
   onSave,
   canSave = true,
+  renderTurnFooter,
 }: {
   canSave?: boolean;
+  renderTurnFooter?: (messages: IndexedMessage[]) => React.ReactNode;
   snapshot: ChatSnapshot;
   chatId: string;
   connected: boolean;
@@ -265,6 +267,7 @@ export function ConversationMessages({
                 })}
               </section>
             )}
+            {renderTurnFooter?.(turn.messages)}
           </React.Fragment>
         );
       })}

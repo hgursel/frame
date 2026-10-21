@@ -107,6 +107,9 @@ The registered-script plugin with per-operation JSON inputs, approvals, and `.en
 
 ## Frame for Excel (implemented pilot; Windows acceptance pending)
 
+- Compact composer with one send/stop control, expandable selection details, and conversation-only uploads/knowledge attachments using Frame's existing file and image handling. Screenshot paste, context usage, observed throughput, and manual compaction reuse the shared UI/backend. Retrieval behavior is unchanged.
+- Proposal controls stay with their original response. Applied/replaced proposals collapse to a short history entry; accepted follow-ups supersede pending proposals while failed submissions leave them reviewable. Applying/uncertain batches retain the existing recovery controls. Request retries cannot replace a newer proposal.
+
 - Automatic selection input with blank-sheet support; no Capture button. Selection snapshots remain historical conversation context across cell/sheet changes. A pane-bound read-only bridge provides on-demand reads of any sheet in the current workbook. Existing-sheet proposals cover partial values/formulas, formatting, table/chart creation and updates, sorting/filtering, and separate whole-row/column insertion/deletion batches with explicit destinations and Apply.
 
 - Larger configurable captures (default 100,000 cells / 1,024 columns), compact model context, on-demand scoped section reads, visible supplied ranges, and bounded Excel read/write batches. Stored proposal summaries avoid transferring or parsing large validation snapshots during polling. Grouped activity reuses Frame's web renderer; the composer and review-panel actions remain visible while their content scrolls.

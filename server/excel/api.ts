@@ -1,3 +1,6 @@
+import { chatAttachments } from '../chat-attachments.js';
+import { imagesSchema } from '../images.js';
+import type { Knowledge } from '../knowledge.js';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { Runner } from '../runner.js';
@@ -11,6 +14,7 @@ export function excelApi(
   app: FastifyInstance,
   excel: ExcelSessions,
   runner: Runner,
+  knowledge: Knowledge,
   origin: string,
   references: (
     projectId: string,
@@ -118,17 +122,23 @@ export function excelApi(
   );
   app.post<{ Params: { id: string } }>(
     '/api/excel/sessions/:id/messages',
-    { bodyLimit: MAX_SELECTION_BYTES + 100000 },
+    { bodyLimit: MAX_SELECTION_BYTES + 12 * 1024 * 1024 },
     async (request, reply) => {
       const id = request.params.id;
       auth(id, request.headers['x-frame-excel-key']);
       const b = z
         .object({
           requestId: z.uuid(),
-          text: z.string().trim().min(1).max(16000),
+          text: z.string().trim().max(16000),
+          documentIds: z.array(z.uuid()).max(5).default([]),
+          images: imagesSchema,
           selection: selectionSchema,
         })
         .strict()
+        .refine(
+          (b) => !!b.text || b.documentIds.length > 0 || b.images.length > 0,
+          'Enter a message or attach a file or image.',
+        )
         .parse(request.body);
       // A retry of an accepted request only returns its state, never replays work.
       const prior = excel.store.db
@@ -139,25 +149,31 @@ export function excelApi(
           return reply.code(409).send({ error: 'Request ID already used.' });
         return reply.code(202).send({ id: b.requestId, status: prior.status, duplicate: true });
       }
-      const turn = excel.turn(id, b.selection);
       const projectId = excel.store.conversation(id)!.projectId;
-      const recalled = await references(projectId, b.text);
-      return reply
-        .code(202)
-        .send(
-          runner.start(
-            id,
-            b.requestId,
-            b.text,
-            undefined,
-            undefined,
-            recalled.catalog,
-            'prompt',
-            recalled.reference,
-            undefined,
-            turn,
-          ),
+      return knowledge.write(projectId, async () => {
+        const documents = await chatAttachments(knowledge, id, projectId, b.documentIds);
+        const recalled = await references(projectId, b.text);
+        // Recheck after asynchronous reads: Apply may have been claimed in the meantime.
+        const turn = excel.turn(id, b.selection);
+        const started = runner.start(
+          id,
+          b.requestId,
+          b.text ||
+            (b.documentIds.length
+              ? 'Please review the attached file(s).'
+              : 'Please describe the attached image(s).'),
+          documents,
+          undefined,
+          recalled.catalog,
+          'prompt',
+          recalled.reference,
+          b.images,
+          turn,
         );
+        // start() is synchronous. Only retire pending edits once the new run is accepted.
+        if (!started.duplicate) excel.supersedePending(id);
+        return reply.code(202).send(started);
+      });
     },
   );
   app.post<{ Params: { id: string; proposal: string } }>(

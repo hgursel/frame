@@ -116,6 +116,11 @@ const project = ctx.store.createProject({
   instructions: '',
   toolsEnabled: true,
 });
+const knowledgeDoc = await ctx.knowledge.add(
+  project.id,
+  'Workbook rules.txt',
+  Buffer.from('Use NetAmount for the total.'),
+);
 ctx.store.saveSettings({
   ...ctx.store.settings(),
   modelId: 'local',
@@ -158,13 +163,14 @@ try {
   await expect(page.getByRole('button', { name: 'Capture selection' })).toHaveCount(0);
   const send = async (text: string) => {
     // The background composer is inert until the asynchronous review action closes its modal.
-    await expect(page.getByRole('dialog')).not.toBeVisible();
-    await page.getByLabel('Ask Frame').fill(text);
-    await expect(page.getByLabel('Ask Frame')).toHaveValue(text);
-    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
+    await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).not.toBeVisible();
+    await page.getByLabel('Message Frame').fill(text);
+    await expect(page.getByLabel('Message Frame')).toHaveValue(text);
+    await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled({
       timeout: 5000,
     });
-    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await expect(page.locator('.message.user').last()).toContainText(text, { timeout: 25000 });
     await page
       .getByRole('button', { name: 'Review changes', exact: true })
       .click({ timeout: 25000 });
@@ -181,7 +187,7 @@ try {
     1,
     'Tool work shares one collapsed activity row',
   );
-  const composer = await page.getByLabel('Ask Frame').boundingBox();
+  const composer = await page.getByLabel('Message Frame').boundingBox();
   assert(
     composer && composer.y + composer.height < 900 && composer.y > 650,
     'Composer stays at bottom',
@@ -190,7 +196,7 @@ try {
     el.scrollTop = 0;
   });
   assert.deepEqual(
-    await page.getByLabel('Ask Frame').boundingBox(),
+    await page.getByLabel('Message Frame').boundingBox(),
     composer,
     'History scroll never moves composer',
   );
@@ -232,6 +238,31 @@ try {
   await page.getByRole('button', { name: 'Apply changes' }).click();
   await expect(page.getByText('applied', { exact: true })).toBeVisible();
   assert.equal(await page.evaluate(() => (window as any).fakeExcel.source.formulas[1][1]), '=A2*3');
+  await expect(page.getByText('Pilot', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.excel-dock [role="status"]')).toHaveCount(0);
+  await expect(
+    page.locator('.excel-composer').getByRole('button', { name: 'Send message' }),
+  ).toHaveCount(1);
+  await expect(page.locator('.excel-context')).not.toHaveAttribute('open');
+  await send('Prepare another total');
+  await page.getByRole('button', { name: 'Close review' }).click();
+  const oldId = ctx.excel.list(
+    ctx.store.conversations().find((c: any) => ctx.excel.has(c.id)).id,
+  )[0].id;
+  await send('Actually change that pending total');
+  await page.getByRole('button', { name: 'Close review' }).click();
+  await expect(page.locator(`[data-proposal-id="${oldId}"]`)).toContainText('Replaced');
+  assert(
+    await page.locator(`[data-proposal-id="${oldId}"]`).evaluate((card) => {
+      const next = [...document.querySelectorAll('.message.user')].find((el) =>
+        el.textContent?.includes('Actually change'),
+      );
+      return !!next && !!(card.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }),
+    'Old changes stay before the next user turn',
+  );
+  await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+  await page.getByRole('button', { name: 'Reject', exact: true }).click();
   changes = {
     summary: 'Summary and chart',
     target: 'new_sheet',
@@ -245,7 +276,11 @@ try {
   };
   await send('Create a summary table and chart');
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByText('Created worksheet Summary.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).not.toBeVisible();
+  assert.equal(
+    ctx.excel.list(ctx.store.conversations().find((c: any) => ctx.excel.has(c.id)).id)[0].result,
+    'Created worksheet Summary.',
+  );
   const written = await page.evaluate(() => (window as any).fakeExcel.writes);
   assert(written.includes('table'));
   assert(written.includes('chart'));
@@ -276,7 +311,7 @@ try {
   assert.equal(largeCapture.values.length, 500);
   assert.equal(largeCapture.values[499][199], 99999, 'Client capture reads every block');
   await page.getByRole('button', { name: 'Reject', exact: true }).click();
-  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).not.toBeVisible();
   const operation = randomUUID();
   ctx.excel.capture(conversationId, operation, {
     columns: Array.from({ length: 200 }, (_, c) => `Column ${c + 1}`),
@@ -293,7 +328,9 @@ try {
     });
   proposeImport('Large import');
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('500 rows × 200 columns');
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).toContainText(
+    '500 rows × 200 columns',
+  );
   await page.getByRole('button', { name: 'Next columns' }).click();
   await page.getByRole('button', { name: 'Next rows' }).click();
   const applyBounds = await page.getByRole('button', { name: 'Apply changes' }).boundingBox();
@@ -306,9 +343,10 @@ try {
     'Review scrolling never moves approval controls',
   );
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByText('Created worksheet Large import.', { exact: true })).toBeVisible({
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).not.toBeVisible({
     timeout: 25000,
   });
+  assert.equal(ctx.excel.list(conversationId)[0].result, 'Created worksheet Large import.');
   const largeWritten = await page.evaluate(() => {
     const fake = (window as any).fakeExcel,
       sheet = fake.sheets.find((s: any) => s.name === 'Large import');
@@ -331,7 +369,7 @@ try {
     (window as any).fakeExcel.writesUntilFailure = 1;
   });
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByRole('dialog')).toContainText('unknown');
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).toContainText('unknown');
   assert.equal(
     await page.evaluate(
       () => (window as any).fakeExcel.sheets.find((s: any) => s.name === 'Uncertain').values.length,
@@ -352,7 +390,7 @@ try {
     ctx.excel.list(ctx.store.conversations().find((c: any) => ctx.excel.has(c.id)).id)[0].status,
     'unknown',
   );
-  assert.equal(ctx.knowledge.list(project.id).length, 0);
+  assert.equal(ctx.knowledge.list(project.id).length, 1);
   await page.evaluate(async () => {
     const fake = (window as any).fakeExcel;
     fake.addSheet('Blank', [['']]);
@@ -398,7 +436,9 @@ try {
     0,
     'Automatic workbook reads and preview never write',
   );
-  await expect(page.getByRole('dialog')).toContainText('Blank!A1:B3');
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).toContainText(
+    'Blank!A1:B3',
+  );
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace(/\.png$/, '-excel-workbook.png'),
@@ -413,7 +453,7 @@ try {
     });
   });
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).not.toBeVisible();
   assert.deepEqual(
     await page.evaluate(
       () => (window as any).fakeExcel.sheets.find((s: any) => s.name === 'Blank').values,
@@ -461,13 +501,97 @@ try {
     'Earlier selection snapshot is retained',
   );
   await page.getByRole('button', { name: 'Apply changes' }).click();
-  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Review Excel changes' })).not.toBeVisible();
   assert.equal(await page.evaluate(() => (window as any).fakeExcel.source.formulas[1][1]), '=A2*5');
   assert.equal(await page.evaluate(() => (window as any).fakeExcel.source.values[1][0]), 2);
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace(/\.png$/, '-excel-conversation.png'),
     });
+  // Attachments use the same conversation and never become project knowledge automatically.
+  workbookCalls = [];
+  workbookStep = 0;
+  await page.getByRole('button', { name: 'Add attachments' }).click();
+  await page.getByRole('button', { name: 'Attach from knowledge', exact: false }).click();
+  await page.getByRole('checkbox', { name: /Workbook rules/ }).check();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Remove attachment Workbook rules.txt' }),
+  ).toBeVisible();
+  await page.getByLabel('Upload chat files').setInputFiles({
+    name: 'sample.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Name,Amount\nExample,42'),
+  });
+  await expect(page.getByRole('button', { name: 'Remove attachment sample.csv' })).toBeVisible();
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 80;
+    canvas.height = 60;
+    canvas.getContext('2d')!.fillRect(0, 0, 80, 60);
+    return canvas.toDataURL().split(',')[1]!;
+  });
+  await page.getByLabel('Upload chat images').setInputFiles({
+    name: 'upload.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(image, 'base64'),
+  });
+  await expect(page.getByAltText('upload.png')).toBeVisible();
+  await page.getByRole('button', { name: 'Remove image 1' }).click();
+  await page.getByLabel('Message Frame').evaluate((el, data) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.items.add(
+      new File([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], 'pasted.png', {
+        type: 'image/png',
+      }),
+    );
+    el.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }),
+    );
+  }, image);
+  await expect(page.getByAltText('pasted.png')).toBeVisible();
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.locator('.message.user').last()).toContainText('sample.csv');
+  await expect(page.locator('.message.user').last().getByRole('img')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Stop generation' })).toHaveCount(0, {
+    timeout: 25000,
+  });
+  assert.deepEqual(
+    ctx.knowledge.list(project.id).map((d: any) => d.id),
+    [knowledgeDoc.id],
+  );
+  const lastRequest = JSON.stringify(workbookMessages.at(-1));
+  assert(
+    lastRequest.includes('NetAmount') &&
+      lastRequest.includes('Example,42') &&
+      lastRequest.includes('image_url'),
+  );
+  await expect(page.locator('.composer-attachments')).toHaveCount(0);
+  await expect(page.locator('.throughput')).toBeVisible();
+  await page.getByLabel('Context usage').click();
+  await expect(page.getByText('Conversation context', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Compact now' })).toBeEnabled();
+  // Use a smaller context target so this short fixture has older turns to summarize.
+  ctx.store.saveSettings({ ...ctx.store.settings(), contextWindow: 8192, maxTokens: 1024 });
+  const writesBeforeCompact = await page.evaluate(() => (window as any).fakeExcel.writes.length);
+  const usersBeforeCompact = await page.locator('.message.user').count();
+  await page.getByRole('button', { name: 'Compact now' }).click();
+  await expect(page.getByText('Last checkpoint', { exact: false })).toBeVisible({ timeout: 25000 });
+  assert.equal(await page.locator('.message.user').count(), usersBeforeCompact);
+  assert.equal(
+    await page.evaluate(() => (window as any).fakeExcel.writes.length),
+    writesBeforeCompact,
+    'Compaction never replays edits',
+  );
+  assert(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    'Context menu fits the narrow pane',
+  );
+  if (process.env.FRAME_SCREENSHOT)
+    await page.screenshot({
+      path: process.env.FRAME_SCREENSHOT.replace(/\.png$/, '-excel-context.png'),
+    });
+  await page.getByLabel('Context usage').click();
   await page.setViewportSize({ width: 1100, height: 850 });
   await page.goto(origin);
   await page.getByRole('button', { name: 'Settings', exact: false }).click();

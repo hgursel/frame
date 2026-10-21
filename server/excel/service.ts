@@ -115,7 +115,7 @@ export class ExcelSessions {
   summaries(id: string): ExcelProposalSummary[] {
     const rows = this.store.db
       .prepare(
-        'SELECT summary FROM excel_proposals WHERE conversationId=? ORDER BY at DESC,rowid DESC LIMIT 20',
+        'SELECT summary FROM excel_proposals WHERE conversationId=? ORDER BY at DESC,rowid DESC',
       )
       .all(id) as { summary: string }[];
     return rows.map((r) => JSON.parse(r.summary));
@@ -230,13 +230,20 @@ export class ExcelSessions {
         `Selection exceeds configured limits (${limits.maxCells.toLocaleString()} cells / ${limits.maxColumns.toLocaleString()} columns).`,
         400,
       );
-    if (this.summaries(id).some((p) => p.status === 'pending' || p.status === 'applying'))
-      throw fail('Apply or reject the waiting proposal before sending another message.');
+    if (this.summaries(id).some((p) => p.status === 'applying'))
+      throw fail('Wait for the current workbook changes to finish before sending another message.');
     return {
       selection,
       recent: this.summaries(id)
         .slice(0, 5)
-        .map(({ summary, status, result }) => ({ summary, status, result })),
+        .map(({ summary, status, result }) => ({
+          summary,
+          status: status === 'pending' ? 'superseded' : status,
+          result:
+            status === 'pending'
+              ? 'Replaced by the user’s follow-up. Nothing was applied.'
+              : result,
+        })),
     };
   }
   capture(conversationId: string, operation: string, result: SqlResult) {
@@ -446,6 +453,15 @@ export class ExcelSessions {
     p.result = result;
     this.save(p);
     return p;
+  }
+  supersedePending(id: string) {
+    for (const summary of this.summaries(id)) {
+      if (summary.status !== 'pending') continue;
+      const p = this.get(id, summary.id);
+      p.status = 'superseded';
+      p.result = 'Replaced by the user’s follow-up. Nothing was applied.';
+      this.save(p);
+    }
   }
   cancel(id: string) {
     for (const summary of this.summaries(id)) {

@@ -1,3 +1,4 @@
+import { chatAttachments } from './chat-attachments.js';
 import { chatFilesApi } from './chat-files-api.js';
 import { imagesSchema } from './images.js';
 import { KnowledgeLibrary, libraryApi } from './library/service.js';
@@ -357,31 +358,7 @@ export async function createApp(options: {
         return reply.code(202).send(runner.start(id, requestId, text));
       const project = store.project(store.conversation(id)!.projectId)!;
       return knowledge.write(project.id, async () => {
-        const chatFiles = knowledge.forConversation(id);
-        const localIds = new Set(chatFiles.list(project.id).map((d) => d.id));
-        if (new Set(documentIds).size !== documentIds.length)
-          throw Object.assign(new Error('Attach distinct files.'), { statusCode: 400 });
-        const documents = [];
-        let documentBudget = Math.min(24000, Math.floor(store.settings().contextWindow / 2));
-        for (const documentId of documentIds) {
-          const source = localIds.has(documentId) ? chatFiles : knowledge;
-          const doc = await source.read(project.id, documentId);
-          const limit = Math.floor(documentBudget / (documentIds.length - documents.length));
-          const text = doc.text.slice(0, limit);
-          documentBudget -= text.length;
-          documents.push({
-            id: doc.id,
-            name: doc.name,
-            source: localIds.has(documentId)
-              ? ('chat_upload' as const)
-              : ('project_knowledge' as const),
-            text:
-              text +
-              (text.length < doc.text.length || doc.truncated
-                ? `\n[Excerpt truncated. Use ${localIds.has(documentId) ? 'read_chat_file' : 'read_knowledge'} with this ID for later sections.]`
-                : ''),
-          });
-        }
+        const documents = await chatAttachments(knowledge, id, project.id, documentIds);
         const runtime = project.toolsEnabled ? await python.status() : undefined;
         const catalog = [...(await wiki.catalog(project.id)), ...library.catalog(project.id)];
         const recent =
@@ -542,7 +519,7 @@ export async function createApp(options: {
   knowledgeApi(app, knowledge, wiki, runner);
   libraryApi(app, library, runner, knowledge);
   libraryDownloadsApi(app, library, options.libraryFetch);
-  excelApi(app, excel, runner, origin, async (projectId, query) => {
+  excelApi(app, excel, runner, knowledge, origin, async (projectId, query) => {
     const catalog = [...(await wiki.catalog(projectId)), ...library.catalog(projectId)];
     return recall(
       maintenance.methods,
