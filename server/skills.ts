@@ -1,4 +1,5 @@
-import { statSync } from 'node:fs';
+import { inside } from './security.js';
+import { statSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -40,8 +41,34 @@ export class Skills {
   }
   /** Saving records paths and scans skill metadata; nothing is executed or installed. */
   save(value: unknown) {
-    this.store.setMeta('skills:settings', JSON.stringify(settingsSchema.parse(value)));
+    const settings = settingsSchema.parse(value);
+    for (const folder of settings.folders) this.validateFolder(folder);
+    this.store.setMeta('skills:settings', JSON.stringify(settings));
     return this.catalog();
+  }
+  private validateFolder(folder: string) {
+    let canonical = folder;
+    try {
+      canonical = realpathSync(folder);
+    } catch {
+      return;
+    }
+    const protectedPaths = [
+      'projects',
+      'sessions',
+      'agent',
+      'frame.db',
+      'settings.json',
+      'mssql.json',
+    ].map((p) => path.join(this.store.root, p));
+    if (
+      inside(canonical, this.store.root) ||
+      protectedPaths.some((p) => inside(p, canonical) || inside(canonical, p))
+    )
+      throw Object.assign(
+        new Error('Skills must be in dedicated folders outside private Frame data.'),
+        { statusCode: 400 },
+      );
   }
   /** Rescans on every call so edits to skill folders apply to the next turn. */
   catalog(): SkillsCatalog {
@@ -50,6 +77,7 @@ export class Skills {
     const warnings: string[] = [];
     for (const folder of folders) {
       try {
+        this.validateFolder(folder);
         if (!statSync(folder).isDirectory()) throw new Error();
       } catch {
         warnings.push(`${folder}: folder not found or not readable by Frame.`);
@@ -58,6 +86,12 @@ export class Skills {
       const found = loadSkillsFromDir({ dir: folder, source: 'frame' });
       for (const d of found.diagnostics) warnings.push(`${d.path || folder}: ${d.message}`);
       for (const s of found.skills) {
+        try {
+          this.validateFolder(s.baseDir);
+        } catch {
+          warnings.push('Skipped skill inside private Frame data.');
+          continue;
+        }
         const first = skills.find((e) => e.name === s.name);
         if (first) {
           warnings.push(

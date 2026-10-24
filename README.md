@@ -12,7 +12,7 @@ A self-hosted AI workspace for company knowledge, SQL analysis, and local models
 
 </div>
 
-Bring your documents, project knowledge, and SQL data into one conversational workspace. Ask questions, investigate results, create charts, and turn useful answers into knowledge you can keep—all with a llama.cpp model running on your own infrastructure.
+Bring your documents, project knowledge, and SQL data into one conversational workspace. Ask questions, investigate results, create charts, and turn useful answers into knowledge you can keep—using your chosen OpenAI-compatible model server.
 
 Frame embeds the **Pi SDK**, so there is no separate Pi installation to manage. Configure your model, projects, and built-in plugins through the web interface.
 
@@ -47,19 +47,19 @@ Use Frame in an Excel Desktop task pane: start on a blank sheet, explain or repa
 
 Excel selections now default to **100,000 cells / 1,024 columns**, with configurable limits, context-budgeted section reads, and visible supplied-range details. Grouped thinking/tool activity, a fixed-bottom composer, and a separate paginated review panel keep long conversations usable. Large writes are batched with progress and retain the same explicit approval controls. The composer includes send/stop, conversation-only file/image attachments, screenshot paste, knowledge selection, and context/throughput controls. Applied changes stay with their original response; sending a follow-up replaces a pending proposal without applying it.
 
-Install locally using an XML manifest from **Settings → Frame for Excel**. This single-user pilot requires trusted HTTPS and Microsoft 365 Excel with ExcelApi 1.16; Microsoft 365 Integrated Apps deployment is unnecessary. Automated tests use a simulated Office host; real Windows Excel and local-model acceptance remain required. [Installation, self-signed certificate, and pilot limits →](docs/FRAME_FOR_EXCEL.md)
+Install locally using an XML manifest from **Settings → Frame for Excel**. The Excel add-in uses your personal Frame account and requires trusted HTTPS and Microsoft 365 Excel with ExcelApi 1.16; Microsoft 365 Integrated Apps deployment is unnecessary. Automated tests use a simulated Office host; real Windows Excel and local-model acceptance remain required. [Installation, self-signed certificate, and pilot limits →](docs/FRAME_FOR_EXCEL.md)
 
 ### SQL analysis with explicit controls
 
 The built-in **MSSQL plugin** lets you work with SQL Server through conversation:
 
 - Ask questions against administrator-selected databases using SQL Authentication.
-- Run supported reads with a separate read-only login; review and approve every enabled write, schema change, or allowlisted stored procedure.
+- Run supported reads through one shared read-only login. Writes, schema changes, and stored procedures are disabled for everyone.
 - Initialize searchable schema knowledge so models can find table structures and relationships without rediscovering the database each time.
 - Optionally generate per-object notes and business vocabulary, processing large catalogs one object at a time.
 - Expand a query result to inspect its table and download returned rows as CSV, without filling the conversation with automatic export files.
 
-Configure the shared connection in system settings, then enable MSSQL for individual projects. SQL Server permissions remain the final boundary; the plugin is intended for development databases.
+Configure the shared connection in system settings, then enable MSSQL for individual projects. SQL Server permissions must also restrict the shared login to reads and permitted metadata.
 
 [Set up MSSQL →](docs/MSSQL.md)
 
@@ -85,7 +85,7 @@ Set organization defaults and optional project overrides. Ask for a report direc
 
 ### Your own skills
 
-Point Frame at folders of **Agent Skills**—the `SKILL.md` format used by OpenCode, Claude Code, and Pi—and enable them per project. The model sees each skill's name and description, reads the full instructions when a task matches, and runs its Bash or Python scripts with the project's trusted agent tools. Type `/` in the message box to pick a skill directly. Skills and their `.env` files stay on your installation; nothing is imported, uploaded, or published.
+Point Frame at folders of **Agent Skills**—the `SKILL.md` format used by OpenCode, Claude Code, and Pi—and enable them per project. The model sees each skill's name and description, reads the full instructions when a task matches, and runs its Bash or Python scripts with the project's isolated file and Python tools. Type `/` in the message box to pick a skill directly. Admins install skills; users select them per project. Enabled skill directories are readable by those users’ tools, so do not store credentials in them.
 
 [Use your skills →](docs/SKILLS.md)
 
@@ -114,7 +114,7 @@ SQL examples require the MSSQL plugin and an appropriate schema. Model-driven to
 
 ## Quick start
 
-**Requirements:** Ubuntu 26.04, Node.js 24 LTS, npm, and a running llama.cpp server. Frame does not download models or install llama.cpp.
+**Requirements:** Linux (Ubuntu 26.04 recommended), Node.js 24 LTS, npm, and an OpenAI-compatible model endpoint. File/Python tools additionally require `bubblewrap`, Python 3, and permitted unprivileged user namespaces. Frame does not install or configure your model engine.
 
 ```bash
 git clone https://github.com/hgursel/frame.git
@@ -124,30 +124,30 @@ npm run build
 npm start
 ```
 
-1. Open **http://127.0.0.1:3000**. Use the setup token printed in the server console to create an administrator password.
-2. Go to **Settings → Model**. Enter your llama.cpp endpoint, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
-3. In **Settings → Context**, match the context window to your llama.cpp slot and reserve room for output.
+1. Open **http://127.0.0.1:3000**. Use the setup token printed in the server console to create an administrator username and password.
+2. Go to **Settings → Model**. Enter your OpenAI-compatible base URL, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
+3. In **Settings → Context**, match the context window to the model server’s per-request capacity and reserve room for output.
 4. Create a project, add documents under **Knowledge**, and start a conversation.
 5. Configure Reports, Charts, MSSQL, or Skills in **Settings → Plugins**, then enable them in **Project settings**. For MSSQL, initialize database knowledge.
 
-The endpoint is reached from the Frame server. V1 accepts loopback and private IPv4 addresses; internal DNS names are not supported yet. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
+The endpoint is reached from the Frame server. Administrators can configure HTTP(S) addresses, DNS names, and custom API base paths. There is no provider fallback. Configure simultaneous model requests and image/tool support in **Settings → Context**. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
 
 For access from another computer, follow the [LAN, HTTPS reverse-proxy, or SSH-tunnel guide](docs/DEPLOYMENT.md). Deployment-level network and storage settings are configured outside the browser.
 
 ### Image conversations
 
-Use **+ → Upload images**, or paste a screenshot into the chat. Preview or remove images before sending; an image can also be sent without text. PNG, JPEG, and WebP are supported (four per message, 10 MiB per source image). Frame resizes images to a maximum 2048-pixel edge and sends them directly to your local vision model. Images stay in the conversation, not project knowledge; incognito images are temporary. Your llama.cpp server must already have vision support configured for the selected model.
+Use **+ → Upload images**, or paste a screenshot into the chat. Preview or remove images before sending; an image can also be sent without text. PNG, JPEG, and WebP are supported (four per message, 10 MiB per source image). Frame resizes images to a maximum 2048-pixel edge and sends them directly to your local vision model. Images stay in the conversation, not project knowledge; incognito images are temporary. Enable image input only when the configured server and model support it.
 
 ## Local by design
 
-- **Your model endpoint.** Frame connects to the llama.cpp server you operate, with no cloud-model fallback.
+- **Your model endpoint.** Frame connects only to the OpenAI-compatible endpoint your administrator chooses, with no automatic fallback.
 - **Your stored data.** Project files, knowledge, settings, chart datasets, and conversation history stay in the configured data directory on the Frame host.
 - **No telemetry.** Frame disables Pi install telemetry and model-catalog network refreshes. Initial dependency installation still requires package downloads.
 - **Optional reference downloads.** Browsing knowledge packs works offline. Explicitly downloading or installing an optional pack contacts Frame’s public GitHub repository, verifies its checksum, and sends no project content. Installed packs remain local; project attachment and upgrades are separate choices.
-- **Explicit capabilities.** Enable built-in plugins per project and opt into trusted host tools when you need filesystem or Python/shell execution.
+- **Explicit capabilities.** Enable built-in plugins per project and opt into isolated file and Python tools when you need filesystem or Python/shell execution.
 
 > [!IMPORTANT]
-> **V1 supports one administrator.** Multi-user access and isolated execution are planned for V2. Trusted host tools run with the Frame service account's permissions; project folders are not sandboxes. Use a dedicated account and authenticated private access. See [runtime and data boundaries](docs/OPERATIONS.md).
+> **Personal workspaces:** admins create local accounts and configure shared connections; users own private projects and knowledge. Admin accounts cannot browse other owners’ content through Frame. Server operators still control the underlying files. File/Python tools fail closed if Linux isolation is unavailable. See [multiuser setup and migration](docs/MULTIUSER.md).
 
 ## Documentation
 
@@ -155,7 +155,7 @@ Use **+ → Upload images**, or paste a screenshot into the chat. Preview or rem
 | -------------------------------------- | ------------------------------------------------------------------------------- |
 | [Knowledge](docs/KNOWLEDGE.md)         | Uploads, reviewed updates, Markdown pages, OKF export, and Python documents     |
 | [Knowledge maintenance](docs/KNOWLEDGE_MAINTENANCE.md) | Scheduling, publishing policies, health checks, SQL privacy, and incognito chats |
-| [MSSQL](docs/MSSQL.md)                 | Connection setup, SQL permissions, approvals, and schema knowledge              |
+| [MSSQL](docs/MSSQL.md)                 | Connection setup, read-only SQL permissions, and schema knowledge              |
 | [Reports](docs/REPORTS.md)             | Branded PDF layouts, project overrides, chart/table sources, and local rendering |
 | [Skills](docs/SKILLS.md)               | Agent Skills folders, project enablement, `/skill` commands, and credentials    |
 | [Charts](docs/CHARTS.md)               | Chart types, dataset limits, exports, and saved snapshots                       |
@@ -168,13 +168,13 @@ Use **+ → Upload images**, or paste a screenshot into the chat. Preview or rem
 
 ## Project status and contributing
 
-Frame is an actively developed **single-administrator V1**. Online skill installation, a packaged installer, and multi-user access are roadmap items. Automated tests cover API behavior, the real Pi SDK with a local mock endpoint, and browser workflows; validate your own llama.cpp model and SQL Server configuration before relying on them.
+Frame supports local multiuser accounts, personal projects, and concurrent conversations. Project sharing, online skill installation, and a packaged installer remain future work. Automated tests cover ownership, migration, streaming through the real Pi SDK with mock OpenAI-compatible endpoints, queuing, cancellation, and reconnects. Validate your actual model engine, Linux isolation, SQL permissions, and Excel installation before rollout.
 
 Have a bug or an idea? [Open an issue](https://github.com/hgursel/frame/issues). For code changes, read [AGENTS.md](AGENTS.md) and the [development guide](docs/DEVELOPMENT.md). Keep reports free of credentials and private organization data.
 
 ## Built with
 
-[Pi SDK](https://pi.dev/docs/latest/sdk) · [llama.cpp](https://github.com/ggml-org/llama.cpp) · React · TypeScript · Fastify · SQLite
+[Pi SDK](https://pi.dev/docs/latest/sdk) · OpenAI-compatible model APIs · React · TypeScript · Fastify · SQLite
 
 The knowledge workflow draws on [Google's Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md) and [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 

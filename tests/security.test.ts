@@ -18,7 +18,7 @@ test('password hashes are salted and compared correctly', () => {
   assert(!verifyPassword('incorrect-password', hash));
   assert.notEqual(hash, hashPassword(password));
 });
-test('only literal loopback/private model endpoints are permitted', () => {
+test('administrator-selected OpenAI-compatible base URLs allow DNS and custom paths', () => {
   for (const input of [
     'http://localhost:8080',
     'http://127.0.0.1:8080/v1/',
@@ -28,16 +28,15 @@ test('only literal loopback/private model endpoints are permitted', () => {
     'http://[::1]:8080/v1',
   ])
     assert(localEndpoint(input).endsWith('/v1'));
+  assert.equal(
+    localEndpoint('https://models.example/compatible/api'),
+    'https://models.example/compatible/api',
+  );
   for (const input of [
-    'https://api.openai.com/v1',
-    'http://8.8.8.8/v1',
-    'http://169.254.169.254/v1',
-    'http://172.32.1.1/v1',
     'file:///etc/passwd',
     'http://user:pass@localhost/v1',
     'http://localhost/v1?q=a',
     'http://localhost/v1#test',
-    'http://localhost:8080/admin',
   ])
     assert.throws(() => localEndpoint(input), input);
 });

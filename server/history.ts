@@ -29,7 +29,7 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
           .map((p: any) => p.thinking || '')
           .join('\n')
       : '';
-    // Some llama.cpp templates send leading <think> tags in ordinary content.
+    // Some model templates send leading <think> tags in ordinary content.
     // Only interpret a leading block; quoted tags later in an answer remain visible.
     let openTag = false;
     if (m.role === 'assistant' && text.trimStart().startsWith('<think>')) {

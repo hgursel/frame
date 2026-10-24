@@ -153,7 +153,7 @@ const model = createServer(async (req, res) => {
             : prompt.includes('Read database')
               ? 'Database read finished.'
               : prompt.includes('Approve')
-                ? 'Approved operation finished.'
+                ? 'Read-only operation rejected.'
                 : 'Denied operation finished.',
       }) +
         chunk({}, 'stop') +
@@ -189,7 +189,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${port}`);
   await page.getByLabel('Setup token').fill('sql-test');
-  await page.getByLabel('Administrator password').fill('sql-browser-password');
+  await page.getByLabel('Password').fill('sql-browser-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.locator('.sidebar-bottom').getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
@@ -202,10 +202,7 @@ try {
   await page.getByLabel('Allowed databases', { exact: true }).fill('Dev');
   await page.getByLabel('read SQL username').fill('reader');
   await page.getByLabel('read SQL password').fill('reader-secret');
-  await page.getByLabel('write SQL username').fill('writer');
-  await page.getByLabel('write SQL password').fill('writer-secret');
   await page.getByLabel('Enable MSSQL system-wide').check();
-  await page.getByLabel('Allow INSERT, UPDATE, and DELETE with approval').check();
   await page.getByRole('button', { name: 'Save MSSQL settings', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'MSSQL settings saved' })).toBeVisible();
   assert.equal(driver.calls.length, 0, 'Saving configuration must not contact SQL Server');
@@ -286,24 +283,11 @@ try {
 
   await expect(page.locator('.chart-card')).toHaveCount(0);
   await send('Approve a change');
-  const approval = page.getByRole('region', { name: 'SQL change approval' });
-  await expect(approval).toBeVisible({ timeout: 30000 });
-  await expect(approval).toContainText('UPDATE dbo.Table1105');
-  await expect(approval).toContainText('approved');
-  assert.equal(driver.calls.length, metadataCalls + 1);
-  await page.getByRole('button', { name: 'Approve SQL change', exact: true }).click();
-  await page.getByText('Approved operation finished.', { exact: true }).waitFor({ timeout: 30000 });
-  assert.equal(driver.calls.at(-1)?.login, 'write');
-  await send('Deny a change');
-  await expect(approval).toBeVisible({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Deny SQL change', exact: true }).click();
-  await page.getByText('Denied operation finished.', { exact: true }).waitFor({ timeout: 30000 });
-  assert.equal(driver.calls.length, metadataCalls + 2);
-  await send('Stop a change');
-  await expect(approval).toBeVisible({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Stop generation', exact: true }).click();
-  await expect(approval).toHaveCount(0);
-  assert.equal(driver.calls.length, metadataCalls + 2);
+  await page
+    .getByText('Read-only operation rejected.', { exact: true })
+    .waitFor({ timeout: 30000 });
+  await expect(page.getByRole('region', { name: 'SQL change approval' })).toHaveCount(0);
+  assert.equal(driver.calls.length, metadataCalls + 1, 'Writes never reach SQL Server');
   for (const [i, kind] of ['bar', 'line', 'pie', 'scatter'].entries()) {
     await send(`Chart ${kind}`);
     const card = page.getByRole('figure', { name: `SQL ${kind}`, exact: true });
@@ -426,7 +410,7 @@ try {
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);
   console.log(
-    'MSSQL browser + real SDK worker: settings, 1105-object knowledge, cached reads, result table/CSV, write approval, deny, Stop, and interactive SQL charts with PNG/CSV exports and reload passed.',
+    'MSSQL browser + real SDK worker: settings, 1105-object knowledge, cached reads, result table/CSV, write rejection, and interactive SQL charts with PNG/CSV exports and reload passed.',
   );
 } finally {
   await browser?.close();

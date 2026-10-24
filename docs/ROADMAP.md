@@ -2,7 +2,7 @@
 
 ## 0.1 — Foundation
 
-Implemented: local endpoint setup, administrator sign-in, managed projects, chat-only/trusted-tool modes, SDK worker lifecycle, streaming, persisted history, and downloads. Validate against a real llama.cpp build/model before internal trial use.
+Implemented: local endpoint setup, administrator sign-in, managed projects, chat-only/trusted-tool modes, SDK worker lifecycle, streaming, persisted history, and downloads. Validate against a real model server/model before internal trial use.
 
 ## 0.2 — Knowledge and document workflow (implemented)
 
@@ -17,7 +17,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Refreshed chat layout, light/dark appearance, collapsible navigation, conversation search, copying, and scroll-aware streaming.
 - Context window/usage meter with reported-versus-estimated counts, checkpoint inspection, and observed generation throughput.
 - Configurable automatic compaction with scaled local-model budgets, manual/interruptible compaction, and reversible older read-only tool-result pruning.
-- Local mock SDK and browser coverage. Real-model long-context quality and llama.cpp timing validation remain acceptance work; see [context research](CONTEXT.md).
+- Local mock SDK and browser coverage. Real-model long-context quality and model-server timing validation remain acceptance work; see [context research](CONTEXT.md).
 
 ## 0.4 — Navigation and content refinements (implemented)
 
@@ -61,7 +61,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.
 - Automatic SQL CSV exports appear only through their query result’s download link; conversation file cards show other deliverables, including ordinary CSV reports. Existing exports are retained and filtered by persisted SQL operation IDs.
 - 60-minute task deadline (paused while awaiting structured question answers); completed SQL knowledge jobs show completion instead of their last processing phase.
-- Deferred: adjustable per-project task limits and llama.cpp prompt-processing percentages.
+- Deferred: adjustable per-project task limits and engine-specific prompt-processing percentages.
 
 ## Charts (implemented)
 
@@ -118,32 +118,36 @@ The registered-script plugin with per-operation JSON inputs, approvals, and `.en
 - Selection-scoped context, project knowledge, read-only SQL, formulas, selection replacement, and new worksheets with tables/native charts. Literal data uses typed cells; supported formulas are explicit.
 - Preview before Apply, pane-bound sessions, one-time claims, stale-cell/protection checks, and uncertain-outcome recovery without replay. Workbook history stays separate from automatic project learning.
 - Automated schema/API/SDK and simulated Office-host checks do not establish real Excel, certificate trust, coauthoring, or local-model correctness. Complete the [Windows acceptance checklist](FRAME_FOR_EXCEL.md) before relying on the pilot.
-- Deferred: macros, arbitrary functions/code, full native Undo/transactional rollback, multi-user access, Mac/Web Excel, and organization-wide distribution. Real Windows acceptance is still required for native table, chart, and structural-edit behavior.
+- Deferred: macros, arbitrary functions/code, full native Undo/transactional rollback, Mac/Web Excel, and organization-wide distribution. Real Windows acceptance is still required for native table, chart, and structural-edit behavior.
 
 ## Next — Complete V1
 
-1. **llama.cpp acceptance matrix:** record server version, model/quantization, template, context per slot, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
+1. **OpenAI-compatible engine acceptance matrix:** record server version, model/quantization, template, context per request, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
 2. **MCP:** deferred at the owner's request in favor of Skills. If revisited, choose one maintained integration or narrow adapter with selected transports, secret references, connectivity tests, explicit trust, project scoping, and cleanup. Do not silently auto-approve. Online skill installation, if added, must display what code and dependencies will run first.
 3. **Knowledge refinements:** full OKF bundle import/round-trip editing, semantic contradiction review, richer dependency tracking, and larger knowledge quotas. Scheduled structural health checks and controlled conversation learning are implemented; no autonomous factual verification.
 4. **Packaging and diagnostics:** repeatable Ubuntu installer/uninstaller, dependency checks, sanitized diagnostics, admin password/token rotation, backup/restore commands, and signed versioned releases. Avoid unattended self-updates.
 
-## V2 — Multi-user organizational deployment
+## Personal workspaces and concurrent execution (implemented)
 
-Deferred from V1 at the owner's request. V1 retains one administrator.
-
-- Authentication strategy (e.g. organization OIDC), user/session lifecycle, per-project authorization on every endpoint/event/file.
-- OS-level worker isolation, credential and egress boundaries, resource limits; decide how shared files and simultaneous writes behave.
-- Audit records, retention, deletion/restore policy, key management, dependency review, and security assessment.
+- Local usernames/passwords, administrator-created accounts, temporary password replacement, resets, disabling, and session revocation.
+- Owner-only personal projects, knowledge, chats, downloads, charts, and Excel sessions, including ownership enforcement for administrator accounts.
+- Existing password/content migrates to the initial admin account. Existing sessions are revoked.
+- Admin-managed skills/connections; owners enable capabilities per project. One read-only SQL login for everyone.
+- Concurrent conversations with FIFO model-request capacity, one response per conversation, and independent cancellation. Logout does not stop normal tasks.
+- Bubblewrap isolation for arbitrary file/shell tools with unrestricted networking; fail closed without supported namespaces.
+- OpenAI-compatible endpoint/model settings with optional authentication, context/output budgets, concurrency, image and tool capability switches.
+- Automated cross-owner API, migration, streaming/queue and cancellation tests. Successful sandbox execution, real backend performance, SQL login privileges, and real Excel remain deployment acceptance checks.
+- Deferred: sharing/collaboration, SSO, audit/retention policies, per-user quotas, and network allowlists. Nightly maintenance remains present and is not redesigned.
 
 ## Acceptance checklist for the first real machine
 
 - [ ] Fresh Node 24 installation builds and starts without a separately installed Pi CLI.
-- [ ] Only the configured llama.cpp endpoint receives model traffic; no cloud catalog/telemetry requests.
+- [ ] Only the configured model endpoint receives model traffic; no cloud catalog/telemetry requests.
 - [ ] Chat streams with the chosen model and resumes after service restart.
 - [ ] Read/write/bash works only after opting into trusted tools; generated files download safely.
 - [ ] Stop actually ends generation and relevant subprocesses; repeated Send/reconnect never replays a task.
 - [ ] Bad token, wrong model ID, full context, unavailable server, and malformed tool arguments fail visibly.
-- [ ] Two projects run without sharing conversation history; same-project concurrent tasks are rejected.
+- [ ] Two projects run without sharing conversation history; same-project concurrent tasks queue/run independently.
 - [ ] Backup/restore recovers settings, metadata, sessions, and project outputs together.
 
 ## Curated project memory (implemented)

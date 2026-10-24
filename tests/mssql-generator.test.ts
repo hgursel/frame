@@ -154,9 +154,9 @@ test('Knowledge generation retries only the current item for output/context limi
     );
     for (const r of requests) {
       assert.equal(r.messages.length, 2);
-      assert.equal(r.response_format.type, 'json_object');
-      assert.equal(r.chat_template_kwargs.enable_thinking, false);
-      assert.equal(r.reasoning_effort, 'none');
+      assert.equal(r.response_format, undefined);
+      assert.equal(r.chat_template_kwargs, undefined);
+      assert.equal(r.reasoning_effort, undefined);
       assert(Buffer.byteLength(r.messages[1].content) <= 8192);
       assert.match(r.messages[1].content, /^Dev.dbo.Table1/);
       assert.match(r.messages[1].content, /Reply with JSON\.$/);

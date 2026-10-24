@@ -4,33 +4,27 @@ Use your existing Agent Skills with Frame. A skill is a folder with a `SKILL.md`
 
 ## Set up
 
-1. Put your skills in a folder outside the Frame checkout, for example `/opt/frame-skills/<skill-name>/SKILL.md`. Give the Linux account that runs Frame read access to the folder and execute permission on scripts. `~` inside a script means that account's home directory.
+1. Put your skills in a folder outside the Frame checkout, for example `/opt/frame-skills/<skill-name>/SKILL.md`. Give the Linux account that runs Frame read access to the folder and execute permission on scripts. `~` inside a script refers to temporary sandbox storage.
 2. Open **Settings → Plugins → Skills**, enter one absolute folder path per line, and select **Save skill folders**. Frame lists the skills it found and any warnings, such as a missing description, a duplicate name, or an unreadable folder. **Rescan** refreshes the list after you edit files.
-3. Open **Project settings**. Skills run with **trusted agent tools**, so enable those for the project. Under **Project skills**, select the skills this project may use and save.
+3. Open **Project settings**. Skills run with **file and Python tools**, so enable those for the project. Under **Project skills**, select the skills this project may use and save.
 
 Saving settings records folder paths only. It does not run scripts, install dependencies, or contact anything.
 
 ## Use in chat
 
-- The model sees each enabled skill's name, description, and `SKILL.md` location. When a request matches, it reads the full instructions and runs the skill's scripts with the project's trusted agent tools.
+- The model sees each enabled skill's name, description, and `SKILL.md` location. When a request matches, it reads the full instructions and runs the skill's scripts with the project’s isolated tools.
 - Type `/` in the message box to pick an enabled skill. This inserts `/skill:<name> `; add your request after it. Frame sends the complete `SKILL.md` with that message, which is the reliable way to make a small local model follow a skill. The conversation shows the short `/skill:` command, not the skill body.
 - A skill with `disable-model-invocation: true` in its frontmatter is not listed for the model; it is available only through `/skill:<name>`.
 - Frame rescans skill folders at the start of each turn, so edits apply to the next message. A renamed or removed skill silently drops out of the projects that enabled it.
-- Skills are unavailable in incognito chats and in projects without trusted agent tools, because the model could not read or run them there.
+- Skills are unavailable in incognito chats and in projects without file and Python tools, because the model could not read or run them there.
 
-## Credentials
+## Credentials and execution
 
-Keep credentials with the skill, not in Frame, prompts, or `SKILL.md`. A common layout is a `.env` beside the scripts with `chmod 600`, loaded by the script itself, for example with `python-dotenv` or `set -a; . ./.env; set +a` in Bash. Frame does not read, inject, or redact these values. Frame starts the agent with a minimal environment (`PATH`, `LANG`, and Frame's own variables), so keys exported in your shell profile are not available to scripts.
+Admins register skill folders; users enable installed skills in their own projects. Skill folders are mounted read-only inside the execution sandbox and their contents are visible to those users' tools. Do not put credentials, `.env` files, or private organization content inside a generally available skill folder. Frame’s model/SQL credentials stay outside the sandbox and are not passed to scripts.
 
-Be explicit about the boundary: trusted agent tools can read any file and run any command the Frame Linux account can. Frame instructs the model never to print or read credential files, but it cannot prevent it. Use a dedicated service account, give it only the credentials its skills need, and prefer credentials with limited remote permissions.
+Scripts can write only the current conversation’s output/work directory and temporary files. Project knowledge, conversation uploads, selected skill files, and required runtime files are read-only. Network access is unrestricted. There is no per-command approval; a failed/stopped remote operation may still have completed and must be checked before retrying. Use `$FRAME_PYTHON` when the managed Python runtime is enabled, or a system interpreter. Home directories and arbitrary host installations are not available.
 
-## Boundaries
-
-- Skills are trusted administrator content. Review a skill's instructions and scripts before adding its folder: a skill can direct the model to do anything the account can do, without per-command approval.
-- Scripts run as the Frame account in the project workspace. This is not a sandbox.
-- A stopped or failed script may already have changed remote data. Frame never retries automatically; verify the outcome before asking again.
-- Python scripts use their own shebang interpreter. Install their packages for that interpreter; Frame's managed document environment is separate.
-- Frame does not install skills from the internet, run a skill's setup steps, or connect to MCP servers.
+Linux bubblewrap and permitted user namespaces are required. Missing isolation causes an explicit tool failure, never host execution. Frame does not install skills, execute their setup steps, or contact MCP servers. See [multiuser deployment](MULTIUSER.md).
 
 ## Private Tools removal
 

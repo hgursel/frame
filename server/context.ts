@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { estimateTokens } from '@earendil-works/pi-coding-agent';
 import type { ChatMetrics, ModelSettings, Project } from '../shared/types.js';
 
-/** Scale to the configured llama.cpp slot, leaving generation and framing headroom. */
+/** Scale to the configured model request context, leaving generation and framing headroom. */
 export function contextBudget(settings: ModelSettings) {
   const safety = Math.max(256, Math.ceil(settings.contextWindow * 0.03));
   const reserveTokens = Math.max(

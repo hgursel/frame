@@ -1,3 +1,4 @@
+import { installAuthorization, usernameSchema } from './auth.js';
 import { chatAttachments } from './chat-attachments.js';
 import { chatFilesApi } from './chat-files-api.js';
 import { imagesSchema } from './images.js';
@@ -18,7 +19,8 @@ import { chartsApi } from './plugins/charts/api.js';
 import { MssqlPlugin } from './plugins/mssql/service.js';
 import { mssqlApi } from './plugins/mssql/api.js';
 import type { SqlDriver } from './plugins/mssql/driver.js';
-import type { Generator } from './plugins/mssql/generate.js';
+import { LocalGenerator, type Generator } from './plugins/mssql/generate.js';
+import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import staticFiles from '@fastify/static';
@@ -39,7 +41,6 @@ import { knowledgeApi } from './knowledge-api.js';
 import {
   digest,
   equal,
-  hashPassword,
   localEndpoint,
   openArtifact,
   randomToken,
@@ -62,6 +63,9 @@ const modelSchema = z
         return z.NEVER;
       }
     }),
+    maxConcurrentRequests: z.number().int().min(1).max(32).default(2),
+    supportsImages: z.boolean().default(true),
+    supportsTools: z.boolean().default(true),
     modelId: z.string().trim().min(1).max(200),
     contextWindow: z.number().int().min(2048).max(2_000_000),
     maxTokens: z.number().int().min(128).max(131072),
@@ -76,6 +80,7 @@ const modelSchema = z
     'Leave space for input and template overhead below the context window',
   );
 const credentialsSchema = z.object({
+  username: usernameSchema.default('admin'),
   password: z.string().min(12).max(256),
   token: z.string().max(256).optional(),
 });
@@ -92,7 +97,20 @@ export async function createApp(options: {
   const origin = new URL(options.origin).origin;
   const store = new Store(path.resolve(options.dataDir));
   recoverDeletions(store);
-  const mssql = new MssqlPlugin(store, options.sqlDriver, options.generator);
+  let runner: Runner;
+  const generator = options.generator ?? new LocalGenerator(() => store.settings());
+  const backgroundGenerator: Generator = {
+    async complete(request, signal) {
+      const id = `background:${randomUUID()}`;
+      await runner.capacity.acquire(id, signal);
+      try {
+        return await generator.complete(request, signal);
+      } finally {
+        runner.capacity.release(id);
+      }
+    },
+  };
+  const mssql = new MssqlPlugin(store, options.sqlDriver, backgroundGenerator);
   const python = new PythonRuntime(store.root);
   const knowledge = new Knowledge(store, python);
   const library = new KnowledgeLibrary(store);
@@ -108,7 +126,7 @@ export async function createApp(options: {
   // Private Tools was removed in favor of Skills; drop its stored registrations once.
   store.db.prepare("DELETE FROM meta WHERE key='private-tools:settings'").run();
   store.db.prepare("DELETE FROM project_plugins WHERE plugin='private-tools'").run();
-  const runner = new Runner(store, mssql, charts, reports, skills, knowledge);
+  runner = new Runner(store, mssql, charts, reports, skills, knowledge);
   const excel = new ExcelSessions(store);
   runner.excel = excel;
   mssql.captureExcelData = (conversation, operation, result) =>
@@ -116,7 +134,7 @@ export async function createApp(options: {
   // Enrichment shares one local model with chat, so it pauses instead of competing for it.
   mssql.notes.busy = () => runner.active.size > 0;
   const wiki = new Wiki(knowledge);
-  const maintenance = new Maintenance(store, wiki, runner, options.generator);
+  const maintenance = new Maintenance(store, wiki, runner, backgroundGenerator);
   await maintenance.initialize();
   mssql.notes.methodCatalog = (projectId) => {
     try {
@@ -190,25 +208,32 @@ export async function createApp(options: {
     secure: origin.startsWith('https:'),
     maxAge: 8 * 3600,
   };
-  app.get('/api/auth/status', async () => ({ setupRequired: !store.meta('password') }));
+  installAuthorization(app, store);
+  app.get('/api/auth/status', async () => ({
+    setupRequired: !store.db.prepare('SELECT id FROM users LIMIT 1').get(),
+  }));
   app.post('/api/auth/setup', { config: authLimit }, async (request, reply) => {
-    if (store.meta('password')) return reply.code(409).send({ error: 'Already initialized' });
+    if (store.db.prepare('SELECT id FROM users LIMIT 1').get())
+      return reply.code(409).send({ error: 'Already initialized' });
     const data = credentialsSchema.parse(request.body);
     if (!data.token || !equal(data.token, options.setupToken))
       return reply.code(403).send({ error: 'Incorrect setup token' });
-    store.setMeta('password', hashPassword(data.password));
+    const user = store.createUser(data.username, data.password, 'admin', false);
+    store.db.prepare('UPDATE projects SET ownerId=? WHERE ownerId IS NULL').run(user.id);
     return { ok: true };
   });
   app.post('/api/auth/login', { config: authLimit }, async (request, reply) => {
-    const { password } = credentialsSchema.parse(request.body);
-    const stored = store.meta('password');
-    if (!stored || !verifyPassword(password, stored))
-      return reply.code(401).send({ error: 'Incorrect password' });
+    const { username, password } = credentialsSchema.parse(request.body);
+    const user = store.db
+      .prepare('SELECT * FROM users WHERE username=? AND disabled=0')
+      .get(username) as any;
+    if (!user || !verifyPassword(password, user.password))
+      return reply.code(401).send({ error: 'Incorrect username or password' });
     const token = randomToken();
     store.db.prepare('DELETE FROM logins WHERE expires<=?').run(Date.now());
     store.db
-      .prepare('INSERT INTO logins VALUES (?, ?)')
-      .run(digest(token), Date.now() + 8 * 3600_000);
+      .prepare('INSERT INTO logins(token,expires,userId) VALUES (?, ?, ?)')
+      .run(digest(token), Date.now() + 8 * 3600_000, user.id);
     reply.setCookie('frame_session', token, sessionCookie);
     return { ok: true };
   });
@@ -219,9 +244,11 @@ export async function createApp(options: {
     reply.clearCookie('frame_session', { path: '/' });
     return { ok: true };
   });
-  app.get('/api/settings', async () => {
+  app.get('/api/settings', async (request) => {
     const { apiKey, ...settings } = store.settings();
-    return { ...settings, hasApiKey: !!apiKey };
+    return request.user.role === 'admin'
+      ? { ...settings, hasApiKey: !!apiKey }
+      : { ...settings, baseUrl: '', instructions: '', hasApiKey: false };
   });
   app.put('/api/settings', async (request) => {
     if (runner.active.size || mssql.notes.jobs.size)
@@ -247,7 +274,7 @@ export async function createApp(options: {
           redirect: 'error',
         });
         if (!response.ok)
-          return reply.code(502).send({ error: `llama.cpp returned HTTP ${response.status}` });
+          return reply.code(502).send({ error: `Model endpoint returned HTTP ${response.status}` });
         // Bound response size even for an accidentally misconfigured local service.
         const reader = response.body!.getReader();
         let text = '';
@@ -275,14 +302,16 @@ export async function createApp(options: {
       } catch {
         return reply.code(502).send({
           error:
-            'Could not query the local endpoint. Check address, authentication, and llama.cpp availability.',
+            'Could not query the local endpoint. Check address, authentication, and model server availability.',
         });
       }
     },
   );
-  app.get('/api/projects', async () => store.projects());
+  app.get('/api/projects', async (request) =>
+    store.projects().filter((p) => store.ownsProject(request.user.id, p.id)),
+  );
   app.post('/api/projects', async (request) =>
-    store.createProject(projectSchema.parse(request.body)),
+    store.createProject(projectSchema.parse(request.body), request.user.id),
   );
   app.put<{ Params: { id: string } }>('/api/projects/:id', async (request, reply) => {
     const id = uuid.parse(request.params.id);
@@ -304,7 +333,11 @@ export async function createApp(options: {
     z.object({ confirm: z.literal(true) }).parse(request.body);
     return deleteWorkspaceData(store, runner, knowledge, conversation.projectId, id);
   });
-  app.get('/api/conversations', async () => store.conversations().filter((c) => !c.incognito));
+  app.get('/api/conversations', async (request) =>
+    store
+      .conversations()
+      .filter((c) => !c.incognito && store.ownsConversation(request.user.id, c.id)),
+  );
   app.post('/api/conversations', async (request, reply) => {
     const { projectId, incognito: temporary } = z
       .object({ projectId: uuid, incognito: z.boolean().default(false) })

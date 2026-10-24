@@ -43,14 +43,14 @@ test('MSSQL SQL policy parses statements and fails closed at dangerous boundarie
     'UPDATE dbo.t SET id=2 WHERE id=1',
     'DELETE FROM dbo.t WHERE id=1',
   ])
-    assert.equal(classify({ database: 'Dev', sql }, config), 'data');
+    assert.throws(() => classify({ database: 'Dev', sql }, config));
   for (const sql of [
     'CREATE TABLE dbo.t (id int PRIMARY KEY)',
     'ALTER TABLE dbo.t ADD name nvarchar(100)',
     'DROP TABLE dbo.t',
     'CREATE INDEX ix ON dbo.t (id)',
   ])
-    assert.equal(classify({ database: 'Dev', sql }, config), 'schema');
+    assert.throws(() => classify({ database: 'Dev', sql }, config));
   for (const sql of [
     'SELECT * INTO dbo.copy FROM dbo.t',
     'SELECT 1; DELETE FROM dbo.t',
@@ -85,12 +85,11 @@ test('MSSQL SQL policy parses statements and fails closed at dangerous boundarie
   assert.throws(() =>
     classify({ database: 'Dev', procedure: { schema: 'dbo', name: 'Unlisted' } }, config),
   );
-  assert.equal(
+  assert.throws(() =>
     classify({ database: 'Dev', procedure: { schema: 'dbo', name: 'Approved' } }, config),
-    'procedure',
   );
 });
-test('MSSQL settings are secret, project access is enforced, approvals execute exactly once', async () => {
+test('MSSQL settings are secret, project access is enforced, writes are rejected even with legacy settings', async () => {
   const f = await fixture();
   try {
     const saved = await f.auth('/plugins/mssql', 'PUT', config);
@@ -117,83 +116,45 @@ test('MSSQL settings are secret, project access is enforced, approvals execute e
     assert.equal(read.rows.length, 2);
     const csv = await readFile(path.join(f.store.artifacts(f.conversation), read.csv), 'utf8');
     assert(csv.includes("'=HYPERLINK"));
-    const runId = randomUUID();
-    const change = f.mssql.invoke(f.conversation.id, runId, 'query', {
-      database: 'Dev',
-      sql: 'UPDATE dbo.t SET id=2 WHERE id=1',
-    });
-    const approval = f.mssql.approval(f.conversation.id)!;
-    assert(approval);
+    for (const command of [
+      { sql: 'UPDATE dbo.t SET id=2 WHERE id=1' },
+      { sql: 'DROP TABLE dbo.t' },
+      { procedure: { schema: 'dbo', name: 'Approved' } },
+    ])
+      await assert.rejects(
+        f.mssql.invoke(f.conversation.id, randomUUID(), 'query', { database: 'Dev', ...command }),
+      );
     assert.equal(f.driver.calls.length, 1);
+    assert.equal(f.mssql.approval(f.conversation.id), undefined);
     assert.equal(
-      (
-        await f.auth(`/conversations/${randomUUID()}/sql-approvals/${approval.id}`, 'POST', {
-          runId,
-          approve: true,
-        })
-      ).statusCode,
-      409,
+      (await f.auth('/plugins/mssql', 'PUT', { ...config, allowDataChanges: true })).statusCode,
+      400,
     );
     assert.equal(
       (
-        await f.auth(`/conversations/${f.conversation.id}/sql-approvals/${approval.id}`, 'POST', {
-          runId: randomUUID(),
-          approve: true,
+        await f.auth('/plugins/mssql', 'PUT', {
+          ...config,
+          write: { username: 'writer', password: 'secret' },
         })
       ).statusCode,
-      409,
+      400,
     );
-    assert.equal(
-      (
-        await f.auth(`/conversations/${f.conversation.id}/sql-approvals/${approval.id}`, 'POST', {
-          runId,
-          approve: true,
-        })
-      ).statusCode,
-      200,
+    // Legacy files cannot re-enable writes after upgrading.
+    await writeFile(
+      path.join(f.root, 'mssql.json'),
+      JSON.stringify({
+        ...config,
+        allowDataChanges: true,
+        write: { username: 'writer', password: 'secret' },
+      }),
     );
-    await change;
-    assert.equal(f.driver.calls.length, 2);
-    assert.equal(f.driver.calls.at(-1)?.login, 'write');
-    assert.equal(
-      (
-        await f.auth(`/conversations/${f.conversation.id}/sql-approvals/${approval.id}`, 'POST', {
-          runId,
-          approve: true,
-        })
-      ).statusCode,
-      409,
+    await assert.rejects(
+      f.mssql.invoke(f.conversation.id, randomUUID(), 'query', {
+        database: 'Dev',
+        sql: 'DELETE FROM dbo.t',
+      }),
     );
-    const denied = f.mssql.invoke(f.conversation.id, randomUUID(), 'query', {
-      database: 'Dev',
-      procedure: { schema: 'dbo', name: 'Approved' },
-      parameters: [{ name: 'id', type: 'int', value: 5 }],
-    });
-    const denial = assert.rejects(denied, /denied/);
-    const pending = f.mssql.approval(f.conversation.id)!;
-    f.mssql.decide(f.conversation.id, pending.id, pending.runId, false);
-    await denial;
-    assert.equal(f.driver.calls.length, 2);
-    const stoppedRun = randomUUID();
-    const stopped = f.mssql.invoke(f.conversation.id, stoppedRun, 'query', {
-      database: 'Dev',
-      sql: 'DELETE FROM dbo.t',
-    });
-    const cancelled = assert.rejects(stopped);
-    f.mssql.cancelRun(stoppedRun);
-    await cancelled;
-    assert.equal(f.driver.calls.length, 2);
-    // Server-side state changes cannot reuse an approval issued under an earlier policy.
-    const stale = f.mssql.invoke(f.conversation.id, randomUUID(), 'query', {
-      database: 'Dev',
-      sql: 'DELETE FROM dbo.t',
-    });
-    const staleReject = assert.rejects(stale, /settings changed/);
-    const old = f.mssql.approval(f.conversation.id)!;
-    f.mssql.save({ ...config, maxRows: 100 });
-    f.mssql.decide(f.conversation.id, old.id, old.runId, true);
-    await staleReject;
-    assert.equal(f.driver.calls.length, 2);
+    assert.equal(f.driver.calls.length, 1);
   } finally {
     await f.cleanup();
   }
@@ -256,7 +217,7 @@ test('Schema import scales past 1000 objects, is project-scoped, preserves prior
     await f.cleanup();
   }
 });
-test('SQL cancellation aborts an executing driver and records writes as uncertain', async () => {
+test('SQL cancellation aborts an executing read and records its outcome', async () => {
   const f = await fixture();
   try {
     f.mssql.save(config);
@@ -265,18 +226,16 @@ test('SQL cancellation aborts an executing driver and records writes as uncertai
     const runId = randomUUID();
     const task = f.mssql.invoke(f.conversation.id, runId, 'query', {
       database: 'Dev',
-      sql: 'UPDATE dbo.t SET id=2',
+      sql: 'SELECT id FROM dbo.t',
     });
     const rejected = assert.rejects(task);
-    const p = f.mssql.approval(f.conversation.id)!;
-    f.mssql.decide(f.conversation.id, p.id, runId, true);
     await new Promise((resolve) => setTimeout(resolve, 10));
     f.mssql.cancelRun(runId);
     await rejected;
     assert.equal(
-      (f.store.db.prepare('SELECT status FROM mssql_operations WHERE id=?').get(p.id) as any)
+      (f.store.db.prepare('SELECT status FROM mssql_operations WHERE runId=?').get(runId) as any)
         .status,
-      'unknown',
+      'failed',
     );
     assert.equal(f.driver.calls.length, 1);
   } finally {

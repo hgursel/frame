@@ -157,7 +157,7 @@ try {
   await page.goto(`${origin}/excel.html`);
   assert.deepEqual(errors, [], 'Host fixture loaded');
   assert.deepEqual(await page.getByRole('alert').allTextContents(), [], 'Office host initialized');
-  await page.getByLabel('Frame administrator password').fill('excel-browser-password');
+  await page.getByLabel('Frame password').fill('excel-browser-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('button', { name: 'Start Excel conversation' }).click();
   await expect(page.getByRole('button', { name: 'Capture selection' })).toHaveCount(0);

@@ -2,7 +2,19 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Maintenance } from './service.js';
 export function maintenanceApi(app: FastifyInstance, maintenance: Maintenance) {
-  app.get('/api/maintenance', () => maintenance.status());
+  app.get('/api/maintenance', (request) => {
+    const status = maintenance.status();
+    const owns = (p: any) => maintenance.store.ownsProject(request.user.id, p.projectId || p.id);
+    return {
+      ...status,
+      projects: status.projects.filter(owns),
+      methods: status.methods.filter(owns),
+      candidates: status.candidates.filter(owns),
+      findings: status.findings.filter(owns),
+      runs: [],
+      observations: 0,
+    };
+  });
   app.put('/api/maintenance/settings', (request) => maintenance.save(request.body));
   app.post('/api/maintenance/run', (_request, reply) => {
     const run = maintenance.enqueue();

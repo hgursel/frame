@@ -98,7 +98,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${port}`);
   await page.getByLabel('Setup token').fill('test');
-  await page.getByLabel('Administrator password').fill('test-password-12345');
+  await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await expect(page.getByLabel('Upload chat files')).toBeEnabled();
   await page.getByLabel('Upload chat files').setInputFiles({

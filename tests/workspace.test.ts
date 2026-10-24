@@ -285,7 +285,11 @@ test('real SDK asks, waits through reload, accepts an answer once, and retains s
       `data: ${JSON.stringify({ id: 'question', object: 'chat.completion.chunk', model: 'local', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     const tool = body.messages.findLast((m: any) => m.role === 'tool');
-    if (!tool)
+    if (JSON.stringify(body.messages).includes('Concurrent while waiting'))
+      res.end(
+        chunk({ content: 'Concurrent task completed.' }) + chunk({}, 'stop') + 'data: [DONE]\n\n',
+      );
+    else if (!tool)
       res.end(
         chunk({
           tool_calls: [
@@ -309,6 +313,7 @@ test('real SDK asks, waits through reload, accepts an answer once, and retains s
     f.store.saveSettings({
       ...f.store.settings(),
       modelId: 'local',
+      maxConcurrentRequests: 1,
       baseUrl: `http://127.0.0.1:${(model.address() as any).port}/v1`,
     });
     const p = f.store.createProject({ name: 'Questions', instructions: '', toolsEnabled: false });
@@ -335,6 +340,17 @@ test('real SDK asks, waits through reload, accepts an answer once, and retains s
     assert.equal(after.status, 'Waiting for your answer');
     assert(requests[0].tools.some((t: any) => t.function.name === 'ask_user_question'));
     assert(JSON.stringify(requests[0].messages).includes('cobalt'));
+    const parallel = f.store.createConversation(p.id);
+    await f.auth(`/conversations/${parallel.id}/messages`, 'POST', {
+      requestId: randomUUID(),
+      text: 'Concurrent while waiting',
+    });
+    await waitUntil(() => !f.runner.active.has(parallel.id));
+    assert.equal(f.runner.snapshot(parallel.id).status, 'completed');
+    assert(
+      f.runner.questions.get(c.id),
+      'The original question remains pending while another conversation completes',
+    );
     const answerUrl = `/conversations/${c.id}/questions/${after.question.id}`;
     const answer = {
       runId,
@@ -344,8 +360,8 @@ test('real SDK asks, waits through reload, accepts an answer once, and retains s
     assert.equal((await f.auth(answerUrl, 'POST', answer)).statusCode, 200);
     await waitUntil(() => !f.runner.snapshot(c.id).running);
     assert.equal(f.runner.snapshot(c.id).error, undefined);
-    assert.equal(requests.length, 2);
-    assert(JSON.stringify(requests[1].messages).includes('Include details'));
+    assert.equal(requests.length, 3);
+    assert(JSON.stringify(requests[2].messages).includes('Include details'));
     assert.equal((await f.charts.sources.list(c.id, { kind: 'document' })).sources[0]?.id, file.id);
     await f.auth(`/conversations/${c.id}/messages`, 'POST', {
       requestId: randomUUID(),

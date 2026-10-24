@@ -105,7 +105,7 @@ try {
   });
   await page.goto(`http://127.0.0.1:${port}`);
   await page.getByLabel('Setup token').fill('test');
-  await page.getByLabel('Administrator password').fill('test-password-12345');
+  await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.getByRole('button', { name: '⚙ Settings', exact: true }).click();
   await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
