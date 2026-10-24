@@ -4,6 +4,9 @@ import type { SkillEntry } from './skills.js';
 import type { ChartRef } from './charts.js';
 import type { SqlApproval, SqlResult } from './plugins.js';
 export interface ModelSettings {
+  maxConcurrentRequests?: number;
+  supportsImages?: boolean;
+  supportsTools?: boolean;
   baseUrl: string;
   modelId: string;
   contextWindow: number;
@@ -91,6 +94,7 @@ export interface ChatMetrics {
   };
 }
 export interface WorkerInput {
+  sandbox?: import('../server/sandbox.js').Sandbox;
   excel?: import('./excel.js').ExcelModelContext;
   skills?: SkillEntry[];
   operation?: 'prompt' | 'compact';

@@ -95,7 +95,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(origin);
   await page.getByLabel('Setup token').fill('maintenance-test');
-  await page.getByLabel('Administrator password').fill('maintenance-test-password');
+  await page.getByLabel('Password').fill('maintenance-test-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByRole('tab', { name: 'Knowledge', exact: true }).click();

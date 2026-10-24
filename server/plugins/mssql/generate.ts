@@ -9,8 +9,7 @@ export interface Generator {
   ): Promise<string>;
 }
 /**
- * Enrichment talks to the same local llama.cpp endpoint as chat, through the same private-address
- * guard. It is deliberately not a Pi agent session: no tools, no history, one JSON answer.
+ * Enrichment uses the configured OpenAI-compatible endpoint. It is deliberately not a Pi agent session: no tools, no history, one JSON answer.
  */
 export class LocalGenerator implements Generator {
   constructor(readonly settings: () => StoredSettings) {}
@@ -54,10 +53,6 @@ export class LocalGenerator implements Generator {
           temperature: 0,
           stream: false,
           max_tokens: maxTokens,
-          // llama.cpp supports these per-request options; normal chat thinking is unchanged.
-          response_format: { type: 'json_object' },
-          chat_template_kwargs: { enable_thinking: false },
-          reasoning_effort: 'none',
           messages: [
             { role: 'system', content: request.system },
             { role: 'user', content: prompt },
@@ -89,7 +84,7 @@ export class LocalGenerator implements Generator {
             continue;
           }
           throw new Error(
-            'This single-item request exceeds the llama.cpp context. Match Frame’s context window to the server’s per-slot size. Completed notes are kept.',
+            'This single-item request exceeds the model server context. Match Frame’s context window to the server’s per-request capacity. Completed notes are kept.',
           );
         }
         throw new Error(
@@ -123,7 +118,7 @@ function shorten(prompt: string, budget: number) {
   const instructions = shape >= 0 ? Buffer.byteLength(prompt.slice(shape)) : 0;
   if (instructions > available - 64)
     throw new Error(
-      'This single-item request cannot fit its JSON instructions in the available context. Check the llama.cpp per-slot size and Frame context setting. Completed notes are kept.',
+      'This single-item request cannot fit its JSON instructions in the available context. Check the model server per-request capacity and Frame context setting. Completed notes are kept.',
     );
   const tail = Math.max(instructions, Math.ceil(available * 0.4));
   const head = available - tail;

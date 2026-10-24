@@ -100,7 +100,7 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
     assert.equal((await f.auth('/excel/manifest')).statusCode, 400);
     assert.equal(
       (await f.auth('/excel/sessions', 'POST', { projectId: randomUUID() })).statusCode,
-      400,
+      404,
     );
     const p = f.store.createProject({ name: 'Excel', instructions: '', toolsEnabled: true });
     const a = f.excel.create(p.id),
@@ -558,7 +558,7 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
         .snapshot(id)
         .messages.filter((m) => m.role === 'tool')
         .at(-1)!.text,
-      /read-only SQL/,
+      /read-only SQL|disabled in system plugin settings/,
     );
     assert(JSON.stringify(requests.at(-1).messages).includes('Updated Input!A1:B2.'));
     mode = 'read';

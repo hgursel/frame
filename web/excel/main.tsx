@@ -367,6 +367,7 @@ function App() {
     [officeError, setOfficeError] = useState('');
   const [signedIn, setSignedIn] = useState(false),
     [password, setPassword] = useState('');
+  const [username, setUsername] = useState('admin');
   const [projects, setProjects] = useState<Project[]>([]),
     [project, setProject] = useState('');
   const [session, setSession] = useState<Session>(),
@@ -405,11 +406,26 @@ function App() {
   const loadProjects = async () => {
     const list = await api<Project[]>('/projects');
     setProjects(list);
-    setProject((p) => p || list[0]?.id || '');
+    setProject((p) => (list.some((item) => item.id === p) ? p : list[0]?.id || ''));
     setSignedIn(true);
   };
   useEffect(() => {
-    const signedOut = () => setSignedIn(false);
+    const signedOut = () => {
+      setSignedIn(false);
+      setSession(undefined);
+      setState(undefined);
+      setProjects([]);
+      setProject('');
+      setReview(undefined);
+      setText('');
+      setAttached([]);
+      setDocuments([]);
+      setChatFiles([]);
+      setSettings(undefined);
+      outbox.current = undefined;
+      workbookReplies.current.clear();
+      pollVersion.current++;
+    };
     window.addEventListener('frame-signed-out', signedOut);
     return () => window.removeEventListener('frame-signed-out', signedOut);
   }, []);
@@ -738,16 +754,30 @@ function App() {
             onSubmit={(e) => {
               e.preventDefault();
               void action(async () => {
-                await api('/auth/login', 'POST', { password });
+                await api('/auth/login', 'POST', { username, password });
+                const me = await api<{ mustChangePassword: number }>('/auth/me');
+                if (me.mustChangePassword)
+                  throw new Error(
+                    'Open Frame in your browser to change your temporary password, then return here.',
+                  );
                 setPassword('');
                 await loadProjects();
               });
             }}
           >
             <h2>Connect to Frame</h2>
+            <label>
+              Username
+              <input
+                required
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </label>
             <p>{location.origin}</p>
             <label>
-              Frame administrator password
+              Frame password
               <input
                 type="password"
                 autoComplete="current-password"

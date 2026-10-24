@@ -7,10 +7,10 @@ export const config: MssqlSettings = {
   server: '127.0.0.1',
   databases: ['Dev'],
   read: { username: 'reader', password: 'reader-secret' },
-  write: { username: 'writer', password: 'writer-secret' },
-  allowDataChanges: true,
-  allowSchemaChanges: true,
-  allowProcedures: true,
+  write: { username: '', password: '' },
+  allowDataChanges: false,
+  allowSchemaChanges: false,
+  allowProcedures: false,
   procedures: [{ database: 'Dev', schema: 'dbo', name: 'Approved' }],
 };
 export class FakeSql implements SqlDriver {

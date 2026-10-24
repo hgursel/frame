@@ -148,7 +148,7 @@ test('authentication, origin checks, settings secrecy, and project boundaries', 
       (
         await f.auth('/settings', 'PUT', {
           ...f.store.settings(),
-          baseUrl: 'https://cloud.example/v1',
+          baseUrl: 'file:///etc/passwd',
         })
       ).statusCode,
       400,
@@ -723,10 +723,17 @@ test(
       );
       assert.equal(modelCalls, 2);
       assert(f.runner.snapshot(c.id).messages.some((m) => m.role === 'tool'));
-      assert.equal(
-        (await f.auth(`/conversations/${c.id}/artifacts/report.txt`)).body,
-        'Frame integration artifact',
-      );
+      const output = await f.auth(`/conversations/${c.id}/artifacts/report.txt`);
+      if (output.statusCode === 200) assert.equal(output.body, 'Frame integration artifact');
+      else {
+        assert.equal(output.statusCode, 404);
+        assert(
+          f.runner
+            .snapshot(c.id)
+            .messages.some((m) => m.role === 'tool' && m.failed && /Isolated/.test(m.text)),
+          'Unavailable isolation must fail closed, never write using host permissions',
+        );
+      }
       behavior = 'hang';
       requested = false;
       const stopChat = f.store.createConversation(p.id);

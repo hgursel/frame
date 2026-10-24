@@ -138,7 +138,7 @@ export function PluginSettings() {
               placeholder="One database name per line"
             />
           </label>
-          {(['read', 'write'] as const).map((kind) => (
+          {(['read'] as const).map((kind) => (
             <fieldset key={kind} className="login-group">
               <legend>{kind === 'read' ? 'Read-only SQL login' : 'Write SQL login'}</legend>
               <label>
@@ -174,52 +174,8 @@ export function PluginSettings() {
             </fieldset>
           ))}
           <p className="muted small">
-            Use a genuinely read-only SQL Server account for automatic queries and metadata. Grant
-            the write login only the operations you intend to approve. Host tools run with the Frame
-            account's permissions and are not contained by plugin restrictions.
-          </p>
-          <h3>Allowed operations</h3>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.allowDataChanges}
-              onChange={(e) => change('allowDataChanges', e.target.checked)}
-            />
-            Allow INSERT, UPDATE, and DELETE with approval
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.allowSchemaChanges}
-              onChange={(e) => change('allowSchemaChanges', e.target.checked)}
-            />
-            Allow table/index schema changes with approval (including DROP and TRUNCATE)
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.allowProcedures}
-              onChange={(e) => change('allowProcedures', e.target.checked)}
-            />
-            Allow selected stored procedures with approval
-          </label>
-          <p className="muted small">
-            Knowledge uses schema structure and parameterized query templates. SQL result values are
-            never used for learning.
-          </p>
-          <label>
-            Allowed stored procedures
-            <textarea
-              aria-label="Allowed stored procedures"
-              rows={4}
-              value={procedures}
-              onChange={(e) => setProcedures(e.target.value)}
-              placeholder="Database | Schema | Procedure (one per line)"
-            />
-          </label>
-          <p className="muted small">
-            Procedures may modify data or access other objects internally. Their SQL Server
-            permissions remain the final boundary.
+            Use a SQL Server login restricted to SELECT and permitted metadata. Frame disables
+            writes and stored procedures for all users.
           </p>
           <h3>Connection and result limits</h3>
           <p className="muted small">
@@ -260,7 +216,7 @@ export function PluginSettings() {
         </fieldset>
       </form>
       <div className="button-row">
-        {(['read', 'write'] as const).map((login) => (
+        {(['read'] as const).map((login) => (
           <button
             key={login}
             disabled={busy || !form.databases.length}
@@ -309,6 +265,7 @@ export function PluginSettings() {
   );
 }
 export function ProjectPlugins({ projectId }: { projectId: string }) {
+  const [excel, setExcel] = useState(true);
   const [reports, setReports] = useState(false);
   const [reportsSystem, setReportsSystem] = useState(false);
   const [charts, setCharts] = useState(false);
@@ -323,6 +280,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   useEffect(() => {
     let live = true;
     void api<{
+      excel: boolean;
       mssql: boolean;
       systemEnabled: boolean;
       charts: boolean;
@@ -332,6 +290,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
     }>(`/projects/${projectId}/plugins`)
       .then((v) => {
         if (live) {
+          setExcel(v.excel);
           setEnabled(v.mssql);
           setSystem(v.systemEnabled);
           setCharts(v.charts);
@@ -351,6 +310,15 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project plugins</h2>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={excel}
+          disabled={!loaded || busy}
+          onChange={(e) => setExcel(e.target.checked)}
+        />
+        Frame for Excel
+      </label>
       <label className="checkbox">
         <input
           type="checkbox"
@@ -410,6 +378,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
           setError('');
           try {
             await api(`/projects/${projectId}/plugins`, 'PUT', {
+              excel,
               mssql: enabled,
               charts,
               reports,

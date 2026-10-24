@@ -92,6 +92,11 @@ export class MssqlPlugin extends EventEmitter {
       ...structuredClone(defaults),
       ...(existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}),
       allowValueSampling: false,
+      allowDataChanges: false,
+      allowSchemaChanges: false,
+      allowProcedures: false,
+      write: { username: '', password: '' },
+      procedures: [],
     };
   }
   publicSettings(): PublicMssqlSettings {
@@ -103,7 +108,16 @@ export class MssqlPlugin extends EventEmitter {
     };
   }
   save(input: unknown) {
-    const v = settingsSchema.parse(input),
+    const requested = settingsSchema.parse(input);
+    if (
+      requested.allowDataChanges ||
+      requested.allowSchemaChanges ||
+      requested.allowProcedures ||
+      requested.write?.username ||
+      requested.write?.password
+    )
+      throw fail('Frame uses one read-only SQL login. Writes and stored procedures are disabled.');
+    const v = requested,
       prior = this.settings();
     const s: MssqlSettings = {
       ...v,
@@ -413,6 +427,7 @@ export class MssqlPlugin extends EventEmitter {
     return pages;
   }
   async test(database: string, login: 'read' | 'write') {
+    if (login !== 'read') throw fail('Only the read-only connection is available.');
     const s = this.settings();
     if (!s.databases.includes(database) || !s[login].username || !s[login].password)
       throw fail('Configure this database and login first.');

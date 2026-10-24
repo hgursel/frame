@@ -10,9 +10,13 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { hashPassword } from './security.js';
 import type { Conversation, Project, StoredSettings } from '../shared/types.js';
 
 export const defaults: StoredSettings = {
+  maxConcurrentRequests: 2,
+  supportsImages: true,
+  supportsTools: true,
   baseUrl: 'http://127.0.0.1:8080/v1',
   modelId: '',
   contextWindow: 32768,
@@ -56,10 +60,40 @@ export class Store {
       )
     )
       this.db.exec('ALTER TABLE conversations ADD COLUMN incognito INTEGER NOT NULL DEFAULT 0');
+    this.db.exec(`CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      password TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','user')),
+      disabled INTEGER NOT NULL DEFAULT 0, mustChangePassword INTEGER NOT NULL DEFAULT 0
+    )`);
+    for (const [table, column] of [
+      ['projects', 'ownerId'],
+      ['logins', 'userId'],
+    ]) {
+      if (
+        !(this.db.prepare(`PRAGMA table_info(${table})`).all() as any[]).some(
+          (c) => c.name === column,
+        )
+      )
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT REFERENCES users(id)`);
+    }
+    if (this.meta('password') && !this.db.prepare('SELECT id FROM users LIMIT 1').get()) {
+      this.db.exec('BEGIN IMMEDIATE');
+      try {
+        const id = randomUUID();
+        this.db
+          .prepare('INSERT INTO users(id,username,password,role) VALUES (?,?,?,?)')
+          .run(id, 'admin', this.meta('password')!, 'admin');
+        this.db.prepare('UPDATE projects SET ownerId=? WHERE ownerId IS NULL').run(id);
+        this.db.exec("DELETE FROM logins; DELETE FROM meta WHERE key='password'; COMMIT");
+      } catch (error) {
+        this.db.exec('ROLLBACK');
+        throw error;
+      }
+    }
     chmodSync(path.join(root, 'frame.db'), 0o600);
     this.db
       .prepare(
-        "UPDATE runs SET status='interrupted', error='Frame restarted before this run completed. Review the conversation before retrying.' WHERE status='running'",
+        "UPDATE runs SET status='interrupted', error='Frame restarted before this run completed. Review the conversation before retrying.' WHERE status IN ('running','queued')",
       )
       .run();
   }
@@ -83,6 +117,28 @@ export class Store {
     writeFileSync(`${file}.tmp`, JSON.stringify(value, null, 2), { mode: 0o600 });
     renameSync(`${file}.tmp`, file);
   }
+  user(id: string): any {
+    return this.db
+      .prepare('SELECT id,username,role,disabled,mustChangePassword FROM users WHERE id=?')
+      .get(id);
+  }
+  createUser(username: string, password: string, role = 'user', mustChangePassword = true) {
+    const id = randomUUID();
+    this.db
+      .prepare('INSERT INTO users(id,username,password,role,mustChangePassword) VALUES (?,?,?,?,?)')
+      .run(id, username.toLowerCase(), hashPassword(password), role, Number(mustChangePassword));
+    return this.user(id);
+  }
+  ownsProject(userId: string, id: string) {
+    return !!this.db.prepare('SELECT id FROM projects WHERE id=? AND ownerId=?').get(id, userId);
+  }
+  ownsConversation(userId: string, id: string) {
+    return !!this.db
+      .prepare(
+        'SELECT c.id FROM conversations c JOIN projects p ON p.id=c.projectId WHERE c.id=? AND p.ownerId=?',
+      )
+      .get(id, userId);
+  }
   projects(): Project[] {
     return (
       this.db.prepare('SELECT * FROM projects ORDER BY name').all() as unknown as Project[]
@@ -93,12 +149,23 @@ export class Store {
       Project | undefined;
     return p && { ...p, toolsEnabled: !!p.toolsEnabled };
   }
-  createProject(input: Omit<Project, 'id'>) {
-    const project = { id: randomUUID(), ...input };
+  createProject(input: Omit<Project, 'id'>, ownerId?: string) {
+    ownerId ??= (
+      this.db.prepare("SELECT id FROM users WHERE role='admin' ORDER BY rowid LIMIT 1").get() as any
+    )?.id;
+    const project = { id: randomUUID(), ...input, ownerId: ownerId ?? null };
     mkdirSync(this.projectPath(project.id), { recursive: true, mode: 0o700 });
     this.db
-      .prepare('INSERT INTO projects VALUES (?, ?, ?, ?)')
-      .run(project.id, project.name, project.instructions, Number(project.toolsEnabled));
+      .prepare(
+        'INSERT INTO projects(id,name,instructions,toolsEnabled,ownerId) VALUES (?, ?, ?, ?, ?)',
+      )
+      .run(
+        project.id,
+        project.name,
+        project.instructions,
+        Number(project.toolsEnabled),
+        ownerId ?? null,
+      );
     return project;
   }
   updateProject(id: string, input: Omit<Project, 'id'>) {

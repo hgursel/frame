@@ -19,7 +19,7 @@ const { app, store, runner } = await createApp({
   setupToken,
   webDir,
 });
-if (!store.meta('password')) console.log(`First-run setup token (keep private): ${setupToken}`);
+if (!store.db.prepare('SELECT id FROM users LIMIT 1').get()) console.log(`First-run setup token (keep private): ${setupToken}`);
 await app.listen({ host, port });
 console.log(`Frame is ready at ${origin}`);
 let closing = false;

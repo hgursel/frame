@@ -135,10 +135,10 @@ try {
     assert.equal(await page.evaluate(() => typeof crypto.randomUUID), 'undefined');
   }
   await page.getByLabel('Setup token').fill('browser-test-bootstrap');
-  await page.getByLabel('Administrator password').fill('browser-test-password');
+  await page.getByLabel('Password').fill('browser-test-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.getByRole('heading', { name: 'Your knowledge. Your infrastructure.' }).waitFor();
-  await page.getByRole('button', { name: 'Connect your llama.cpp endpoint' }).click();
+  await page.getByRole('button', { name: 'Configure the model connection' }).click();
   await page
     .getByLabel('Endpoint URL')
     .fill(`http://127.0.0.1:${(model.address() as { port: number }).port}/v1`);

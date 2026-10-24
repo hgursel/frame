@@ -39,7 +39,7 @@ export function ExcelSettings() {
             <dt>Excel version</dt>
             <dd>Microsoft 365 Excel Desktop on Windows with ExcelApi 1.16.</dd>
             <dt>Access</dt>
-            <dd>One administrator. Sign in inside Excel with your Frame password.</dd>
+            <dd>Sign in inside Excel with your own Frame username and password.</dd>
           </dl>
           <form
             onSubmit={async (e) => {

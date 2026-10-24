@@ -1,5 +1,4 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { isIP } from 'node:net';
 import { constants } from 'node:fs';
 import { open, realpath } from 'node:fs/promises';
 import path from 'node:path';
@@ -17,7 +16,7 @@ export function verifyPassword(password: string, encoded: string) {
   return !!salt && !!hash && equal(scryptSync(password, salt, 64).toString('hex'), hash);
 }
 
-/** Deliberately no DNS in V1: literal private addresses prevent DNS rebinding. */
+/** Administrator-selected OpenAI-compatible base URL; no automatic fallback. */
 export function localEndpoint(value: string): string {
   const url = new URL(value);
   if (
@@ -28,23 +27,7 @@ export function localEndpoint(value: string): string {
     url.hash
   )
     throw new Error('Use an HTTP(S) endpoint without credentials, query strings, or fragments.');
-  if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
-  const host = url.hostname.replace(/^\[|\]$/g, '');
-  const bytes = host.split('.').map(Number);
-  const allowed =
-    host === '::1' ||
-    (isIP(host) === 4 &&
-      (bytes[0] === 127 ||
-        bytes[0] === 10 ||
-        (bytes[0] === 192 && bytes[1] === 168) ||
-        (bytes[0] === 172 && bytes[1]! >= 16 && bytes[1]! <= 31)));
-  if (!allowed)
-    throw new Error(
-      'Use localhost, a loopback IP, or an RFC1918 private IPv4 address. Public endpoints and DNS names are disabled.',
-    );
-  if (!['/', '/v1', '/v1/'].includes(url.pathname))
-    throw new Error('The endpoint must end in /v1.');
-  url.pathname = '/v1';
+  if (url.pathname === '/') url.pathname = '/v1';
   return url.toString().replace(/\/$/, '');
 }
 

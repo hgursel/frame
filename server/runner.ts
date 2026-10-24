@@ -1,3 +1,5 @@
+import { ModelCapacity } from './model-capacity.js';
+import { mkdirSync } from 'node:fs';
 import type { Knowledge } from './knowledge.js';
 import type { ExcelSessions } from './excel/service.js';
 import type { ExcelTurn } from '../shared/excel.js';
@@ -28,6 +30,7 @@ import { Store } from './store.js';
 import { emptyMetrics, metricsKey } from './context.js';
 
 type ActiveRun = {
+  queued?: boolean;
   images?: WorkerInput['images'];
   process: ChildProcess;
   projectId: string;
@@ -42,6 +45,7 @@ type ActiveRun = {
   pluginAbort: AbortController;
 };
 export class Runner extends EventEmitter {
+  readonly capacity = new ModelCapacity(() => this.store.settings().maxConcurrentRequests || 2);
   excel?: ExcelSessions;
   readonly questions = new Questions();
   private revision = Date.now() * 1000;
@@ -73,11 +77,13 @@ export class Runner extends EventEmitter {
         sqlApproval,
         question: this.questions.get(id),
         status:
-          this.questions.get(id) && !live.stopRequested
-            ? 'Waiting for your answer'
-            : sqlApproval && !live.stopRequested
-              ? 'Awaiting SQL approval'
-              : live.snapshot.status,
+          live.queued && !live.stopRequested
+            ? 'Queued for model'
+            : this.questions.get(id) && !live.stopRequested
+              ? 'Waiting for your answer'
+              : sqlApproval && !live.stopRequested
+                ? 'Awaiting SQL approval'
+                : live.snapshot.status,
         runId: live.runId,
         revision: ++this.revision,
       };
@@ -163,6 +169,8 @@ export class Runner extends EventEmitter {
     }
     const conversation = this.store.conversation(id)!;
     const originalProject = this.store.project(conversation.projectId)!;
+    if (excel && !this.excel?.projectEnabled(originalProject.id))
+      throw Object.assign(new Error('Excel is disabled for this project.'), { statusCode: 403 });
     if (this.excel?.has(id) && !excel && operation !== 'compact')
       throw Object.assign(new Error('Continue this conversation in Frame for Excel.'), {
         statusCode: 409,
@@ -171,18 +179,12 @@ export class Runner extends EventEmitter {
       conversation.incognito || excel
         ? { ...originalProject, toolsEnabled: false }
         : originalProject;
-    if (this.reports?.busy(project.id))
-      throw Object.assign(new Error('Wait for report operations to finish.'), { statusCode: 409 });
     if (this.mssql?.schema.jobs.has(project.id))
       throw Object.assign(new Error('Wait for schema initialization to finish.'), {
         statusCode: 409,
       });
-    if (this.projectBusy(project.id))
-      throw Object.assign(new Error('Another task is running in this project. Stop it or wait.'), {
-        statusCode: 409,
-      });
-    if (this.active.size >= 2)
-      throw Object.assign(new Error('Two tasks are already running. Wait for one to finish.'), {
+    if (this.active.has(id))
+      throw Object.assign(new Error('This conversation already has an active response.'), {
         statusCode: 409,
       });
     const settings = this.store.settings();
@@ -190,6 +192,12 @@ export class Runner extends EventEmitter {
       throw Object.assign(new Error('Configure your local model in Settings first.'), {
         statusCode: 400,
       });
+    if (images?.length && settings.supportsImages === false)
+      throw Object.assign(new Error('Image input is disabled for this model.'), {
+        statusCode: 400,
+      });
+    const workDir = path.join(this.store.artifacts(conversation), 'work');
+    mkdirSync(workDir, { recursive: true, mode: 0o700 });
     this.emit('foreground');
     if (conversation.incognito && !this.ephemeral.has(id)) this.ephemeral.set(id, { entries: [] });
     const history = conversation.incognito
@@ -228,7 +236,7 @@ export class Runner extends EventEmitter {
     let child: ChildProcess;
     try {
       child = fork(workerFile, [], {
-        cwd: this.store.projectPath(project.id),
+        cwd: workDir,
         detached: true,
         execArgv: workerFile.endsWith('.ts') ? ['--import', import.meta.resolve('tsx')] : [],
         stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
@@ -294,6 +302,26 @@ export class Runner extends EventEmitter {
         void Promise.resolve()
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
+            if (event.action === 'model_acquire') {
+              active.queued = true;
+              active.snapshot.status = 'Queued for model';
+              this.emit(id);
+              return this.capacity.acquire(runId, active.pluginAbort.signal).then(() => {
+                if (active.stopRequested) {
+                  this.capacity.release(runId);
+                  throw new Error('Task stopped');
+                }
+                active.queued = false;
+                active.snapshot.status = 'Waiting for model';
+                this.emit(id);
+                return { ok: true };
+              });
+            }
+            if (event.action === 'model_release') {
+              this.capacity.release(runId);
+              return { ok: true };
+            }
+
             if (event.action === 'excel_propose') {
               if (!excel || !this.excel)
                 throw new Error('Workbook tools require an Excel session.');
@@ -435,6 +463,7 @@ export class Runner extends EventEmitter {
       deadline.close();
       this.questions.finish(runId);
       active.pluginAbort.abort();
+      this.capacity.release(runId);
       this.mssql?.cancelRun(runId);
       this.killGroup(child);
       const status = error
@@ -481,7 +510,25 @@ export class Runner extends EventEmitter {
     child.once('close', finish);
     child.send(
       {
-        cwd: this.store.projectPath(project.id),
+        cwd: workDir,
+        sandbox: {
+          writable: this.store.artifacts(conversation),
+          hidden: [
+            this.store.root,
+            fileURLToPath(
+              new URL(import.meta.url.endsWith('.ts') ? '../' : '../../', import.meta.url),
+            ),
+          ],
+          readonly: [
+            path.join(this.store.projectPath(project.id), 'knowledge'),
+            path.join(this.store.projectPath(project.id), 'uploads', id),
+            ...(project.toolsEnabled
+              ? (this.skills?.context(project.id) || []).map((s) => s.baseDir)
+              : []),
+            ...(pythonPath ? [path.dirname(path.dirname(pythonPath))] : []),
+          ],
+          pythonPath,
+        },
         agentDir: path.join(this.store.root, 'agent', id),
         sessionFile: this.store.sessionFile(id),
         ephemeralEntries: conversation.incognito

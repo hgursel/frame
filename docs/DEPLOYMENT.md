@@ -51,7 +51,7 @@ Then run `sudo systemctl daemon-reload` and `sudo systemctl restart frame`. A no
 
 ## HTTPS LAN access
 
-Keep Frame on loopback and put an HTTPS reverse proxy in front. Set `FRAME_ORIGIN=https://frame.example.internal` to your real origin. Preserve that Host header; do not replace it with `127.0.0.1`. Forward SSE without buffering. Frame’s password authentication remains required; do not assume a reverse proxy creates project isolation or multi-user authorization.
+Keep Frame on loopback and put an HTTPS reverse proxy in front. Set `FRAME_ORIGIN=https://frame.example.internal` to your real origin. Preserve that Host header; do not replace it with `127.0.0.1`. Forward SSE without buffering. Frame’s password authentication remains required; Frame enforces owner-only project access; a reverse proxy does not replace its account checks.
 
 An illustrative Caddy block:
 
@@ -72,7 +72,7 @@ Stop Frame cleanly before backing up the entire configured data directory. Inclu
 
 ## Dependencies and updates
 
-The lockfile pins application dependencies. Installing/building requires package-registry access; running against a local model does not require cloud model APIs. Changes to SDK versions must pass the mock integration suite and a real llama.cpp acceptance test. Python document tools install only through the explicit Settings action or `npm run python:setup`; Ubuntu needs `python3-venv`. Skills are loaded only from folders you configure; Frame does not install them or run their setup steps. MCP is not supported.
+The lockfile pins application dependencies. Installing/building requires package-registry access; running against a local model does not require cloud model APIs. Changes to SDK versions must pass the mock integration suite and an acceptance test with your configured model server. Python document tools install only through the explicit Settings action or `npm run python:setup`; Ubuntu needs `python3-venv`. Skills are loaded only from folders you configure; Frame does not install them or run their setup steps. MCP is not supported.
 
 For the 0.2 update, stop Frame, back up its data directory, pull the latest code, run `npm ci` and `npm run build`, then restart. SQLite adds the knowledge tables without replacing existing projects or conversations. Use Settings to install document tools when PDF/DOCX features are needed. Keep the repository's `python/` folder alongside the compiled application; the Node service invokes its document helper.
 
@@ -80,4 +80,8 @@ The included systemd hardening is defense-in-depth, not a sandbox. Tool executio
 
 ## Image message limits
 
-Chat image messages can be up to 12 MiB including JSON/base64 overhead (up to 8 MiB of encoded image files in total). If using a reverse proxy, allow at least 12 MiB request bodies for the messages endpoint; for nginx, use `client_max_body_size 12m;` in the relevant server/location. Images are served through authenticated conversation URLs with `Cache-Control: no-store`. Frame does not configure the llama.cpp vision projector: configure vision support on that server before sending images.
+Chat image messages can be up to 12 MiB including JSON/base64 overhead (up to 8 MiB of encoded image files in total). If using a reverse proxy, allow at least 12 MiB request bodies for the messages endpoint; for nginx, use `client_max_body_size 12m;` in the relevant server/location. Images are served through authenticated conversation URLs with `Cache-Control: no-store`. Frame does not configure the model engine: enable image input only when the chosen backend supports vision.
+
+## Multiuser upgrade
+
+Back up the complete data directory while Frame is stopped, then follow [account migration and isolation checks](MULTIUSER.md). File/Python tools require bubblewrap and permitted Linux user namespaces.

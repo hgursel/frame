@@ -54,13 +54,13 @@ export function SkillsSettings() {
   return (
     <section className="plugin-card">
       <h2>Skills</h2>
-      <p className="muted">Agent Skills · SKILL.md folders · Run with trusted agent tools</p>
+      <p className="muted">Agent Skills · SKILL.md folders · Isolated execution</p>
       <p>
         Point Frame at folders of skills in the Agent Skills format used by OpenCode, Claude Code,
         and Pi: each skill is a folder with a <code>SKILL.md</code> and optional scripts. Enable
         skills per project. The model sees each skill’s name and description, reads the full
-        instructions when a task matches, and runs its scripts with the project’s trusted agent
-        tools. Type <code>/</code> in a chat to pick a skill directly.
+        instructions when a task matches, and runs its scripts with the project’s isolated file and
+        Python tools. Type <code>/</code> in a chat to pick a skill directly.
       </p>
       <label>
         Skill folders
@@ -74,9 +74,9 @@ export function SkillsSettings() {
       </label>
       <p className="muted small">
         One absolute path per line, readable by the Linux account running Frame. Keep skills outside
-        the Frame checkout. For credentials, keep a <code>chmod 600</code> <code>.env</code> in the
-        skill and load it from your script; Frame does not read it. Trusted agent tools can read any
-        file the Frame account can, so the model is not prevented from opening it.
+        the Frame checkout and private data. Enabled skill folders are visible read-only to users’
+        tools. Do not place credentials or private files in skill folders. Configure shared
+        connections through Frame’s administrator settings.
       </p>
       <div className="button-row">
         <button

@@ -87,7 +87,17 @@ export class ExcelSessions {
       this.save(p);
     }
   }
+  projectEnabled(projectId: string) {
+    return (
+      (
+        this.store.db
+          .prepare("SELECT enabled FROM project_plugins WHERE projectId=? AND plugin='excel'")
+          .get(projectId) as any
+      )?.enabled !== 0
+    );
+  }
   create(projectId: string) {
+    if (!this.projectEnabled(projectId)) throw fail('Excel is disabled for this project.', 403);
     if (!this.store.project(projectId)) throw fail('Project not found.', 404);
     const conversation = this.store.createConversation(projectId);
     const clientKey = randomBytes(32).toString('hex');

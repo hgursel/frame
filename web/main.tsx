@@ -1,3 +1,4 @@
+import { AccountGate, AccountSettings, UsersSettings, useUser } from './Accounts.js';
 import { QuestionCard } from './QuestionCard.js';
 import { ExcelSettings } from './ExcelSettings.js';
 import { ConversationPanel } from './ConversationPanel.js';
@@ -51,7 +52,7 @@ function App() {
     void api<{ setupRequired: boolean }>('/auth/status')
       .then((status) => {
         setSetup(status.setupRequired);
-        return api('/projects')
+        return api('/auth/me')
           .then(() => setAuthenticated(true))
           .catch(() => {});
       })
@@ -66,7 +67,9 @@ function App() {
       </main>
     );
   return authenticated ? (
-    <Workspace />
+    <AccountGate>
+      <Workspace />
+    </AccountGate>
   ) : (
     <Login
       setup={setup}
@@ -78,6 +81,7 @@ function App() {
   );
 }
 function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
+  const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
@@ -99,8 +103,8 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
             setError('');
             setBusy(true);
             try {
-              if (setup) await api('/auth/setup', 'POST', { password, token });
-              await api('/auth/login', 'POST', { password });
+              if (setup) await api('/auth/setup', 'POST', { username, password, token });
+              await api('/auth/login', 'POST', { username, password });
               onDone();
             } catch (e) {
               setError(String((e as Error).message));
@@ -109,6 +113,15 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
             }
           }}
         >
+          <label>
+            Username
+            <input
+              required
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </label>
           {setup && (
             <label>
               Setup token
@@ -122,7 +135,7 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
             </label>
           )}
           <label>
-            Administrator password
+            Password
             <input
               required
               minLength={12}
@@ -150,6 +163,7 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
 }
 
 function Workspace() {
+  const user = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 760);
   const [theme, setTheme] = useState(() => localStorage.getItem('frame-theme') || 'light');
   const [chatSearch, setChatSearch] = useState('');
@@ -802,7 +816,11 @@ function Workspace() {
           )}
         </header>
         {page === 'settings' && settings ? (
-          <Settings initial={settings} onSaved={refresh} />
+          user?.role === 'admin' ? (
+            <Settings initial={settings} onSaved={refresh} />
+          ) : (
+            <AccountSettings />
+          )
         ) : page === 'knowledge' && project ? (
           <KnowledgePanel
             key={projectId}
@@ -866,9 +884,9 @@ function Workspace() {
                         <br />
                         <em>Your infrastructure.</em>
                       </h1>
-                      {!settings?.modelId && (
+                      {!settings?.modelId && user?.role === 'admin' && (
                         <button className="setup-link" onClick={() => setPage('settings')}>
-                          Connect your llama.cpp endpoint →
+                          Configure the model connection →
                         </button>
                       )}
                       {!projectId && (
@@ -1178,6 +1196,8 @@ function Workspace() {
 function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () => Promise<void> }) {
   const [form, setForm] = useState(initial);
   const tabs = [
+    'account',
+    'users',
     'model',
     'context',
     'instructions',
@@ -1235,8 +1255,12 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           </button>
         ))}
       </div>
+      {tab === 'account' && <AccountSettings />}
+      {tab === 'users' && <UsersSettings />}
       <form
         hidden={
+          tab === 'account' ||
+          tab === 'users' ||
           tab === 'documents' ||
           tab === 'plugins' ||
           tab === 'knowledge' ||
@@ -1293,7 +1317,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             Model ID
             <input
               required
-              placeholder="The model alias served by llama.cpp"
+              placeholder="The model ID served by your endpoint"
               value={form.modelId}
               onChange={(e) => setForm({ ...form, modelId: e.target.value })}
             />
@@ -1354,8 +1378,38 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             </label>
           </div>
           <small>
-            Match the context allocated per llama.cpp slot. Model size is not context size.
+            Match the context supported per request by your model server. Model size is not context
+            size.
           </small>
+          <label>
+            Concurrent model requests
+            <input
+              type="number"
+              min={1}
+              max={32}
+              value={form.maxConcurrentRequests ?? 2}
+              onChange={(e) => setForm({ ...form, maxConcurrentRequests: Number(e.target.value) })}
+            />
+          </label>
+          <small>
+            Requests above this limit wait in a queue. Choose a capacity tested with your server.
+          </small>
+          <label>
+            <input
+              type="checkbox"
+              checked={form.supportsImages !== false}
+              onChange={(e) => setForm({ ...form, supportsImages: e.target.checked })}
+            />
+            Model supports image input
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={form.supportsTools !== false}
+              onChange={(e) => setForm({ ...form, supportsTools: e.target.checked })}
+            />
+            Model supports tool calling
+          </label>
           <fieldset className="context-settings">
             <legend>Context management</legend>
             <label className="checkbox">
@@ -1495,11 +1549,10 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
         {tab === 'knowledge' && <MaintenanceSettingsPanel />}
       </div>
       <div className="scope-note">
-        <strong>V1 · Single administrator</strong>
+        <strong>Personal workspaces</strong>
         <p>
-          Multi-user access is planned for V2. Add local skill folders under Plugins. Online skill
-          installation and MCP management are not available. Local models must already be running in
-          llama.cpp.
+          Manage accounts under Users and installed skills under Plugins. Each user owns their
+          projects and knowledge. Configure your chosen OpenAI-compatible model server under Model.
         </p>
       </div>
     </section>
@@ -1560,12 +1613,12 @@ function ProjectForm({
         <div className="warning">
           <label className="checkbox">
             <input type="checkbox" checked={tools} onChange={(e) => setTools(e.target.checked)} />
-            Enable trusted agent tools
+            Enable file and Python tools
           </label>
           <p>
             Allows reading, writing, editing, and shell/Python execution without per-command
-            approval. The agent can access anything the Frame Linux account can access, including
-            outside this project. This is not a sandbox. Enable only for trusted, supervised work.
+            approval within this conversation’s isolated files. Project knowledge and installed
+            skills are read-only. Network access is unrestricted.
           </p>
         </div>
         <button className="primary" disabled={busy}>
