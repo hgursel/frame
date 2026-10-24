@@ -24,7 +24,7 @@ try {
   await admin.goto(origin);
   await admin.getByLabel('Setup token').fill('ui-setup-token');
   await admin.getByLabel('Username', { exact: true }).fill('admin');
-  await admin.getByLabel('Password', { exact: true }).fill('admin-browser-password');
+  await admin.getByLabel('Password').fill('admin-browser-password');
   await admin.getByRole('button', { name: 'Create workspace' }).click();
   await admin.getByRole('button', { name: '⚙ Settings' }).click();
   await admin.getByRole('tab', { name: 'Users', exact: true }).click();
@@ -39,7 +39,7 @@ try {
   alice.on('pageerror', (e) => errors.push(e.message));
   await alice.goto(origin);
   await alice.getByLabel('Username', { exact: true }).fill('alice');
-  await alice.getByLabel('Password', { exact: true }).fill('alice-temporary-password');
+  await alice.getByLabel('Password').fill('alice-temporary-password');
   await alice.getByRole('button', { name: 'Sign in', exact: false }).click();
   await expect(alice.getByRole('heading', { name: 'Choose your password' })).toBeVisible();
   await alice.getByLabel('Current password').fill('alice-temporary-password');
