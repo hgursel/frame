@@ -48,8 +48,14 @@ test('personal workspaces deny every cross-owner project/chat route, including a
       ).statusCode,
       200,
     );
-    assert.deepEqual((await bob.call('/projects')).json(), []);
-    assert.deepEqual((await f.auth('/projects')).json(), []);
+    assert.deepEqual(
+      (await bob.call('/projects')).json().map((p: any) => p.name),
+      ['Arena'],
+    );
+    assert.deepEqual(
+      (await f.auth('/projects')).json().map((p: any) => p.name),
+      ['Arena'],
+    );
     assert.deepEqual((await bob.call('/conversations')).json(), []);
     for (const route of apiRoutes(f.app)) {
       if (!/^\/api\/(projects\/|conversations\/|excel\/sessions\/)/.test(route.url)) continue;
@@ -86,7 +92,7 @@ test('personal workspaces deny every cross-owner project/chat route, including a
     );
     assert.equal(
       (await alice.call(`/projects/${p.id}/skills`, 'PUT', { enabled: [] })).statusCode,
-      200,
+      403,
     );
     assert.equal(
       (

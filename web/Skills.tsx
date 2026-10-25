@@ -79,23 +79,25 @@ export function SkillsSettings() {
         connections through Frame’s administrator settings.
       </p>
       <div className="button-row">
-        <button
-          disabled={!catalog || busy}
-          onClick={() =>
-            void run(
-              () =>
-                api<SkillsCatalog>('/skills', 'PUT', {
-                  folders: folders
-                    .split('\n')
-                    .map((f) => f.trim())
-                    .filter(Boolean),
-                }),
-              'Skill folders saved.',
-            )
-          }
-        >
-          Save skill folders
-        </button>
+        <div className="settings-actions">
+          <button
+            disabled={!catalog || busy}
+            onClick={() =>
+              void run(
+                () =>
+                  api<SkillsCatalog>('/skills', 'PUT', {
+                    folders: folders
+                      .split('\n')
+                      .map((f) => f.trim())
+                      .filter(Boolean),
+                  }),
+                'Skill folders saved.',
+              )
+            }
+          >
+            Save skill folders
+          </button>
+        </div>
         <button
           type="button"
           disabled={!catalog || busy}
@@ -155,14 +157,8 @@ export function ProjectSkillsSettings({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project skills</h2>
-      {value && !value.hostTools && (
-        <p className="warning">
-          Skills run with trusted agent tools. Enable trusted agent tools above and save the project
-          before selected skills become available in chat.
-        </p>
-      )}
       {value && !value.skills.length && (
-        <p className="muted small">No skills found. Add skill folders in Settings → Plugins.</p>
+        <p className="muted small">No skills found. Add skill folders in Settings → Skills.</p>
       )}
       {value?.skills.map((s) => (
         <React.Fragment key={s.name}>
@@ -200,28 +196,30 @@ export function ProjectSkillsSettings({ projectId }: { projectId: string }) {
             </div>
           ))}
       {value && (
-        <button
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setNotice('');
-            setError('');
-            try {
-              const v = await api<ProjectSkills>(`/projects/${projectId}/skills`, 'PUT', {
-                enabled,
-              });
-              setValue(v);
-              setEnabled(v.enabled);
-              setNotice('Project skills saved.');
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          Save project skills
-        </button>
+        <div className="settings-actions">
+          <button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setNotice('');
+              setError('');
+              try {
+                const v = await api<ProjectSkills>(`/projects/${projectId}/skills`, 'PUT', {
+                  enabled,
+                });
+                setValue(v);
+                setEnabled(v.enabled);
+                setNotice('Project skills saved.');
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Save project skills
+          </button>
+        </div>
       )}
       {notice && <p role="status">{notice}</p>}
       {error && (
@@ -264,11 +262,7 @@ export function useSkillPicker(
     if (!draft.startsWith('/')) setDismissed(false);
   }, [draft]);
   const value = project && project.id === projectId ? project.value : undefined;
-  const reason =
-    unavailable ||
-    (value && !value.hostTools
-      ? 'Skills need trusted agent tools. Enable them in Project settings.'
-      : undefined);
+  const reason = unavailable;
   const options =
     value && !reason
       ? value.skills.filter((s) => value.enabled.includes(s.name) && s.name.includes(query || ''))

@@ -274,23 +274,25 @@ export function ReportsSettings({ projectId }: { projectId?: string }) {
           </p>
         </div>
         <div className="row-actions">
-          <button
-            type="button"
-            onClick={() =>
-              void action(async () => {
-                load(
-                  await api<ReportSettings>(
-                    endpoint,
-                    'PUT',
-                    projectId ? { overrides } : { enabled, profile: form },
-                  ),
-                );
-                setNotice('Report settings saved.');
-              })
-            }
-          >
-            Save report settings
-          </button>
+          <div className="settings-actions">
+            <button
+              type="button"
+              onClick={() =>
+                void action(async () => {
+                  load(
+                    await api<ReportSettings>(
+                      endpoint,
+                      'PUT',
+                      projectId ? { overrides } : { enabled, profile: form },
+                    ),
+                  );
+                  setNotice('Report settings saved.');
+                })
+              }
+            >
+              Save report settings
+            </button>
+          </div>
           <button
             type="button"
             disabled={settings.runtime.state !== 'ready'}

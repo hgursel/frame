@@ -41,24 +41,26 @@ export function ChartsSettings() {
         created on request, never automatically after a query. Existing charts remain readable when
         the plugin is disabled.
       </p>
-      <button
-        disabled={!loaded || busy}
-        onClick={async () => {
-          setBusy(true);
-          setNotice('');
-          setError('');
-          try {
-            await api('/plugins/charts', 'PUT', { enabled });
-            setNotice('Charts settings saved.');
-          } catch (e) {
-            setError((e as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        Save Charts settings
-      </button>
+      <div className="settings-actions">
+        <button
+          disabled={!loaded || busy}
+          onClick={async () => {
+            setBusy(true);
+            setNotice('');
+            setError('');
+            try {
+              await api('/plugins/charts', 'PUT', { enabled });
+              setNotice('Charts settings saved.');
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Save Charts settings
+        </button>
+      </div>
       {notice && <p role="status">{notice}</p>}
       {error && (
         <p className="error" role="alert">

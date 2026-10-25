@@ -1,5 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
+import { zipSync, strToU8 } from 'fflate';
 import { mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
@@ -53,23 +54,89 @@ try {
   await alice.getByRole('button', { name: 'Create project', exact: true }).click();
   await alice.getByLabel('Project name').fill('Alice private research');
   await alice.locator('form').getByRole('button', { name: 'Create project', exact: true }).click();
-  await expect(alice.getByText('Alice private research', { exact: true }).first()).toBeVisible();
+  await expect(
+    alice.getByLabel('Project menu: Alice private research', { exact: true }),
+  ).toBeVisible();
   const projects = await alice.evaluate(async () => await (await fetch('/api/projects')).json());
-  assert.equal(projects.length, 1);
+  assert.equal(projects.length, 2);
+  assert(projects.some((p: any) => p.name === 'Arena'));
   const adminProjects = await admin.evaluate(
     async () => await (await fetch('/api/projects')).json(),
   );
-  assert.deepEqual(adminProjects, []);
+  assert.deepEqual(
+    adminProjects.map((p: any) => p.name),
+    ['Arena'],
+  );
   const forbidden = await admin.evaluate(
     async (id) => (await fetch(`/api/projects/${id}/documents`)).status,
-    projects[0].id,
+    projects.find((p: any) => p.name === 'Alice private research').id,
   );
   assert.equal(forbidden, 404);
   await alice.reload();
-  await expect(alice.getByText('Alice private research', { exact: true }).first()).toBeVisible();
+  await expect(
+    alice.getByLabel('Project menu: Alice private research', { exact: true }),
+  ).toBeVisible();
+  await expect(alice.locator('.sidebar-user')).toHaveText('Aalice');
+  await expect(admin.locator('.sidebar-user')).toHaveText('Aadmin');
+  await admin.getByRole('tab', { name: 'Model', exact: true }).click();
+  const width = await admin
+    .locator('.settings-page')
+    .evaluate((el) => el.getBoundingClientRect().width);
+  assert(width > 1000, 'Admin settings use the available screen width');
+  await admin.screenshot({ path: '/tmp/frame-admin-settings.png' });
+  await alice.getByLabel('Project menu: Arena', { exact: true }).click();
+  await alice.getByRole('button', { name: 'Project settings', exact: true }).click();
+  await expect(alice.getByLabel('Enable file and Python tools')).toHaveCount(0);
+  await expect(alice.getByRole('tab', { name: 'Skills', exact: true })).toHaveCount(0);
+  await alice.getByRole('tab', { name: 'Knowledge & Library' }).click();
+  await expect(alice.locator('.library-collapse')).not.toHaveAttribute('open');
+  await expect(alice.locator('.library-collapse > summary')).toContainText('0 attached');
+  await alice.getByRole('tab', { name: 'Plugins', exact: true }).click();
+  await expect(alice.getByLabel('Frame for Excel', { exact: true })).not.toBeChecked();
+  await alice.getByLabel('Frame for Excel', { exact: true }).check();
+  await alice.getByRole('button', { name: 'Save project plugins', exact: true }).click();
+  await expect(alice.getByText('Project plugins saved.', { exact: true })).toBeVisible();
+  await alice.screenshot({ path: '/tmp/frame-project-settings.png' });
+  await alice.setViewportSize({ width: 390, height: 844 });
+  await alice
+    .getByRole('button', { name: 'Close navigation', exact: true })
+    .click({ position: { x: 380, y: 50 } });
+  assert(await alice.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await alice.screenshot({ path: '/tmp/frame-mobile-settings.png' });
+  await alice.setViewportSize({ width: 1280, height: 900 });
+  await alice.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await alice.getByLabel('Project menu: Arena', { exact: true }).click();
+  await alice.getByRole('button', { name: 'Knowledge', exact: true }).click();
+  const bundle = (body: string) =>
+    Buffer.from(
+      zipSync({
+        'index.md': strToU8('---\nokf_version: "0.2"\n---\n# Index'),
+        'guide.md': strToU8('---\ntitle: Imported guide\n---\n\n' + body),
+      }),
+    );
+  const importFile = async (body: string) => {
+    await alice
+      .getByLabel('Import OKF bundle', { exact: true })
+      .setInputFiles({ name: 'bundle.zip', mimeType: 'application/zip', buffer: bundle(body) });
+    await expect(alice.getByRole('region', { name: 'OKF import preview' })).toBeVisible();
+    await alice.getByRole('button', { name: 'Import changes' }).click();
+    await expect(alice.getByRole('status').filter({ hasText: 'Imported' })).toBeVisible();
+  };
+  await importFile('# First version');
+  await importFile('# Updated version');
+  const saved = await alice.evaluate(async () => {
+    const projects = await (await fetch('/api/projects')).json();
+    const project = projects.find((p: any) => p.name === 'Arena');
+    const documents = await (await fetch(`/api/projects/${project.id}/documents`)).json();
+    return await (
+      await fetch(`/api/projects/${project.id}/documents/${documents[0].id}/revisions`)
+    ).json();
+  });
+  assert(saved.some((r: any) => r.content === '# First version'));
+  assert(saved.some((r: any) => r.content === '# Updated version'));
   assert.deepEqual(errors, []);
   console.log(
-    'Multiuser browser flow passed: account creation, forced password change, private projects, role-aware settings, and reload.',
+    'Multiuser/settings browser passed: Arena, username, private projects, desktop/mobile navigation, collapsed references, Excel opt-in, admin-only skills, and OKF update history.',
   );
 } finally {
   await browser.close();

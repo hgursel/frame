@@ -51,7 +51,10 @@ const uuid = z.string().uuid();
 const projectSchema = z.object({
   name: z.string().trim().min(1).max(80),
   instructions: z.string().max(16000).default(''),
-  toolsEnabled: z.boolean().default(false),
+  toolsEnabled: z
+    .boolean()
+    .default(true)
+    .transform(() => true),
 });
 const modelSchema = z
   .object({

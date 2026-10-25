@@ -298,8 +298,11 @@ test('workbook proposals retain one-time approval and saved SQL scope on existin
   const f = await appFixture('workbook-service');
   try {
     const fake = installExcelMock(),
-      p = f.store.createProject({ name: 'Workbook', instructions: '', toolsEnabled: false }),
-      a = f.excel.create(p.id),
+      p = f.store.createProject({ name: 'Workbook', instructions: '', toolsEnabled: false });
+    f.store.db
+      .prepare("UPDATE project_plugins SET enabled=1 WHERE projectId=? AND plugin='excel'")
+      .run(p.id);
+    const a = f.excel.create(p.id),
       b = f.excel.create(p.id);
     const operation = randomUUID();
     f.excel.capture(a.conversationId, operation, {

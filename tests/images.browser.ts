@@ -49,6 +49,7 @@ try {
   await page.getByLabel('Setup token').fill('test');
   await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
+  await page.getByRole('button', { name: '▱ Images', exact: true }).click();
   await expect(page.getByLabel('Message Frame')).toBeVisible();
   const data = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
@@ -83,13 +84,11 @@ try {
     canvas.height = 20;
     return canvas.toDataURL('image/jpeg').split(',')[1]!;
   });
-  await page
-    .getByLabel('Upload chat images')
-    .setInputFiles({
-      name: 'photo.jpg',
-      mimeType: 'image/jpeg',
-      buffer: Buffer.from(jpeg, 'base64'),
-    });
+  await page.getByLabel('Upload chat images').setInputFiles({
+    name: 'photo.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from(jpeg, 'base64'),
+  });
   await expect(page.getByAltText('photo.jpg')).toBeVisible();
 
   let rejected = false;

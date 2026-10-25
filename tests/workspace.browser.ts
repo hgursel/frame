@@ -100,6 +100,7 @@ try {
   await page.getByLabel('Setup token').fill('test');
   await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
+  await page.getByRole('button', { name: '▱ Workspace', exact: true }).click();
   await expect(page.getByLabel('Upload chat files')).toBeEnabled();
   await page.getByLabel('Upload chat files').setInputFiles({
     name: 'chat-only.txt',

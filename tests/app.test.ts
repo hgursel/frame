@@ -158,7 +158,7 @@ test('authentication, origin checks, settings secrecy, and project boundaries', 
       404,
     );
     const p = (await f.auth('/projects', 'POST', { name: 'Research' })).json();
-    assert.equal(p.toolsEnabled, false);
+    assert.equal(p.toolsEnabled, true);
     const c = (await f.auth('/conversations', 'POST', { projectId: p.id })).json();
     await mkdir(f.store.artifacts(c), { recursive: true });
     await writeFile(path.join(f.store.artifacts(c), 'test.html'), '<script>alert(1)</script>');
@@ -575,10 +575,15 @@ test(
       assert.equal(requests[0].model, 'frame-test-model');
       assert.deepEqual(requests[0].tools.map((t: any) => t.function.name).sort(), [
         'ask_user_question',
+        'bash',
+        ...(process.env.FRAME_PYTHON ? ['create_document'] : []),
+        'edit',
         'propose_knowledge',
+        'read',
         'read_chat_file',
         'read_knowledge',
         'search_knowledge',
+        'write',
       ]);
       const second = await f.auth(`/conversations/${c.id}/messages`, 'POST', {
         requestId: randomUUID(),

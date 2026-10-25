@@ -11,7 +11,7 @@ import './maintenance.css';
 import { PluginCatalog } from './PluginCatalog.js';
 import './charts.css';
 import { ProjectPlugins, SqlApprovalCard } from './Plugins.js';
-import { ProjectSkillsSettings, useSkillPicker } from './Skills.js';
+import { ProjectSkillsSettings, SkillsSettings, useSkillPicker } from './Skills.js';
 import './plugins.css';
 import { SidebarMenu } from './SidebarMenu.js';
 import React, { useEffect, useRef, useState } from 'react';
@@ -34,6 +34,7 @@ import './style.css';
 import './chat.css';
 import './refinements.css';
 import './activity.css';
+import './settings.css';
 
 function Logo() {
   return (
@@ -186,6 +187,10 @@ function Workspace() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [chats, setChats] = useState<Conversation[]>([]);
   const [projectId, setProjectId] = useState('');
+  useEffect(() => {
+    if (user && projectId && projects.some((p) => p.id === projectId))
+      localStorage.setItem(`frame-project-${user.id}`, projectId);
+  }, [projectId, projects, user?.id]);
   const currentProject = useRef(projectId);
   currentProject.current = projectId;
   const [chatId, setChatId] = useState('');
@@ -303,7 +308,7 @@ function Workspace() {
   const project = projects.find((p) => p.id === projectId);
   const isIncognito = !!chatId && incognitoId === chatId;
   const skillPicker = useSkillPicker(
-    projectId,
+    user?.role === 'admin' ? projectId : undefined,
     draft,
     setDraft,
     isIncognito ? 'Skills are unavailable in incognito chats.' : undefined,
@@ -334,7 +339,10 @@ function Workspace() {
     setProjects(p);
     setChats(c);
     setSettings(s);
-    setProjectId((prev) => (p.some((project) => project.id === prev) ? prev : p[0]?.id || ''));
+    setProjectId((prev) => {
+      const preferred = prev || (user ? localStorage.getItem(`frame-project-${user.id}`) : '');
+      return p.some((project) => project.id === preferred) ? preferred! : p[0]?.id || '';
+    });
     const selected = currentChat.current;
     if (selected && c.some((chat) => chat.id === selected)) {
       const updated = await api<ChatSnapshot>(`/conversations/${selected}`);
@@ -716,6 +724,10 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
+          <div className="sidebar-user" title={user?.username}>
+            <span aria-hidden="true">{user?.username.slice(0, 1).toUpperCase()}</span>
+            <strong>{user?.username}</strong>
+          </div>
           <button onClick={() => setPage('settings')}>⚙ Settings</button>
           <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             {theme === 'light' ? '◐ Dark appearance' : '◑ Light appearance'}
@@ -758,6 +770,9 @@ function Workspace() {
             <span className="slash">/</span>
             {page === 'settings' ? 'Settings' : project?.name || 'Getting started'}
           </div>
+          {(page === 'settings' || page === 'project') && (
+            <button onClick={() => setPage('chat')}>Back to chat</button>
+          )}
           {page === 'chat' && (
             <button
               className="incognito-toggle"
@@ -838,9 +853,11 @@ function Workspace() {
             project={project}
             onSaved={async (p) => {
               await refresh();
-              setProjectId(p.id);
-              setChatId('');
-              setPage('chat');
+              if (!project) {
+                setProjectId(p.id);
+                setChatId('');
+                setPage('chat');
+              }
             }}
           />
         ) : (
@@ -1203,295 +1220,113 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
     'instructions',
     'documents',
     'plugins',
+    'skills',
     'knowledge',
     'library',
     'excel',
   ] as const;
   const [tab, setTab] = useState<(typeof tabs)[number]>('model');
+  const [visited, setVisited] = useState(new Set<string>(['model']));
+  const selectTab = (name: (typeof tabs)[number]) => {
+    setTab(name);
+    setVisited((v) => new Set([...v, name]));
+  };
   const [key, setKey] = useState('');
   const [clear, setClear] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return (
-    <section className="settings-panel" data-topic={tab}>
+    <section className="settings-panel settings-page" data-topic={tab}>
       <span className="settings-eyebrow">WORKSPACE</span>
       <h1>Settings</h1>
       <p className="muted">Manage your workspace, local model, knowledge, and connected tools.</p>
-      <div className="settings-tabs" role="tablist" aria-label="Settings topics">
-        {tabs.map((name, i) => (
-          <button
-            key={name}
-            type="button"
-            id={`tab-${name}`}
-            role="tab"
-            aria-selected={tab === name}
-            aria-controls={`settings-${name}`}
-            tabIndex={tab === name ? 0 : -1}
-            onClick={() => setTab(name)}
-            onKeyDown={(e) => {
-              const index =
-                e.key === 'ArrowRight'
-                  ? (i + 1) % tabs.length
-                  : e.key === 'ArrowLeft'
-                    ? (i + tabs.length - 1) % tabs.length
-                    : e.key === 'Home'
-                      ? 0
-                      : e.key === 'End'
-                        ? tabs.length - 1
-                        : -1;
-              if (index >= 0) {
-                e.preventDefault();
-                setTab(tabs[index]!);
-                document.getElementById(`tab-${tabs[index]}`)?.focus();
-              }
-            }}
+      <div className="settings-layout">
+        <div
+          className="settings-tabs"
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label="Settings topics"
+        >
+          {tabs.map((name, i) => (
+            <button
+              key={name}
+              type="button"
+              id={`tab-${name}`}
+              role="tab"
+              aria-selected={tab === name}
+              aria-controls={`settings-${name}`}
+              tabIndex={tab === name ? 0 : -1}
+              onClick={() => selectTab(name)}
+              onKeyDown={(e) => {
+                const index =
+                  e.key === 'ArrowRight' || e.key === 'ArrowDown'
+                    ? (i + 1) % tabs.length
+                    : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+                      ? (i + tabs.length - 1) % tabs.length
+                      : e.key === 'Home'
+                        ? 0
+                        : e.key === 'End'
+                          ? tabs.length - 1
+                          : -1;
+                if (index >= 0) {
+                  e.preventDefault();
+                  selectTab(tabs[index]!);
+                  document.getElementById(`tab-${tabs[index]}`)?.focus();
+                }
+              }}
+            >
+              {name === 'library'
+                ? 'Knowledge Library'
+                : name === 'excel'
+                  ? 'Frame for Excel'
+                  : name[0]!.toUpperCase() + name.slice(1)}
+            </button>
+          ))}
+        </div>
+        <div className="settings-content">
+          <div
+            id="settings-account"
+            role="tabpanel"
+            aria-labelledby="tab-account"
+            hidden={tab !== 'account'}
           >
-            {name === 'library'
-              ? 'Knowledge Library'
-              : name === 'excel'
-                ? 'Frame for Excel'
-                : name[0]!.toUpperCase() + name.slice(1)}
-          </button>
-        ))}
-      </div>
-      {tab === 'account' && <AccountSettings />}
-      {tab === 'users' && <UsersSettings />}
-      <form
-        hidden={
-          tab === 'account' ||
-          tab === 'users' ||
-          tab === 'documents' ||
-          tab === 'plugins' ||
-          tab === 'knowledge' ||
-          tab === 'library' ||
-          tab === 'excel'
-        }
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError('');
-          setNotice('');
-          try {
-            const { hasApiKey: _, ...values } = form;
-            await api('/settings', 'PUT', {
-              ...values,
-              ...(key || clear ? { apiKey: clear ? '' : key } : {}),
-            });
-            await onSaved();
-            setKey('');
-            setClear(false);
-            setNotice('Settings saved. New tasks use this configuration.');
-          } catch (e) {
-            setError((e as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <fieldset
-          id="settings-model"
-          role="tabpanel"
-          aria-labelledby="tab-model"
-          hidden={tab !== 'model'}
-          disabled={tab !== 'model' || busy}
-          className="settings-topic"
-        >
-          <div className="settings-section-heading">
-            <h2>Local model</h2>
-            <p>Connect Frame to your organization’s local inference endpoint.</p>
+            {visited.has('account') && <AccountSettings />}
           </div>
-          <label>
-            Endpoint URL
-            <input
-              required
-              value={form.baseUrl}
-              onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
-            />
-            <small>
-              Example: http://127.0.0.1:8080/v1 · localhost refers to the Frame server, not your
-              browser.
-            </small>
-          </label>
-          <label>
-            Model ID
-            <input
-              required
-              placeholder="The model ID served by your endpoint"
-              value={form.modelId}
-              onChange={(e) => setForm({ ...form, modelId: e.target.value })}
-            />
-          </label>
-          <label>
-            Endpoint token (optional)
-            <input
-              type="password"
-              autoComplete="new-password"
-              placeholder={
-                initial.hasApiKey
-                  ? 'Saved token — leave blank to keep'
-                  : 'No authentication token required by default'
-              }
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-            />
-          </label>
-          <label className="checkbox">
-            <input type="checkbox" checked={clear} onChange={(e) => setClear(e.target.checked)} />
-            Remove saved endpoint token
-          </label>
-        </fieldset>
-        <fieldset
-          id="settings-context"
-          role="tabpanel"
-          aria-labelledby="tab-context"
-          hidden={tab !== 'context'}
-          disabled={tab !== 'context' || busy}
-          className="settings-topic"
-        >
-          <div className="settings-section-heading">
-            <h2>Context & generation</h2>
-            <p>Control how much the model can read, write, and retain during a conversation.</p>
+          <div
+            id="settings-users"
+            role="tabpanel"
+            aria-labelledby="tab-users"
+            hidden={tab !== 'users'}
+          >
+            {visited.has('users') && <UsersSettings />}
           </div>
-          <div className="form-row">
-            <label>
-              Context window
-              <input
-                required
-                type="number"
-                min={2048}
-                max={2000000}
-                value={form.contextWindow}
-                onChange={(e) => setForm({ ...form, contextWindow: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Maximum output tokens
-              <input
-                required
-                type="number"
-                min={128}
-                max={131072}
-                value={form.maxTokens}
-                onChange={(e) => setForm({ ...form, maxTokens: Number(e.target.value) })}
-              />
-            </label>
-          </div>
-          <small>
-            Match the context supported per request by your model server. Model size is not context
-            size.
-          </small>
-          <label>
-            Concurrent model requests
-            <input
-              type="number"
-              min={1}
-              max={32}
-              value={form.maxConcurrentRequests ?? 2}
-              onChange={(e) => setForm({ ...form, maxConcurrentRequests: Number(e.target.value) })}
-            />
-          </label>
-          <small>
-            Requests above this limit wait in a queue. Choose a capacity tested with your server.
-          </small>
-          <label>
-            <input
-              type="checkbox"
-              checked={form.supportsImages !== false}
-              onChange={(e) => setForm({ ...form, supportsImages: e.target.checked })}
-            />
-            Model supports image input
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={form.supportsTools !== false}
-              onChange={(e) => setForm({ ...form, supportsTools: e.target.checked })}
-            />
-            Model supports tool calling
-          </label>
-          <fieldset className="context-settings">
-            <legend>Context management</legend>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={form.autoCompaction}
-                onChange={(e) => setForm({ ...form, autoCompaction: e.target.checked })}
-              />
-              Automatically compact older context
-            </label>
-            <label>
-              Compact at used percentage
-              <input
-                type="number"
-                min={50}
-                max={90}
-                required
-                value={form.compactAtPercent}
-                onChange={(e) => setForm({ ...form, compactAtPercent: Number(e.target.value) })}
-              />
-            </label>
-            <small>
-              Default: 75%. Frame may start earlier to reserve your output limit and template
-              headroom. Recent exchanges stay in context; older history becomes a checkpoint.
-            </small>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={form.pruneToolOutputs}
-                onChange={(e) => setForm({ ...form, pruneToolOutputs: e.target.checked })}
-              />
-              Shorten older read-only tool outputs
-            </label>
-            <small>
-              Keeps the latest two user turns, errors, and results from tools that make changes.
-              Full results stay in conversation history.
-            </small>
-          </fieldset>
-        </fieldset>
-        <fieldset
-          id="settings-instructions"
-          role="tabpanel"
-          aria-labelledby="tab-instructions"
-          hidden={tab !== 'instructions'}
-          disabled={tab !== 'instructions' || busy}
-          className="settings-topic"
-        >
-          <div className="settings-section-heading">
-            <h2>Workspace instructions</h2>
-            <p>
-              Set shared guidance for every project. Project instructions add their own context.
-            </p>
-          </div>
-          <label>
-            Organization instructions
-            <textarea
-              rows={4}
-              value={form.instructions}
-              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-            />
-          </label>
-        </fieldset>
-        <div className="button-row">
-          <button className="primary" disabled={busy}>
-            Save settings
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={async () => {
+          <form
+            hidden={
+              tab === 'account' ||
+              tab === 'users' ||
+              tab === 'documents' ||
+              tab === 'plugins' ||
+              tab === 'skills' ||
+              tab === 'knowledge' ||
+              tab === 'library' ||
+              tab === 'excel'
+            }
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
               setError('');
               setNotice('');
-              setBusy(true);
               try {
-                const result = await api<{ models: string[]; selectedModelFound: boolean }>(
-                  '/settings/test',
-                  'POST',
-                  {},
-                );
-                setNotice(
-                  `Saved endpoint connected. Models: ${result.models.join(', ')}.${result.selectedModelFound ? '' : ' The configured model ID was not found.'} Test chat and tools separately.`,
-                );
+                const { hasApiKey: _, ...values } = form;
+                await api('/settings', 'PUT', {
+                  ...values,
+                  ...(key || clear ? { apiKey: clear ? '' : key } : {}),
+                });
+                await onSaved();
+                setKey('');
+                setClear(false);
+                setNotice('Settings saved. New tasks use this configuration.');
               } catch (e) {
                 setError((e as Error).message);
               } finally {
@@ -1499,61 +1334,294 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
               }
             }}
           >
-            Test saved connection
-          </button>
+            <fieldset
+              id="settings-model"
+              role="tabpanel"
+              aria-labelledby="tab-model"
+              hidden={tab !== 'model'}
+              disabled={tab !== 'model' || busy}
+              className="settings-topic"
+            >
+              <div className="settings-section-heading">
+                <h2>Local model</h2>
+                <p>Connect Frame to your organization’s local inference endpoint.</p>
+              </div>
+              <label>
+                Endpoint URL
+                <input
+                  required
+                  value={form.baseUrl}
+                  onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
+                />
+                <small>
+                  Example: http://127.0.0.1:8080/v1 · localhost refers to the Frame server, not your
+                  browser.
+                </small>
+              </label>
+              <label>
+                Model ID
+                <input
+                  required
+                  placeholder="The model ID served by your endpoint"
+                  value={form.modelId}
+                  onChange={(e) => setForm({ ...form, modelId: e.target.value })}
+                />
+              </label>
+              <label>
+                Endpoint token (optional)
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={
+                    initial.hasApiKey
+                      ? 'Saved token — leave blank to keep'
+                      : 'No authentication token required by default'
+                  }
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                />
+              </label>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={clear}
+                  onChange={(e) => setClear(e.target.checked)}
+                />
+                Remove saved endpoint token
+              </label>
+            </fieldset>
+            <fieldset
+              id="settings-context"
+              role="tabpanel"
+              aria-labelledby="tab-context"
+              hidden={tab !== 'context'}
+              disabled={tab !== 'context' || busy}
+              className="settings-topic"
+            >
+              <div className="settings-section-heading">
+                <h2>Context & generation</h2>
+                <p>Control how much the model can read, write, and retain during a conversation.</p>
+              </div>
+              <div className="form-row">
+                <label>
+                  Context window
+                  <input
+                    required
+                    type="number"
+                    min={2048}
+                    max={2000000}
+                    value={form.contextWindow}
+                    onChange={(e) => setForm({ ...form, contextWindow: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Maximum output tokens
+                  <input
+                    required
+                    type="number"
+                    min={128}
+                    max={131072}
+                    value={form.maxTokens}
+                    onChange={(e) => setForm({ ...form, maxTokens: Number(e.target.value) })}
+                  />
+                </label>
+              </div>
+              <small>
+                Match the context supported per request by your model server. Model size is not
+                context size.
+              </small>
+              <label>
+                Concurrent model requests
+                <input
+                  type="number"
+                  min={1}
+                  max={32}
+                  value={form.maxConcurrentRequests ?? 2}
+                  onChange={(e) =>
+                    setForm({ ...form, maxConcurrentRequests: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <small>
+                Requests above this limit wait in a queue. Choose a capacity tested with your
+                server.
+              </small>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.supportsImages !== false}
+                  onChange={(e) => setForm({ ...form, supportsImages: e.target.checked })}
+                />
+                Model supports image input
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.supportsTools !== false}
+                  onChange={(e) => setForm({ ...form, supportsTools: e.target.checked })}
+                />
+                Model supports tool calling
+              </label>
+              <fieldset className="context-settings">
+                <legend>Context management</legend>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.autoCompaction}
+                    onChange={(e) => setForm({ ...form, autoCompaction: e.target.checked })}
+                  />
+                  Automatically compact older context
+                </label>
+                <label>
+                  Compact at used percentage
+                  <input
+                    type="number"
+                    min={50}
+                    max={90}
+                    required
+                    value={form.compactAtPercent}
+                    onChange={(e) => setForm({ ...form, compactAtPercent: Number(e.target.value) })}
+                  />
+                </label>
+                <small>
+                  Default: 75%. Frame may start earlier to reserve your output limit and template
+                  headroom. Recent exchanges stay in context; older history becomes a checkpoint.
+                </small>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={form.pruneToolOutputs}
+                    onChange={(e) => setForm({ ...form, pruneToolOutputs: e.target.checked })}
+                  />
+                  Shorten older read-only tool outputs
+                </label>
+                <small>
+                  Keeps the latest two user turns, errors, and results from tools that make changes.
+                  Full results stay in conversation history.
+                </small>
+              </fieldset>
+            </fieldset>
+            <fieldset
+              id="settings-instructions"
+              role="tabpanel"
+              aria-labelledby="tab-instructions"
+              hidden={tab !== 'instructions'}
+              disabled={tab !== 'instructions' || busy}
+              className="settings-topic"
+            >
+              <div className="settings-section-heading">
+                <h2>Workspace instructions</h2>
+                <p>
+                  Set shared guidance for every project. Project instructions add their own context.
+                </p>
+              </div>
+              <label>
+                Organization instructions
+                <textarea
+                  rows={4}
+                  value={form.instructions}
+                  onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+                />
+              </label>
+            </fieldset>
+            <div className="button-row settings-actions">
+              <button className="primary" disabled={busy}>
+                Save settings
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setError('');
+                  setNotice('');
+                  setBusy(true);
+                  try {
+                    const result = await api<{ models: string[]; selectedModelFound: boolean }>(
+                      '/settings/test',
+                      'POST',
+                      {},
+                    );
+                    setNotice(
+                      `Saved endpoint connected. Models: ${result.models.join(', ')}.${result.selectedModelFound ? '' : ' The configured model ID was not found.'} Test chat and tools separately.`,
+                    );
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Test saved connection
+              </button>
+            </div>
+            {notice && (
+              <p className="notice" role="status">
+                {notice}
+              </p>
+            )}
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+          </form>
+          <div
+            id="settings-documents"
+            role="tabpanel"
+            aria-labelledby="tab-documents"
+            hidden={tab !== 'documents'}
+          >
+            {visited.has('documents') && <DocumentTools />}
+          </div>
+          <div
+            id="settings-plugins"
+            role="tabpanel"
+            aria-labelledby="tab-plugins"
+            hidden={tab !== 'plugins'}
+          >
+            {visited.has('plugins') && <PluginCatalog />}
+          </div>
+          <div
+            id="settings-skills"
+            role="tabpanel"
+            aria-labelledby="tab-skills"
+            hidden={tab !== 'skills'}
+          >
+            {visited.has('skills') && <SkillsSettings />}
+          </div>
+          <div
+            id="settings-excel"
+            role="tabpanel"
+            aria-labelledby="tab-excel"
+            hidden={tab !== 'excel'}
+          >
+            {visited.has('excel') && <ExcelSettings />}
+          </div>
+          <div
+            id="settings-library"
+            role="tabpanel"
+            aria-labelledby="tab-library"
+            hidden={tab !== 'library'}
+          >
+            {visited.has('library') && <KnowledgeLibraryPanel />}
+          </div>
+          <div
+            id="settings-knowledge"
+            role="tabpanel"
+            aria-labelledby="tab-knowledge"
+            hidden={tab !== 'knowledge'}
+          >
+            {visited.has('knowledge') && <MaintenanceSettingsPanel />}
+          </div>
+          <div className="scope-note">
+            <strong>Personal workspaces</strong>
+            <p>
+              Manage accounts under Users and installed skills under Skills. Each user owns their
+              projects and knowledge. Configure your chosen OpenAI-compatible model server under
+              Model.
+            </p>
+          </div>
         </div>
-        {notice && (
-          <p className="notice" role="status">
-            {notice}
-          </p>
-        )}
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-      </form>
-      <div
-        id="settings-documents"
-        role="tabpanel"
-        aria-labelledby="tab-documents"
-        hidden={tab !== 'documents'}
-      >
-        {tab === 'documents' && <DocumentTools />}
-      </div>
-      <div
-        id="settings-plugins"
-        role="tabpanel"
-        aria-labelledby="tab-plugins"
-        hidden={tab !== 'plugins'}
-      >
-        {tab === 'plugins' && <PluginCatalog />}
-      </div>
-      <div id="settings-excel" role="tabpanel" aria-labelledby="tab-excel" hidden={tab !== 'excel'}>
-        {tab === 'excel' && <ExcelSettings />}
-      </div>
-      <div
-        id="settings-library"
-        role="tabpanel"
-        aria-labelledby="tab-library"
-        hidden={tab !== 'library'}
-      >
-        {tab === 'library' && <KnowledgeLibraryPanel />}
-      </div>
-      <div
-        id="settings-knowledge"
-        role="tabpanel"
-        aria-labelledby="tab-knowledge"
-        hidden={tab !== 'knowledge'}
-      >
-        {tab === 'knowledge' && <MaintenanceSettingsPanel />}
-      </div>
-      <div className="scope-note">
-        <strong>Personal workspaces</strong>
-        <p>
-          Manage accounts under Users and installed skills under Plugins. Each user owns their
-          projects and knowledge. Configure your chosen OpenAI-compatible model server under Model.
-        </p>
       </div>
     </section>
   );
@@ -1565,74 +1633,158 @@ function ProjectForm({
   project?: Project;
   onSaved: (p: Project) => Promise<void>;
 }) {
+  const user = useUser();
   const [name, setName] = useState(project?.name || '');
   const [instructions, setInstructions] = useState(project?.instructions || '');
-  const [tools, setTools] = useState(project?.toolsEnabled || false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState('general');
+  const tabs = project
+    ? ['general', 'knowledge', 'plugins', ...(user?.role === 'admin' ? ['skills'] : [])]
+    : ['general'];
   return (
-    <section className="settings-panel">
-      <span className="eyebrow">GIVE YOUR WORK A HOME</span>
+    <section className="settings-panel settings-page">
+      <span className="eyebrow">{project?.name || 'GIVE YOUR WORK A HOME'}</span>
       <h1>{project ? 'Project settings' : 'New project'}</h1>
-      <p className="muted">
-        Each project has its own workspace folder, instructions, and conversations.
-      </p>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError('');
-          setBusy(true);
-          try {
-            const p = await api<Project>(
-              project ? `/projects/${project.id}` : '/projects',
-              project ? 'PUT' : 'POST',
-              { name, instructions, toolsEnabled: tools },
-            );
-            await onSaved(p);
-          } catch (e) {
-            setError((e as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <label>
-          Project name
-          <input required maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label>
-          Project instructions
-          <textarea
-            rows={8}
-            maxLength={16000}
-            placeholder="What should Frame know about this project?"
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-          />
-        </label>
-        <div className="warning">
-          <label className="checkbox">
-            <input type="checkbox" checked={tools} onChange={(e) => setTools(e.target.checked)} />
-            Enable file and Python tools
-          </label>
-          <p>
-            Allows reading, writing, editing, and shell/Python execution without per-command
-            approval within this conversation’s isolated files. Project knowledge and installed
-            skills are read-only. Network access is unrestricted.
-          </p>
+      <p className="muted">Manage your project’s instructions, knowledge, and tools.</p>
+      <div className="settings-layout">
+        <div
+          className="settings-tabs"
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label="Project settings topics"
+        >
+          {tabs.map((name, i) => (
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              id={`project-tab-${name}`}
+              aria-selected={tab === name}
+              aria-controls={`project-settings-${name}`}
+              tabIndex={tab === name ? 0 : -1}
+              onClick={() => setTab(name)}
+              onKeyDown={(e) => {
+                const next =
+                  e.key === 'ArrowDown' || e.key === 'ArrowRight'
+                    ? (i + 1) % tabs.length
+                    : e.key === 'ArrowUp' || e.key === 'ArrowLeft'
+                      ? (i + tabs.length - 1) % tabs.length
+                      : e.key === 'Home'
+                        ? 0
+                        : e.key === 'End'
+                          ? tabs.length - 1
+                          : -1;
+                if (next >= 0) {
+                  e.preventDefault();
+                  setTab(tabs[next]!);
+                  document.getElementById(`project-tab-${tabs[next]}`)?.focus();
+                }
+              }}
+            >
+              {name === 'knowledge'
+                ? 'Knowledge & Library'
+                : name[0]!.toUpperCase() + name.slice(1)}
+            </button>
+          ))}
         </div>
-        <button className="primary" disabled={busy}>
-          {project ? 'Save project' : 'Create project'}
-        </button>
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-      </form>
-      {project && <KnowledgeLibraryPanel projectId={project.id} />}
-      {project && <ProjectSkillsSettings projectId={project.id} />}
-      {project && <ProjectPlugins projectId={project.id} />}
+        <div className="settings-content">
+          <div
+            id="project-settings-general"
+            role="tabpanel"
+            aria-labelledby="project-tab-general"
+            hidden={tab !== 'general'}
+          >
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setError('');
+                setNotice('');
+                setBusy(true);
+                try {
+                  const p = await api<Project>(
+                    project ? `/projects/${project.id}` : '/projects',
+                    project ? 'PUT' : 'POST',
+                    { name, instructions },
+                  );
+                  await onSaved(p);
+                  setNotice('Project saved.');
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <label>
+                Project name
+                <input
+                  required
+                  maxLength={80}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </label>
+              <label>
+                Project instructions
+                <textarea
+                  rows={10}
+                  maxLength={16000}
+                  placeholder="What should Frame know about this project?"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                />
+              </label>
+              <div className="settings-actions">
+                <button className="primary" disabled={busy}>
+                  {project ? 'Save project' : 'Create project'}
+                </button>
+                {notice && (
+                  <p className="notice" role="status">
+                    {notice}
+                  </p>
+                )}
+                {error && (
+                  <p className="error" role="alert">
+                    {error}
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+          {project && (
+            <>
+              <div
+                id="project-settings-knowledge"
+                role="tabpanel"
+                aria-labelledby="project-tab-knowledge"
+                hidden={tab !== 'knowledge'}
+              >
+                <KnowledgeLibraryPanel projectId={project.id} collapsed />
+              </div>
+              <div
+                id="project-settings-plugins"
+                role="tabpanel"
+                aria-labelledby="project-tab-plugins"
+                hidden={tab !== 'plugins'}
+              >
+                <ProjectPlugins projectId={project.id} />
+              </div>
+              {user?.role === 'admin' && (
+                <div
+                  id="project-settings-skills"
+                  role="tabpanel"
+                  aria-labelledby="project-tab-skills"
+                  hidden={tab !== 'skills'}
+                >
+                  <ProjectSkillsSettings projectId={project.id} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

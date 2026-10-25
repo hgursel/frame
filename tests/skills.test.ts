@@ -163,9 +163,8 @@ test(
       const messages = f.runner.snapshot(chat.id).messages.filter((m) => m.role === 'user');
       assert.equal(messages.at(-1)!.text, '/skill:manual-only check week 42');
 
-      // Without host tools the model cannot read or run skills, so none are offered.
-      f.store.updateProject(f.project.id, { ...f.project, toolsEnabled: false });
-      await send(f.store.createConversation(f.project.id).id, 'Hello');
+      // Incognito remains isolated from installed skills.
+      await send(f.store.createConversation(f.project.id, true).id, 'Hello');
       assert.doesNotMatch(system(), /available_skills|<name>lookup/);
     } finally {
       await f.cleanup();
@@ -188,7 +187,7 @@ test('stored Private Tools registrations are removed on startup', async () => {
     assert.equal(restarted.store.meta('private-tools:settings'), undefined);
     assert.deepEqual(
       restarted.store.db
-        .prepare('SELECT plugin FROM project_plugins')
+        .prepare("SELECT plugin FROM project_plugins WHERE plugin<>'excel'")
         .all()
         .map((r: any) => r.plugin),
       ['charts'],

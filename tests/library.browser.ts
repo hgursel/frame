@@ -157,6 +157,8 @@ try {
     await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.getByLabel('Project menu: People and Contracts').click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
+  await page.getByRole('tab', { name: 'Knowledge & Library', exact: true }).click();
+  await page.locator('.library-collapse > summary').click();
   assert.equal(ctx.library.attachments(project.id)[0].version, '1.0.0');
   await hr.getByRole('button', { name: 'Use this version' }).click();
   await expect(hr.getByRole('button', { name: 'Detach' })).toBeVisible();

@@ -267,6 +267,18 @@ export class Wiki {
         }
       }
     }
+    // Optional Frame extension: portable revision history without changing OKF page format.
+    const history: Record<string, unknown[]> = {};
+    for (const doc of this.knowledge.list(projectId)) {
+      history[`wiki/${doc.id}.md`] = (
+        this.knowledge.store.db
+          .prepare(
+            'SELECT at,content,metadata FROM knowledge_revisions WHERE projectId=? AND documentId=? ORDER BY rowid',
+          )
+          .all(projectId, doc.id) as { at: string; content: string; metadata: string }[]
+      ).map((row) => ({ ...row, metadata: JSON.parse(row.metadata) }));
+    }
+    files['frame-history.json'] = strToU8(JSON.stringify(history));
     const schema = this.schemaFiles?.(projectId) || {};
     for (const [name, text] of Object.entries(schema)) files['wiki/' + name] = strToU8(text);
     if (Object.keys(schema).length) {
@@ -281,6 +293,10 @@ export class Wiki {
             .join('\n'),
       );
     }
+    if (Object.values(files).reduce((sum, file) => sum + file.length, 0) > 120 * 1024 * 1024)
+      throw Object.assign(new Error('Export exceeds 120 MiB including history.'), {
+        statusCode: 413,
+      });
     return Buffer.from(zipSync(files, { level: 1 }));
   }
 }

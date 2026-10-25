@@ -29,7 +29,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Maintain knowledge on your schedule.** Run nightly health checks and learn reusable procedures, calculation rules, and parameterized SQL templates from completed chats. Choose review-first or automatic publishing; SQL results never become learned knowledge.
 - **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
 - **Remember useful methods.** Project memory learns recurring tasks and parameterized SQL without saving result values. Keep up to 30 methods per project, review changes, and supply relevant methods directly to future chats. [Configure learning and maintenance →](docs/KNOWLEDGE_MAINTENANCE.md)
-- **Keep the history.** Knowledge pages include revisions and provenance. Export a portable **Open Knowledge Format 0.2** bundle with an index and change log.
+- **Keep the history.** Knowledge pages include revisions and provenance. Export or import a portable **Open Knowledge Format 0.2** bundle with an index, change log, and Frame revision history. Preview imports; conflicting pages update with prior versions preserved.
 - **Add shared business references.** Open **Settings → Knowledge Library → Browse packs** to search eight included packs and 28 detailed federal, industry, California, and guild guides. Inspect sections, install directly, or download JSON without leaving Frame. Topics include employment, safety, privacy, commercial practices, IP/AI, benefits, tax preparation, governance, entertainment, and work with outside counsel. Industry guides cover technology/services, healthcare, nonprofits, education, property, manufacturing, construction, logistics, and retail/hospitality. Attach a version to selected projects separately; open cited sections inside chat. No bargaining agreement content is included in the new guides. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
@@ -85,7 +85,7 @@ Set organization defaults and optional project overrides. Ask for a report direc
 
 ### Your own skills
 
-Point Frame at folders of **Agent Skills**—the `SKILL.md` format used by OpenCode, Claude Code, and Pi—and enable them per project. The model sees each skill's name and description, reads the full instructions when a task matches, and runs its Bash or Python scripts with the project's isolated file and Python tools. Type `/` in the message box to pick a skill directly. Admins install skills; users select them per project. Enabled skill directories are readable by those users’ tools, so do not store credentials in them.
+Point Frame at folders of **Agent Skills**—the `SKILL.md` format used by OpenCode, Claude Code, and Pi—and enable them per project. The model sees each skill's name and description, reads the full instructions when a task matches, and runs its Bash or Python scripts with the project's isolated file and Python tools. Type `/` in the message box to pick a skill directly. Only administrators can install, see, select, or use skills. Regular users cannot access skill APIs or invoke skills; configured skill folders are hidden from their file tools. Do not store credentials in skill directories.
 
 [Use your skills →](docs/SKILLS.md)
 
@@ -127,8 +127,8 @@ npm start
 1. Open **http://127.0.0.1:3000**. Use the setup token printed in the server console to create an administrator username and password.
 2. Go to **Settings → Model**. Enter your OpenAI-compatible base URL, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
 3. In **Settings → Context**, match the context window to the model server’s per-request capacity and reserve room for output.
-4. Create a project, add documents under **Knowledge**, and start a conversation.
-5. Configure Reports, Charts, MSSQL, or Skills in **Settings → Plugins**, then enable them in **Project settings**. For MSSQL, initialize database knowledge.
+4. Every new account starts with a private **Arena** project. Add documents under **Knowledge**, create additional projects, and start a conversation.
+5. Configure Reports, Charts, or MSSQL in **Settings → Plugins**, then enable them in **Project settings → Plugins**. Admin-only skills have their own **Skills** category. For MSSQL, initialize database knowledge.
 
 The endpoint is reached from the Frame server. Administrators can configure HTTP(S) addresses, DNS names, and custom API base paths. There is no provider fallback. Configure simultaneous model requests and image/tool support in **Settings → Context**. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
 
@@ -144,7 +144,7 @@ Use **+ → Upload images**, or paste a screenshot into the chat. Preview or rem
 - **Your stored data.** Project files, knowledge, settings, chart datasets, and conversation history stay in the configured data directory on the Frame host.
 - **No telemetry.** Frame disables Pi install telemetry and model-catalog network refreshes. Initial dependency installation still requires package downloads.
 - **Optional reference downloads.** Browsing knowledge packs works offline. Explicitly downloading or installing an optional pack contacts Frame’s public GitHub repository, verifies its checksum, and sends no project content. Installed packs remain local; project attachment and upgrades are separate choices.
-- **Explicit capabilities.** Enable built-in plugins per project and opt into isolated file and Python tools when you need filesystem or Python/shell execution.
+- **Project capabilities.** File and Python tools are always enabled in ordinary project chats and remain isolated. Frame for Excel starts disabled for new projects; owners enable it in Project settings → Plugins. Existing Excel selections are preserved.
 
 > [!IMPORTANT]
 > **Personal workspaces:** admins create local accounts and configure shared connections; users own private projects and knowledge. Admin accounts cannot browse other owners’ content through Frame. Server operators still control the underlying files. File/Python tools fail closed if Linux isolation is unavailable. See [multiuser setup and migration](docs/MULTIUSER.md).
@@ -153,7 +153,7 @@ Use **+ → Upload images**, or paste a screenshot into the chat. Preview or rem
 
 | Guide                                  | Covers                                                                          |
 | -------------------------------------- | ------------------------------------------------------------------------------- |
-| [Knowledge](docs/KNOWLEDGE.md)         | Uploads, reviewed updates, Markdown pages, OKF export, and Python documents     |
+| [Knowledge](docs/KNOWLEDGE.md)         | Uploads, reviewed updates, Markdown pages, OKF import/export, and Python documents     |
 | [Knowledge maintenance](docs/KNOWLEDGE_MAINTENANCE.md) | Scheduling, publishing policies, health checks, SQL privacy, and incognito chats |
 | [MSSQL](docs/MSSQL.md)                 | Connection setup, read-only SQL permissions, and schema knowledge              |
 | [Reports](docs/REPORTS.md)             | Branded PDF layouts, project overrides, chart/table sources, and local rendering |
