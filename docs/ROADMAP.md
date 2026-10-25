@@ -8,7 +8,8 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 - Chronological activity rows between intermediate replies, with only the current row animated. Streamed reasoning, tool details, and SQL results expand in bounded inline panels; completed rows show their own step counts. One FRAME heading per user turn; replies, charts, files, approvals, and errors stay visible. Waiting, stopping, and reconnecting status lives in the current row rather than above the composer.
 - Project document uploads, preserved sources, bounded PDF/DOCX extraction, Markdown notes and revision history.
-- OKF 0.2 concept files, provenance, cross-links, index/log, and bundle export.
+- OKF 0.2 concept files, provenance, cross-links, index/log, and bundle import/export with preview, duplicate skipping, preserved revisions, and rollback.
+- Wide project/admin settings with category navigation, collapsed library references, sidebar username, built-in File/Python tools, opt-in Excel for new projects, admin-only skills, and a private Arena project for each new account.
 - Conversation knowledge search/read, model draft proposals, and reviewed saves/updates from useful answers and tool results.
 - Explicit Python environment installation, tested PDF/DOCX generation, and completed-artifact publication.
 
@@ -124,7 +125,7 @@ The registered-script plugin with per-operation JSON inputs, approvals, and `.en
 
 1. **OpenAI-compatible engine acceptance matrix:** record server version, model/quantization, template, context per request, tool calls, stop behavior, long-history compaction, and concurrency. Add compatibility fixtures without hard-coding model names.
 2. **MCP:** deferred at the owner's request in favor of Skills. If revisited, choose one maintained integration or narrow adapter with selected transports, secret references, connectivity tests, explicit trust, project scoping, and cleanup. Do not silently auto-approve. Online skill installation, if added, must display what code and dependencies will run first.
-3. **Knowledge refinements:** full OKF bundle import/round-trip editing, semantic contradiction review, richer dependency tracking, and larger knowledge quotas. Scheduled structural health checks and controlled conversation learning are implemented; no autonomous factual verification.
+3. **Knowledge refinements:** broader external OKF compatibility, semantic contradiction review, richer dependency tracking, and larger knowledge quotas. Scheduled structural health checks and controlled conversation learning are implemented; no autonomous factual verification.
 4. **Packaging and diagnostics:** repeatable Ubuntu installer/uninstaller, dependency checks, sanitized diagnostics, admin password/token rotation, backup/restore commands, and signed versioned releases. Avoid unattended self-updates.
 
 ## Personal workspaces and concurrent execution (implemented)

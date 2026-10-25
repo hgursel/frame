@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { Knowledge } from './knowledge.js';
 import { Wiki } from './wiki.js';
+import { OkfImport, MAX_OKF } from './okf-import.js';
 import { Runner } from './runner.js';
 import { openArtifact } from './security.js';
 
@@ -156,6 +157,27 @@ export function knowledgeApi(
         .header('Content-Disposition', 'attachment; filename="frame-knowledge.zip"');
       return wiki.export(request.params.id);
     }),
+  );
+  const okf = new OkfImport(wiki);
+  app.post<{ Params: { id: string }; Querystring: { fingerprint?: string } }>(
+    '/api/projects/:id/knowledge/import',
+    async (request) =>
+      change(request.params.id, async () => {
+        const fingerprint = z
+          .string()
+          .regex(/^[a-f0-9]{64}$/)
+          .optional()
+          .parse(request.query.fingerprint);
+        const file = await request.file({
+          limits: { fileSize: MAX_OKF, files: 1, fields: 0, parts: 1 },
+        });
+        if (!file || !file.filename.toLowerCase().endsWith('.zip'))
+          throw Object.assign(new Error('Choose an OKF ZIP bundle.'), { statusCode: 400 });
+        const buffer = await file.toBuffer();
+        return fingerprint
+          ? okf.apply(request.params.id, buffer, fingerprint)
+          : okf.preview(request.params.id, buffer);
+      }),
   );
   const evidence = (id: string, index: number) => {
     const conversation = knowledge.store.conversation(uuid.parse(id));

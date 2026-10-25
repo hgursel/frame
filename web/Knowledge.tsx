@@ -1,3 +1,4 @@
+import { OkfImport } from './OkfImport.js';
 import { KnowledgeLibraryPanel } from './Library.js';
 import { KnowledgeMetadata } from './Maintenance.js';
 import { SqlKnowledge } from './Plugins.js';
@@ -136,10 +137,24 @@ export function KnowledgePanel({
             Sources, connected notes, and useful discoveries from your conversations.
           </p>
         </div>
-        <a className="button-link" href={`/api/projects/${projectId}/knowledge/export`}>
-          ↓ Export OKF bundle
-        </a>
+        <div className="knowledge-bundle-actions">
+          <label className="button-link" htmlFor={`okf-file-${projectId}`}>
+            ↑ Import OKF bundle
+          </label>
+          <a className="button-link" href={`/api/projects/${projectId}/knowledge/export`}>
+            ↓ Export OKF bundle
+          </a>
+        </div>
       </div>
+      <OkfImport
+        projectId={projectId}
+        onImported={async () => {
+          setSelected(undefined);
+          setEditing(false);
+          setVersions(undefined);
+          await refresh();
+        }}
+      />
       <KnowledgeLibraryPanel projectId={projectId} readOnly />
       <SqlKnowledge projectId={projectId} />
       <div className="knowledge-actions">

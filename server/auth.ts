@@ -68,7 +68,8 @@ export function installAuthorization(app: FastifyInstance, store: Store) {
       route.startsWith('/api/admin/') ||
       (route.startsWith('/api/settings') && mutation) ||
       route.startsWith('/api/plugins/') ||
-      (route === '/api/skills' && mutation) ||
+      route === '/api/skills' ||
+      route === '/api/projects/:id/skills' ||
       route === '/api/document-tools/install' ||
       (route.startsWith('/api/library/') && mutation) ||
       (route === '/api/excel/config' && mutation) ||

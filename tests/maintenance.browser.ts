@@ -174,7 +174,7 @@ try {
     .toBe('Use for maintenance approval and rollback planning.');
   await page
     .getByRole('navigation', { name: 'Projects', exact: true })
-    .locator('.project-link')
+    .getByRole('button', { name: '▱ Operations', exact: true })
     .click();
   const privacy = page.getByRole('button', { name: 'Incognito chat', exact: true });
   await expect(page.locator('.sidebar').getByRole('button', { name: /incognito/i })).toHaveCount(0);

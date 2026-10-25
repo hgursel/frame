@@ -116,6 +116,9 @@ const project = ctx.store.createProject({
   instructions: '',
   toolsEnabled: true,
 });
+ctx.store.db
+  .prepare("UPDATE project_plugins SET enabled=1 WHERE projectId=? AND plugin='excel'")
+  .run(project.id);
 const knowledgeDoc = await ctx.knowledge.add(
   project.id,
   'Workbook rules.txt',
@@ -152,6 +155,7 @@ try {
     content: `globalThis.__name = (fn) => fn; (${officeMock.toString()})();`,
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(30000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(`${origin}/excel.html`);
@@ -159,6 +163,7 @@ try {
   assert.deepEqual(await page.getByRole('alert').allTextContents(), [], 'Office host initialized');
   await page.getByLabel('Frame password').fill('excel-browser-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.getByRole('combobox', { name: /Frame project/ }).selectOption(project.id);
   await page.getByRole('button', { name: 'Start Excel conversation' }).click();
   await expect(page.getByRole('button', { name: 'Capture selection' })).toHaveCount(0);
   const send = async (text: string) => {
@@ -396,6 +401,7 @@ try {
     fake.addSheet('Blank', [['']]);
     await fake.select({ sheet: 'Blank', row: 0, column: 0, rows: 1, columns: 1 });
   });
+  await page.getByRole('combobox', { name: /Frame project/ }).selectOption(project.id);
   await page.getByRole('button', { name: 'Start Excel conversation' }).click();
   await expect(page.getByText('Selected: Blank!A1:A1')).toBeVisible();
   workbookCalls = [

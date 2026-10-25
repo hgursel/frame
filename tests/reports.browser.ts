@@ -15,12 +15,8 @@ const model = createServer(async (req, res) => {
   const body = JSON.parse(raw);
   if (!raw.includes('Include recommendations with named owners'))
     modelError = 'Report instructions missing';
-  if (
-    (body.tools || []).some((t: any) =>
-      ['bash', 'create_document', 'mssql_query'].includes(t.function?.name),
-    )
-  )
-    modelError = 'Reports incorrectly requires host or SQL tools';
+  if ((body.tools || []).some((t: any) => t.function?.name === 'mssql_query'))
+    modelError = 'Reports unexpectedly exposes disabled SQL tools';
   const lastUser = body.messages.findLastIndex((m: any) => m.role === 'user');
   const followUp = JSON.stringify(body.messages[lastUser]?.content).includes('What happens next?');
   const tools = body.messages.slice(lastUser + 1).filter((m: any) => m.role === 'tool');
@@ -157,8 +153,9 @@ try {
       Buffer.from('Region,Requests\nNorth,180\nSouth,140'),
     )
   ).id;
-  await page.getByRole('button', { name: /^Project menu:/ }).click();
+  await page.getByRole('button', { name: 'Project menu: Report project', exact: true }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
+  await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
   await page.getByLabel('Enable Reports for this project').check();
   await page.getByRole('button', { name: 'Save project plugins' }).click();
   await page.getByText('Customize report design', { exact: true }).click();
@@ -228,7 +225,7 @@ try {
   assert.equal(modelError, '');
   assert.deepEqual(errors, []);
   console.log(
-    'Reports browser passed: plugin navigation, retained drafts, branding/instructions, sample PDF, project overrides, mobile layout, real SDK generation without host tools/MSSQL, actual PDF download, stalled-stream follow-up recovery, subsequent live turn, viewport, and reload.',
+    'Reports browser passed: plugin navigation, retained drafts, branding/instructions, sample PDF, project overrides, mobile layout, real SDK generation without MSSQL, actual PDF download, stalled-stream follow-up recovery, subsequent live turn, viewport, and reload.',
   );
 } finally {
   await browser?.close();

@@ -23,6 +23,7 @@ export interface PublicSettings extends ModelSettings {
   hasApiKey: boolean;
 }
 export interface Project {
+  ownerId?: string | null;
   id: string;
   name: string;
   instructions: string;

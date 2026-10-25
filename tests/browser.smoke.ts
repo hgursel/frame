@@ -93,7 +93,7 @@ await new Promise<void>((resolve) => model.listen(0, '127.0.0.1', resolve));
 const root = await mkdtemp(path.join(tmpdir(), 'frame-browser-test-'));
 const port = 31876;
 const lan = process.env.FRAME_TEST_HTTP_LAN === 'true';
-const lanHost = Object.values(networkInterfaces())
+const lanHost = Object.values(lan ? networkInterfaces() : {})
   .flat()
   .find(
     (a) =>
@@ -355,7 +355,9 @@ try {
   await page.getByRole('tab', { name: 'Documents', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Document tools', exact: true })).toBeVisible();
   // Reopen a native session beyond both former display limits, without compaction.
-  const longChat = store.createConversation(store.projects()[0]!.id);
+  const longChat = store.createConversation(
+    store.projects().find((p: any) => p.name === 'Infrastructure')!.id,
+  );
   store.db
     .prepare('UPDATE conversations SET title=? WHERE id=?')
     .run('Long history regression', longChat.id);
@@ -540,6 +542,11 @@ try {
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Delete project', exact: true }).click();
   await expect(page.getByLabel('Project menu: Infrastructure')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await expect(page.getByLabel('Project menu: Arena', { exact: true })).toBeVisible();
+  await page.getByLabel('Project menu: Arena', { exact: true }).click();
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByRole('button', { name: 'Delete project', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Create your first project', exact: false }),
   ).toBeVisible();

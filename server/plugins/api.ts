@@ -18,7 +18,7 @@ export function projectPluginsApi(
     return id;
   };
   const snapshot = (id: string) => ({
-    excel: runner.excel?.projectEnabled(id) ?? true,
+    excel: runner.excel?.projectEnabled(id) ?? false,
     mssql: sql.projectEnabled(id),
     systemEnabled: sql.settings().enabled,
     charts: charts.projectEnabled(id),

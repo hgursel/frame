@@ -51,8 +51,7 @@ try {
   await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
   await page.getByRole('button', { name: '⚙ Settings', exact: true }).click();
-  await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
-  await page.getByRole('button', { name: 'Skills plugin', exact: true }).click();
+  await page.getByRole('tab', { name: 'Skills', exact: true }).click();
   await page
     .getByLabel('Skill folders', { exact: true })
     .fill(`${folder}\n${path.join(root, 'missing')}`);
@@ -80,9 +79,9 @@ try {
   await page.getByRole('button', { name: 'Create project', exact: true }).click();
   await page.getByLabel('Project name', { exact: true }).fill('Skills project');
   await page.getByRole('button', { name: 'Create project', exact: true }).last().click();
-  await page.getByRole('button', { name: /^Project menu:/ }).click();
+  await page.getByRole('button', { name: 'Project menu: Skills project', exact: true }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
-  await expect(page.getByText('Skills run with trusted agent tools.')).toBeVisible();
+  await page.getByRole('tab', { name: 'Skills', exact: true }).click();
   await page.getByLabel('Enable skill lookup').check();
   await page.getByRole('button', { name: 'Save project skills', exact: true }).click();
   await expect(page.getByText('Project skills saved.', { exact: true })).toBeVisible();
@@ -91,11 +90,10 @@ try {
   const composer = page.getByRole('textbox', { name: 'Message Frame' });
   await composer.fill('/');
   const picker = page.getByRole('listbox', { name: 'Skills' });
-  await expect(picker).toContainText('Skills need trusted agent tools.');
+  await expect(picker.getByRole('option', { name: /\/skill:lookup/ })).toBeVisible();
   await composer.fill('');
 
-  const project = ctx.store.projects()[0]!;
-  ctx.store.updateProject(project.id, { ...project, toolsEnabled: true });
+  const project = ctx.store.projects().find((p: any) => p.name === 'Skills project')!;
   await composer.fill('/');
   await expect(picker.getByRole('option', { name: /\/skill:lookup/ })).toBeVisible();
   await composer.press('Escape');
@@ -137,15 +135,16 @@ try {
   await expect(page.getByText('BROWSER-SKILL-BODY')).toHaveCount(0);
   // Removing a skill folder must not leave an invisible project selection that cannot be cleared.
   ctx.skills.save({ folders: [] });
-  await page.getByRole('button', { name: /^Project menu:/ }).click();
+  await page.getByRole('button', { name: 'Project menu: Skills project', exact: true }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
+  await page.getByRole('tab', { name: 'Skills', exact: true }).click();
   await page.getByRole('button', { name: 'Remove unavailable skill lookup' }).click();
   await page.getByRole('button', { name: 'Save project skills', exact: true }).click();
   await expect(page.getByText('Project skills saved.', { exact: true })).toBeVisible();
   assert.deepEqual(ctx.skills.enabled(project.id), []);
   assert.deepEqual(errors, []);
   console.log(
-    'Skills browser passed: folder scan and warnings, project enablement, host-tool gating, picker keyboard use, /skill expansion, collapsed history, and mobile layout.',
+    'Skills browser passed: folder scan and warnings, project enablement, picker keyboard use, /skill expansion, collapsed history, and mobile layout.',
   );
 } finally {
   await browser?.close();

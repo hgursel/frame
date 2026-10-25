@@ -7,6 +7,7 @@ import {
   writeFileSync,
   renameSync,
   existsSync,
+  rmSync,
 } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -47,6 +48,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS logins(token TEXT PRIMARY KEY, expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY, name TEXT NOT NULL, instructions TEXT NOT NULL, toolsEnabled INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS project_plugins (projectId TEXT, plugin TEXT, enabled INTEGER NOT NULL, PRIMARY KEY(projectId,plugin));
       CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY, projectId TEXT NOT NULL REFERENCES projects(id), title TEXT NOT NULL, createdAt TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, conversationId TEXT NOT NULL REFERENCES conversations(id), status TEXT NOT NULL, error TEXT, createdAt INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS documents(id TEXT PRIMARY KEY, projectId TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, kind TEXT NOT NULL, extension TEXT NOT NULL, bytes INTEGER NOT NULL, revision TEXT NOT NULL, truncated INTEGER NOT NULL, updatedAt TEXT NOT NULL);
@@ -90,6 +92,8 @@ export class Store {
         throw error;
       }
     }
+    // File/Python tools are a built-in capability for every project.
+    this.db.exec('UPDATE projects SET toolsEnabled=1 WHERE toolsEnabled<>1');
     chmodSync(path.join(root, 'frame.db'), 0o600);
     this.db
       .prepare(
@@ -124,9 +128,19 @@ export class Store {
   }
   createUser(username: string, password: string, role = 'user', mustChangePassword = true) {
     const id = randomUUID();
-    this.db
-      .prepare('INSERT INTO users(id,username,password,role,mustChangePassword) VALUES (?,?,?,?,?)')
-      .run(id, username.toLowerCase(), hashPassword(password), role, Number(mustChangePassword));
+    this.db.exec('SAVEPOINT create_user');
+    try {
+      this.db
+        .prepare(
+          'INSERT INTO users(id,username,password,role,mustChangePassword) VALUES (?,?,?,?,?)',
+        )
+        .run(id, username.toLowerCase(), hashPassword(password), role, Number(mustChangePassword));
+      this.createProject({ name: 'Arena', instructions: '', toolsEnabled: true }, id);
+      this.db.exec('RELEASE create_user');
+    } catch (error) {
+      this.db.exec('ROLLBACK TO create_user; RELEASE create_user');
+      throw error;
+    }
     return this.user(id);
   }
   ownsProject(userId: string, id: string) {
@@ -142,36 +156,40 @@ export class Store {
   projects(): Project[] {
     return (
       this.db.prepare('SELECT * FROM projects ORDER BY name').all() as unknown as Project[]
-    ).map((p) => ({ ...p, toolsEnabled: !!p.toolsEnabled }));
+    ).map((p) => ({ ...p, toolsEnabled: true }));
   }
   project(id: string): Project | undefined {
     const p = this.db.prepare('SELECT * FROM projects WHERE id=?').get(id) as unknown as
       Project | undefined;
-    return p && { ...p, toolsEnabled: !!p.toolsEnabled };
+    return p && { ...p, toolsEnabled: true };
   }
   createProject(input: Omit<Project, 'id'>, ownerId?: string) {
     ownerId ??= (
       this.db.prepare("SELECT id FROM users WHERE role='admin' ORDER BY rowid LIMIT 1").get() as any
     )?.id;
-    const project = { id: randomUUID(), ...input, ownerId: ownerId ?? null };
+    const project = { id: randomUUID(), ...input, toolsEnabled: true, ownerId: ownerId ?? null };
     mkdirSync(this.projectPath(project.id), { recursive: true, mode: 0o700 });
-    this.db
-      .prepare(
-        'INSERT INTO projects(id,name,instructions,toolsEnabled,ownerId) VALUES (?, ?, ?, ?, ?)',
-      )
-      .run(
-        project.id,
-        project.name,
-        project.instructions,
-        Number(project.toolsEnabled),
-        ownerId ?? null,
-      );
+    this.db.exec('SAVEPOINT create_project');
+    try {
+      this.db
+        .prepare(
+          'INSERT INTO projects(id,name,instructions,toolsEnabled,ownerId) VALUES (?, ?, ?, 1, ?)',
+        )
+        .run(project.id, project.name, project.instructions, ownerId ?? null);
+      // Missing legacy Excel settings still mean enabled; new projects explicitly opt out.
+      this.db.prepare("INSERT INTO project_plugins VALUES (?, 'excel', 0)").run(project.id);
+      this.db.exec('RELEASE create_project');
+    } catch (error) {
+      this.db.exec('ROLLBACK TO create_project; RELEASE create_project');
+      rmSync(this.projectPath(project.id), { recursive: true, force: true });
+      throw error;
+    }
     return project;
   }
   updateProject(id: string, input: Omit<Project, 'id'>) {
     this.db
       .prepare('UPDATE projects SET name=?, instructions=?, toolsEnabled=? WHERE id=?')
-      .run(input.name, input.instructions, Number(input.toolsEnabled), id);
+      .run(input.name, input.instructions, 1, id);
     return this.project(id)!;
   }
   projectPath(id: string) {

@@ -210,8 +210,9 @@ try {
   await page.getByRole('button', { name: 'Create project', exact: true }).click();
   await page.getByLabel('Project name', { exact: true }).fill('Database project');
   await page.getByRole('button', { name: 'Create project', exact: true }).last().click();
-  await page.getByRole('button', { name: /^Project menu:/ }).click();
+  await page.getByRole('button', { name: 'Project menu: Database project', exact: true }).click();
   await page.getByRole('button', { name: 'Project settings', exact: true }).click();
+  await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
   await page.getByLabel('Enable MSSQL for this project').check();
   await page.getByLabel('Enable Charts for this project').check();
   await page.getByRole('button', { name: 'Save project plugins' }).click();
@@ -251,7 +252,7 @@ try {
   await expect(page.locator('.schema-preview')).not.toContainText('Holds business records');
   await expect(page.getByRole('button', { name: 'Reject note', exact: true })).toHaveCount(0);
 
-  const project = ctx.store.projects()[0];
+  const project = ctx.store.projects().find((p: any) => p.name === 'Database project');
   schemaId = ctx.mssql.schema.search(project.id, ['Dev'], 'Table1105').objects[0].id;
   const metadataCalls = driver.calls.length;
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();

@@ -1,0 +1,165 @@
+/* Full-page settings: stable category navigation and an independently scrolling editor. */
+.settings-panel.settings-page {
+  max-width: none;
+  flex: 1;
+  min-height: 0;
+  padding: 28px 36px 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.settings-page > h1 {
+  margin: 8px 0;
+}
+.settings-page > .muted {
+  margin: 0 0 22px;
+}
+.settings-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 30px;
+  flex: 1;
+  min-height: 0;
+}
+.settings-page .settings-tabs {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: static;
+  border: 0;
+  border-right: 1px solid var(--line);
+  margin: 0;
+  padding: 0 18px 20px 0;
+  overflow-y: auto;
+  gap: 4px;
+}
+.settings-page .settings-tabs button {
+  text-align: left;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 14px;
+  white-space: normal;
+}
+.settings-content {
+  min-width: 0;
+  overflow: auto;
+  padding: 0 16px 24px 0;
+  scrollbar-gutter: stable;
+}
+.settings-content > * {
+  max-width: 1200px;
+}
+.settings-content .settings-panel {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+.settings-content .plugin-card,
+.settings-content .library-panel {
+  margin-top: 0;
+}
+.settings-content .settings-actions {
+  position: sticky;
+  bottom: -24px;
+  background: var(--canvas);
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  z-index: 2;
+}
+.settings-content .plugin-catalog {
+  grid-template-columns: 160px minmax(0, 1fr);
+}
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px;
+  min-width: 0;
+}
+.sidebar-user > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.sidebar-user strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+.library-collapse > summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-weight: 600;
+}
+.library-expanded > summary {
+  display: none;
+}
+.okf-preview {
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.okf-preview ul {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-left: 20px;
+}
+@media (max-width: 900px) {
+  .settings-panel.settings-page {
+    padding: 22px 20px 16px;
+  }
+  .settings-layout {
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .settings-content .plugin-catalog {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .settings-panel.settings-page {
+    padding: 16px 12px;
+  }
+  .settings-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .settings-page .settings-tabs {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 0 0 8px;
+    overflow-x: auto;
+    flex: 0 0 auto;
+  }
+  .settings-page .settings-tabs button {
+    white-space: nowrap;
+    padding: 9px 12px;
+  }
+  .settings-content {
+    padding-right: 0;
+  }
+}
+.knowledge-bundle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.knowledge-bundle-actions label {
+  margin: 0;
+  cursor: pointer;
+}
+.settings-content .settings-actions:empty {
+  display: none;
+}

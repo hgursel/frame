@@ -103,6 +103,9 @@ test('Excel proposals enforce pane ownership, one-time Apply, SQL source scope, 
       404,
     );
     const p = f.store.createProject({ name: 'Excel', instructions: '', toolsEnabled: true });
+    f.store.db
+      .prepare("UPDATE project_plugins SET enabled=1 WHERE projectId=? AND plugin='excel'")
+      .run(p.id);
     const a = f.excel.create(p.id),
       b = f.excel.create(p.id);
     f.excel.authorize(a.conversationId, a.clientKey);
@@ -208,6 +211,9 @@ test('large Excel captures use compact, bounded sections and lightweight proposa
   const f = await appFixture('excel-large');
   try {
     const p = f.store.createProject({ name: 'Large', instructions: '', toolsEnabled: false });
+    f.store.db
+      .prepare("UPDATE project_plugins SET enabled=1 WHERE projectId=? AND plugin='excel'")
+      .run(p.id);
     const session = f.excel.create(p.id),
       id = session.conversationId,
       runId = randomUUID();
@@ -412,6 +418,9 @@ test('Excel HTTPS API and real SDK expose only pilot tools, bind approval, rejec
     assert(String(pane.headers['content-security-policy']).includes('onecdn'));
     assert.equal(pane.headers['x-frame-options'], 'DENY');
     const p = f.store.createProject({ name: 'Excel', instructions: '', toolsEnabled: true });
+    f.store.db
+      .prepare("UPDATE project_plugins SET enabled=1 WHERE projectId=? AND plugin='excel'")
+      .run(p.id);
     f.mssql.save(config);
     f.mssql.setProject(p.id, true);
     f.store.saveSettings({

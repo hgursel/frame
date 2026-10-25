@@ -212,7 +212,9 @@ export function PluginSettings() {
               />
             </label>
           </div>
-          <button className="primary">Save MSSQL settings</button>
+          <div className="settings-actions">
+            <button className="primary">Save MSSQL settings</button>
+          </div>
         </fieldset>
       </form>
       <div className="button-row">
@@ -265,7 +267,7 @@ export function PluginSettings() {
   );
 }
 export function ProjectPlugins({ projectId }: { projectId: string }) {
-  const [excel, setExcel] = useState(true);
+  const [excel, setExcel] = useState(false);
   const [reports, setReports] = useState(false);
   const [reportsSystem, setReportsSystem] = useState(false);
   const [charts, setCharts] = useState(false);
@@ -333,7 +335,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
         Branded PDF reports with conversation charts and tables.{' '}
         {reportsSystem
           ? 'Reports is enabled system-wide.'
-          : 'Enable Reports in Settings → Plugins first.'}
+          : 'An administrator must enable Reports first.'}
       </p>
       <details>
         <summary>Customize report design</summary>
@@ -353,7 +355,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
         Charts from SQL results, CSV files, and Markdown tables, only when you ask.{' '}
         {chartsSystem
           ? 'Charts is enabled system-wide.'
-          : 'Enable Charts in Settings → Plugins first.'}
+          : 'An administrator must enable Charts first.'}
       </p>
       <label className="checkbox">
         <input
@@ -369,31 +371,33 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
         Uses system database and operation permissions.{' '}
         {system
           ? 'MSSQL is enabled system-wide.'
-          : 'Enable and configure MSSQL in Settings → Plugins first.'}
+          : 'An administrator must configure and enable MSSQL first.'}
       </p>
-      <button
-        disabled={!loaded || busy}
-        onClick={async () => {
-          setBusy(true);
-          setError('');
-          try {
-            await api(`/projects/${projectId}/plugins`, 'PUT', {
-              excel,
-              mssql: enabled,
-              charts,
-              reports,
-            });
-            setNotice('Project plugins saved.');
-            setSavedVersion((v) => v + 1);
-          } catch (e) {
-            setError((e as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        Save project plugins
-      </button>
+      <div className="settings-actions">
+        <button
+          disabled={!loaded || busy}
+          onClick={async () => {
+            setBusy(true);
+            setError('');
+            try {
+              await api(`/projects/${projectId}/plugins`, 'PUT', {
+                excel,
+                mssql: enabled,
+                charts,
+                reports,
+              });
+              setNotice('Project plugins saved.');
+              setSavedVersion((v) => v + 1);
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Save project plugins
+        </button>
+      </div>
       {notice && <p role="status">{notice}</p>}
       {error && (
         <p role="alert" className="error">

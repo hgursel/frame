@@ -8,7 +8,9 @@ Frame runs one installation with local accounts. Admins manage accounts, the mod
 2. Deploy the new build. Existing single-password installations migrate to username `admin`, retaining the old password and assigning existing projects to it. Existing cookies are revoked; log in again. Fresh installs use the printed setup token to create the initial account.
 3. In Settings → Users, create accounts with temporary passwords. Users must replace these on first login; existing password reset/disable operations revoke sessions. Disabling preserves their files. For Excel, complete the password change in the main browser first.
 4. Admins configure the endpoint base URL, optional key, model ID, context/output budgets, image/tool capabilities, and concurrent model requests. No particular engine is assumed. The default capacity is two requests; benchmark your chosen backend before increasing it.
-5. Users create projects and manage knowledge directly. Global capabilities are selected in Project settings; installed skills are selected separately. Excel is available by default and can be disabled per project. Uploads stay conversation-only unless intentionally saved to knowledge.
+5. Every newly created account receives its own **Arena** project, including the initial administrator. Existing accounts receive no additional project. Users create projects and manage knowledge directly. File/Python tools are always enabled for ordinary project chats. Excel defaults off for new projects; existing project choices are preserved. Only admins can see or use skills. Uploads stay conversation-only unless intentionally saved to knowledge.
+
+Project and admin settings use wide pages with category navigation. Project categories are General, Knowledge & Library, Plugins, and admin-only Skills. Library references start collapsed with an attachment count. The signed-in username appears above Settings in the sidebar.
 
 SQL uses one read-only login for everyone. Legacy write credentials are ignored; remove unused credentials from backups/configuration under your retention policy. Grant read-only rights at SQL Server—Frame does not change database grants.
 

@@ -2,6 +2,9 @@
 
 # Frame for Excel — Windows pilot
 
+New projects start with Excel disabled. Enable **Frame for Excel** in **Project settings → Plugins** before connecting the add-in. Existing projects keep their previous enabled/disabled choice.
+
+
 Frame for Excel is a private Office task-pane add-in for one administrator using Microsoft 365 Excel Desktop on Windows. It connects to your Frame server over trusted HTTPS. It uses the existing local llama.cpp model, selected project's knowledge/library references, and enabled read-only SQL connection. There is no Copilot requirement, cloud-model fallback, Microsoft Graph connection, or Microsoft 365 Integrated Apps deployment in this pilot.
 
 ## What is implemented

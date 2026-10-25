@@ -149,6 +149,8 @@ export class Skills {
   }
   /** Skills passed to the worker; renamed or removed skills silently drop out. */
   context(projectId: string) {
+    const owner = this.store.project(projectId)?.ownerId;
+    if (!owner || this.store.user(owner)?.role !== 'admin') return [];
     const enabled = new Set(this.enabled(projectId));
     if (!enabled.size) return [];
     return this.catalog().skills.filter((s) => enabled.has(s.name));

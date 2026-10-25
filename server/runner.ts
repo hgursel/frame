@@ -169,6 +169,12 @@ export class Runner extends EventEmitter {
     }
     const conversation = this.store.conversation(id)!;
     const originalProject = this.store.project(conversation.projectId)!;
+    const admin =
+      originalProject.ownerId && this.store.user(originalProject.ownerId)?.role === 'admin';
+    if (!admin && /^\s*\/skill:/.test(prompt))
+      throw Object.assign(new Error('Skills are available only to administrators.'), {
+        statusCode: 403,
+      });
     if (excel && !this.excel?.projectEnabled(originalProject.id))
       throw Object.assign(new Error('Excel is disabled for this project.'), { statusCode: 403 });
     if (this.excel?.has(id) && !excel && operation !== 'compact')
@@ -515,6 +521,7 @@ export class Runner extends EventEmitter {
           writable: this.store.artifacts(conversation),
           hidden: [
             this.store.root,
+            ...(this.skills?.settings().folders || []),
             fileURLToPath(
               new URL(import.meta.url.endsWith('.ts') ? '../' : '../../', import.meta.url),
             ),

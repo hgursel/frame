@@ -97,7 +97,11 @@ export class ExcelSessions {
     );
   }
   create(projectId: string) {
-    if (!this.projectEnabled(projectId)) throw fail('Excel is disabled for this project.', 403);
+    if (!this.projectEnabled(projectId))
+      throw fail(
+        'Excel is disabled for this project. Enable Frame for Excel in Project settings → Plugins.',
+        403,
+      );
     if (!this.store.project(projectId)) throw fail('Project not found.', 404);
     const conversation = this.store.createConversation(projectId);
     const clientKey = randomBytes(32).toString('hex');

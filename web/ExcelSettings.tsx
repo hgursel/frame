@@ -110,7 +110,9 @@ export function ExcelSettings() {
               output must still fit the response budget. Reopen the Excel pane after changing
               limits.
             </p>
-            <button disabled={busy}>{busy ? 'Saving…' : 'Save Excel limits'}</button>
+            <div className="settings-actions">
+              <button disabled={busy}>{busy ? 'Saving…' : 'Save Excel limits'}</button>
+            </div>
             {saved && <p role="status">Excel limits saved.</p>}
           </form>
           <ol>
