@@ -1,4 +1,7 @@
 const labels: Record<string, string> = {
+  email_recipients: 'Find email recipients',
+  email_outputs: 'Find email attachments',
+  email_prepare: 'Prepare email for review',
   excel_read_selection: 'Read selected cells',
   excel_read_workbook: 'Read workbook',
   excel_edit_workbook: 'Prepare worksheet edits',

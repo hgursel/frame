@@ -61,6 +61,7 @@ export function deleteWorkspaceData(
   if (
     runner.projectBusy(projectId) ||
     runner.reports?.busy(projectId) ||
+    runner.email?.busy(projectId) ||
     knowledge.locks.has(projectId) ||
     sql.schema.jobs.has(projectId) ||
     sql.notes.jobs.has(projectId) ||
@@ -110,6 +111,7 @@ export function deleteWorkspaceData(
         store.db.prepare('DELETE FROM chart_datasets WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM mssql_operations WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM runs WHERE conversationId=?').run(c.id);
+        store.db.prepare('DELETE FROM email_drafts WHERE conversationId=?').run(c.id);
         store.db.prepare('DELETE FROM meta WHERE key=?').run(`metrics:${c.id}`);
         store.db.prepare('DELETE FROM meta WHERE key=?').run(`memory:${c.id}`);
         store.db

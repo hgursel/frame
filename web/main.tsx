@@ -1,3 +1,4 @@
+import { EmailDrafts, EmailSettings } from './Email.js';
 import { AccountGate, AccountSettings, UsersSettings, useUser } from './Accounts.js';
 import { QuestionCard } from './QuestionCard.js';
 import { ExcelSettings } from './ExcelSettings.js';
@@ -725,8 +726,10 @@ function Workspace() {
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-user" title={user?.username}>
-            <span aria-hidden="true">{user?.username.slice(0, 1).toUpperCase()}</span>
-            <strong>{user?.username}</strong>
+            <span aria-hidden="true">
+              {(user?.displayName || user?.username || '').slice(0, 1).toUpperCase()}
+            </span>
+            <strong>{user?.displayName || user?.username}</strong>
           </div>
           <button onClick={() => setPage('settings')}>⚙ Settings</button>
           <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
@@ -929,6 +932,7 @@ function Workspace() {
                       chatId={chatId}
                     />
                   )}
+                  <EmailDrafts chatId={chatId} drafts={snapshot.emails || []} />
                   {snapshot.question && (
                     <QuestionCard
                       key={snapshot.question.id}
@@ -1224,6 +1228,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
     'knowledge',
     'library',
     'excel',
+    'email',
   ] as const;
   const [tab, setTab] = useState<(typeof tabs)[number]>('model');
   const [visited, setVisited] = useState(new Set<string>(['model']));
@@ -1302,16 +1307,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             {visited.has('users') && <UsersSettings />}
           </div>
           <form
-            hidden={
-              tab === 'account' ||
-              tab === 'users' ||
-              tab === 'documents' ||
-              tab === 'plugins' ||
-              tab === 'skills' ||
-              tab === 'knowledge' ||
-              tab === 'library' ||
-              tab === 'excel'
-            }
+            hidden={!['model', 'context', 'instructions'].includes(tab)}
             onSubmit={async (e) => {
               e.preventDefault();
               setBusy(true);
@@ -1588,6 +1584,14 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             hidden={tab !== 'skills'}
           >
             {visited.has('skills') && <SkillsSettings />}
+          </div>
+          <div
+            id="settings-email"
+            role="tabpanel"
+            aria-labelledby="tab-email"
+            hidden={tab !== 'email'}
+          >
+            {visited.has('email') && <EmailSettings />}
           </div>
           <div
             id="settings-excel"

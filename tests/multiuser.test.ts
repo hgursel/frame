@@ -215,11 +215,13 @@ test(
           202,
         );
       await waitUntil(() => pending.length === 1);
-      const running = chats.find((c) => f.runner.snapshot(c.id).status === 'Waiting for model')!;
       await waitUntil(
         () =>
           chats.filter((c) => f.runner.snapshot(c.id).status === 'Queued for model').length === 2,
       );
+      // Workers briefly publish "Waiting for model" before acquiring capacity.
+      // Identify the permit holder only after both other workers are queued.
+      const running = chats.find((c) => f.runner.snapshot(c.id).status === 'Waiting for model')!;
       const queued = chats.filter((c) => c.id !== running.id);
       assert.equal(
         (

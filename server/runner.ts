@@ -1,3 +1,4 @@
+import type { Email } from './email.js';
 import { ModelCapacity } from './model-capacity.js';
 import { mkdirSync } from 'node:fs';
 import type { Knowledge } from './knowledge.js';
@@ -47,6 +48,7 @@ type ActiveRun = {
 export class Runner extends EventEmitter {
   readonly capacity = new ModelCapacity(() => this.store.settings().maxConcurrentRequests || 2);
   excel?: ExcelSessions;
+  email?: Email;
   readonly questions = new Questions();
   private revision = Date.now() * 1000;
   readonly ephemeral = new Map<string, { entries: unknown[]; snapshot?: ChatSnapshot }>();
@@ -71,6 +73,7 @@ export class Runner extends EventEmitter {
       const sqlApproval = this.mssql?.approval(id);
       return {
         ...live.snapshot,
+        emails: this.email?.list(id),
         messages: live.tail ? [...live.snapshot.messages, live.tail] : live.snapshot.messages,
         streaming: !!live.tail,
         messagesVersion: live.messagesVersion,
@@ -106,6 +109,7 @@ export class Runner extends EventEmitter {
     return {
       messagesVersion: this.revision + 1,
       revision: ++this.revision,
+      emails: this.email?.list(id),
       memory: JSON.parse(this.store.meta(`memory:${id}`) || '[]'),
       messages: readHistory(this.store.sessionFile(id)),
       running: false,
@@ -345,6 +349,18 @@ export class Runner extends EventEmitter {
                 throw new Error('Workbook tools require an Excel session.');
               return this.excel.read(id, runId, excel.selection, event.args);
             }
+            if (event.action.startsWith('email_')) {
+              if (!this.email || !this.email.modelContext(id))
+                throw new Error('Email unavailable.');
+              if (event.action === 'email_recipients')
+                return this.email.lookup(
+                  id,
+                  z.object({ query: z.string() }).parse(event.args).query,
+                );
+              if (event.action === 'email_outputs') return this.email.outputs(id);
+              if (event.action === 'email_prepare') return this.email.prepare(id, event.args);
+              throw new Error('Email tool unavailable. Only the user can send a reviewed draft.');
+            }
             if (event.action === 'ask_user_question') {
               if (this.questions.get(id)) throw new Error('Answer the pending questions first.');
               deadline.pause();
@@ -548,6 +564,7 @@ export class Runner extends EventEmitter {
         documents,
         images,
         excel: excelContext,
+        email: this.email?.modelContext(id),
         pythonPath,
         // Metadata only: page text is served through knowledge_search/knowledge_read.
         knowledge: knowledge.map(({ text: _, ...entry }) => entry),

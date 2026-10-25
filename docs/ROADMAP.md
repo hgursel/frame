@@ -9,6 +9,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Chronological activity rows between intermediate replies, with only the current row animated. Streamed reasoning, tool details, and SQL results expand in bounded inline panels; completed rows show their own step counts. One FRAME heading per user turn; replies, charts, files, approvals, and errors stay visible. Waiting, stopping, and reconnecting status lives in the current row rather than above the composer.
 - Project document uploads, preserved sources, bounded PDF/DOCX extraction, Markdown notes and revision history.
 - OKF 0.2 concept files, provenance, cross-links, index/log, and bundle import/export with preview, duplicate skipping, preserved revisions, and rollback.
+- Internal SMTP email with approved domains, editable human-confirmed drafts, generated-output attachments, persistent send status and duplicate protection; admin-managed display names and email profiles.
 - Wide project/admin settings with category navigation, collapsed library references, sidebar username, built-in File/Python tools, opt-in Excel for new projects, admin-only skills, and a private Arena project for each new account.
 - Conversation knowledge search/read, model draft proposals, and reviewed saves/updates from useful answers and tool results.
 - Explicit Python environment installation, tested PDF/DOCX generation, and completed-artifact publication.
