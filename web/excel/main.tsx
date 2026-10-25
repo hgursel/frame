@@ -1,3 +1,4 @@
+import { EmailDrafts } from '../Email.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { api } from '../api.js';
@@ -911,6 +912,10 @@ function App() {
                 {unlinked
                   .filter((p) => p.status === 'pending' || p.status === 'applying')
                   .map(proposalCard)}
+                <EmailDrafts
+                  chatId={session.conversationId}
+                  drafts={state?.snapshot.emails || []}
+                />
                 {state?.snapshot.question && (
                   <QuestionCard
                     key={state.snapshot.question.id}

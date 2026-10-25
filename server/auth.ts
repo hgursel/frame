@@ -5,6 +5,8 @@ import { digest, hashPassword, verifyPassword } from './security.js';
 export interface User {
   id: string;
   username: string;
+  displayName: string;
+  email: string;
   role: 'admin' | 'user';
   disabled: number;
   mustChangePassword: number;
@@ -21,6 +23,22 @@ export const usernameSchema = z
   .max(64)
   .regex(/^[a-zA-Z0-9_.-]+$/)
   .transform((v) => v.toLowerCase());
+export const displayNameSchema = z
+  .string()
+  .trim()
+  .max(120)
+  .regex(/^[^\x00-\x1f\x7f]*$/);
+export const emailAddressSchema = z
+  .string()
+  .trim()
+  .max(254)
+  .email()
+  .regex(/^[^\s<>\x00-\x1f\x7f]+$/)
+  .transform((v) => v.toLowerCase());
+const profileFields = {
+  displayName: displayNameSchema,
+  email: z.union([emailAddressSchema, z.literal('')]),
+};
 export const passwordSchema = z.string().min(12).max(256);
 const fail = (statusCode: number, message: string) =>
   Object.assign(new Error(message), { statusCode });
@@ -35,7 +53,7 @@ export function installAuthorization(app: FastifyInstance, store: Store) {
       return;
     const user = store.db
       .prepare(
-        `SELECT u.id,u.username,u.role,u.disabled,u.mustChangePassword FROM users u JOIN logins l ON l.userId=u.id WHERE l.token=? AND l.expires>? AND u.disabled=0`,
+        `SELECT u.id,u.username,u.displayName,u.email,u.role,u.disabled,u.mustChangePassword FROM users u JOIN logins l ON l.userId=u.id WHERE l.token=? AND l.expires>? AND u.disabled=0`,
       )
       .get(digest(request.cookies.frame_session || ''), Date.now()) as unknown as User;
     if (!user) throw fail(401, 'Sign in to Frame');
@@ -112,7 +130,9 @@ export function installAuthorization(app: FastifyInstance, store: Store) {
   });
   app.get('/api/admin/users', () =>
     store.db
-      .prepare('SELECT id,username,role,disabled,mustChangePassword FROM users ORDER BY username')
+      .prepare(
+        'SELECT id,username,displayName,email,role,disabled,mustChangePassword FROM users ORDER BY username',
+      )
       .all(),
   );
   app.post('/api/admin/users', (request) => {
@@ -121,19 +141,32 @@ export function installAuthorization(app: FastifyInstance, store: Store) {
         username: usernameSchema,
         password: passwordSchema,
         role: z.enum(['admin', 'user']).default('user'),
+        displayName: profileFields.displayName.default(''),
+        email: profileFields.email.default(''),
       })
       .parse(request.body);
     if (store.db.prepare('SELECT id FROM users WHERE username=?').get(data.username))
       throw fail(409, 'Username already exists');
-    return store.createUser(data.username, data.password, data.role);
+    return store.createUser(data.username, data.password, data.role, true, {
+      displayName: data.displayName,
+      email: data.email,
+    });
   });
   app.patch<{ Params: { id: string } }>('/api/admin/users/:id', (request) => {
     const data = z
-      .object({ disabled: z.boolean().optional(), password: passwordSchema.optional() })
+      .object({
+        disabled: z.boolean().optional(),
+        password: passwordSchema.optional(),
+        displayName: profileFields.displayName.optional(),
+        email: profileFields.email.optional(),
+      })
       .strict()
       .parse(request.body);
     if (!store.user(request.params.id)) throw fail(404, 'User not found');
-    if (request.params.id === request.user.id)
+    if (
+      request.params.id === request.user.id &&
+      (data.disabled !== undefined || data.password !== undefined)
+    )
       throw fail(
         400,
         'Use your account settings to change your password. You cannot disable your own account.',
@@ -146,7 +179,14 @@ export function installAuthorization(app: FastifyInstance, store: Store) {
       store.db
         .prepare('UPDATE users SET password=?,mustChangePassword=1 WHERE id=?')
         .run(hashPassword(data.password), request.params.id);
-    store.db.prepare('DELETE FROM logins WHERE userId=?').run(request.params.id);
+    if (data.displayName !== undefined)
+      store.db
+        .prepare('UPDATE users SET displayName=? WHERE id=?')
+        .run(data.displayName, request.params.id);
+    if (data.email !== undefined)
+      store.db.prepare('UPDATE users SET email=? WHERE id=?').run(data.email, request.params.id);
+    if (data.disabled !== undefined || data.password)
+      store.db.prepare('DELETE FROM logins WHERE userId=?').run(request.params.id);
     return store.user(request.params.id);
   });
 }

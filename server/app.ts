@@ -1,3 +1,4 @@
+import { Email, emailApi } from './email.js';
 import { installAuthorization, usernameSchema } from './auth.js';
 import { chatAttachments } from './chat-attachments.js';
 import { chatFilesApi } from './chat-files-api.js';
@@ -130,6 +131,9 @@ export async function createApp(options: {
   store.db.prepare("DELETE FROM meta WHERE key='private-tools:settings'").run();
   store.db.prepare("DELETE FROM project_plugins WHERE plugin='private-tools'").run();
   runner = new Runner(store, mssql, charts, reports, skills, knowledge);
+  const email = new Email(store);
+  runner.email = email;
+  email.on('change', (id: string) => runner.emit(id));
   const excel = new ExcelSessions(store);
   runner.excel = excel;
   mssql.captureExcelData = (conversation, operation, result) =>
@@ -212,6 +216,7 @@ export async function createApp(options: {
     maxAge: 8 * 3600,
   };
   installAuthorization(app, store);
+  emailApi(app, email);
   app.get('/api/auth/status', async () => ({
     setupRequired: !store.db.prepare('SELECT id FROM users LIMIT 1').get(),
   }));
@@ -587,6 +592,7 @@ export async function createApp(options: {
     for (const stream of streams) stream.end();
     await maintenance.close();
     await runner.close();
+    await email.close();
     await reports.close();
     await python.close();
     await mssql.close();
@@ -610,5 +616,6 @@ export async function createApp(options: {
     skills,
     maintenance,
     incognito,
+    email,
   };
 }

@@ -67,6 +67,12 @@ export class Store {
       password TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','user')),
       disabled INTEGER NOT NULL DEFAULT 0, mustChangePassword INTEGER NOT NULL DEFAULT 0
     )`);
+    for (const column of ['displayName', 'email']) {
+      if (
+        !(this.db.prepare('PRAGMA table_info(users)').all() as any[]).some((c) => c.name === column)
+      )
+        this.db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
+    }
     for (const [table, column] of [
       ['projects', 'ownerId'],
       ['logins', 'userId'],
@@ -123,18 +129,34 @@ export class Store {
   }
   user(id: string): any {
     return this.db
-      .prepare('SELECT id,username,role,disabled,mustChangePassword FROM users WHERE id=?')
+      .prepare(
+        'SELECT id,username,displayName,email,role,disabled,mustChangePassword FROM users WHERE id=?',
+      )
       .get(id);
   }
-  createUser(username: string, password: string, role = 'user', mustChangePassword = true) {
+  createUser(
+    username: string,
+    password: string,
+    role = 'user',
+    mustChangePassword = true,
+    profile = { displayName: '', email: '' },
+  ) {
     const id = randomUUID();
     this.db.exec('SAVEPOINT create_user');
     try {
       this.db
         .prepare(
-          'INSERT INTO users(id,username,password,role,mustChangePassword) VALUES (?,?,?,?,?)',
+          'INSERT INTO users(id,username,password,role,mustChangePassword,displayName,email) VALUES (?,?,?,?,?,?,?)',
         )
-        .run(id, username.toLowerCase(), hashPassword(password), role, Number(mustChangePassword));
+        .run(
+          id,
+          username.toLowerCase(),
+          hashPassword(password),
+          role,
+          Number(mustChangePassword),
+          profile.displayName,
+          profile.email,
+        );
       this.createProject({ name: 'Arena', instructions: '', toolsEnabled: true }, id);
       this.db.exec('RELEASE create_user');
     } catch (error) {

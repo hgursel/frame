@@ -52,6 +52,7 @@ export interface DisplayMessage {
   chart?: ChartRef;
 }
 export interface ChatSnapshot {
+  emails?: import('./email.js').EmailDraft[];
   question?: import('./questions.js').QuestionRequest;
   /** Monotonic server observation order; HTTP and SSE share this sequence. */
   revision?: number;
@@ -95,6 +96,12 @@ export interface ChatMetrics {
   };
 }
 export interface WorkerInput {
+  email?: {
+    displayName: string;
+    email: string;
+    domains: string[];
+    recent: { id: string; status: string; subject: string; message: string }[];
+  };
   sandbox?: import('../server/sandbox.js').Sandbox;
   excel?: import('./excel.js').ExcelModelContext;
   skills?: SkillEntry[];

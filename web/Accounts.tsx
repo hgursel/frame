@@ -3,6 +3,8 @@ import { api } from './api.js';
 type User = {
   id: string;
   username: string;
+  displayName: string;
+  email: string;
   role: 'admin' | 'user';
   disabled: number;
   mustChangePassword: number;
@@ -18,6 +20,11 @@ export function AccountGate({ children }: { children: React.ReactNode }) {
       .catch((e) => setError(e.message));
   useEffect(() => {
     void refresh();
+    const changed = () => {
+      void refresh();
+    };
+    window.addEventListener('frame-profile-updated', changed);
+    return () => window.removeEventListener('frame-profile-updated', changed);
   }, []);
   if (!user) return <main className="auth">{error || 'Opening your account…'}</main>;
   return (
@@ -89,6 +96,12 @@ export function AccountSettings() {
         Signed in as <strong>{user?.username}</strong> ·{' '}
         {user?.role === 'admin' ? 'Administrator' : 'User'}
       </p>
+      <p>
+        Display name: {user?.displayName || user?.username}
+        <br />
+        Email: {user?.email || 'Not set'}
+      </p>
+      <p className="muted">Your administrator manages these profile details.</p>
       <PasswordForm />
     </section>
   );
@@ -99,6 +112,8 @@ export function UsersSettings() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
   const [notice, setNotice] = useState('');
   const refresh = () => api<User[]>('/admin/users').then(setUsers);
   useEffect(() => {
@@ -108,6 +123,8 @@ export function UsersSettings() {
     try {
       await api(`/admin/users/${user.id}`, 'PATCH', body);
       await refresh();
+      window.dispatchEvent(new Event('frame-profile-updated'));
+      setNotice('Account updated.');
     } catch (e) {
       setNotice((e as Error).message);
     }
@@ -123,8 +140,10 @@ export function UsersSettings() {
         onSubmit={async (e) => {
           e.preventDefault();
           try {
-            await api('/admin/users', 'POST', { username, password, role });
+            await api('/admin/users', 'POST', { username, password, role, displayName, email });
             setUsername('');
+            setDisplayName('');
+            setEmail('');
             setPassword('');
             await refresh();
             setNotice('Account created. Share the username and temporary password with the user.');
@@ -141,6 +160,23 @@ export function UsersSettings() {
             value={username}
             autoComplete="off"
             onChange={(e) => setUsername(e.target.value)}
+          />
+        </label>
+        <label>
+          Display name
+          <input
+            maxLength={120}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            maxLength={254}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </label>
         <label>
@@ -169,6 +205,24 @@ export function UsersSettings() {
         <article className="auth-card" key={u.id}>
           <strong>{u.username}</strong> · {u.role} · {u.disabled ? 'Disabled' : 'Active'}
           {u.mustChangePassword ? ' · Password change required' : ''}
+          <form
+            key={`${u.displayName}:${u.email}`}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const data = new FormData(e.currentTarget);
+              void update(u, { displayName: data.get('displayName'), email: data.get('email') });
+            }}
+          >
+            <label>
+              Display name
+              <input name="displayName" maxLength={120} defaultValue={u.displayName} />
+            </label>
+            <label>
+              Email
+              <input name="email" type="email" maxLength={254} defaultValue={u.email} />
+            </label>
+            <button>Save profile</button>
+          </form>
           {u.id !== self?.id && (
             <div>
               <button onClick={() => void update(u, { disabled: !u.disabled })}>
