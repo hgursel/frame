@@ -1,3 +1,4 @@
+import type { Scheduled } from './scheduled.js';
 import type { Email } from './email.js';
 import { ModelCapacity } from './model-capacity.js';
 import { mkdirSync } from 'node:fs';
@@ -49,6 +50,7 @@ export class Runner extends EventEmitter {
   readonly capacity = new ModelCapacity(() => this.store.settings().maxConcurrentRequests || 2);
   excel?: ExcelSessions;
   email?: Email;
+  scheduled?: Scheduled;
   readonly questions = new Questions();
   private revision = Date.now() * 1000;
   readonly ephemeral = new Map<string, { entries: unknown[]; snapshot?: ChatSnapshot }>();
@@ -73,6 +75,7 @@ export class Runner extends EventEmitter {
       const sqlApproval = this.mssql?.approval(id);
       return {
         ...live.snapshot,
+        scheduled: this.scheduled?.forConversation(id),
         emails: this.email?.list(id),
         messages: live.tail ? [...live.snapshot.messages, live.tail] : live.snapshot.messages,
         streaming: !!live.tail,
@@ -110,6 +113,7 @@ export class Runner extends EventEmitter {
       messagesVersion: this.revision + 1,
       revision: ++this.revision,
       emails: this.email?.list(id),
+      scheduled: this.scheduled?.forConversation(id),
       memory: JSON.parse(this.store.meta(`memory:${id}`) || '[]'),
       messages: readHistory(this.store.sessionFile(id)),
       running: false,
@@ -172,6 +176,8 @@ export class Runner extends EventEmitter {
       return { id: runId, status: existing.status, duplicate: true };
     }
     const conversation = this.store.conversation(id)!;
+    const scheduledTask = conversation.scheduled ? this.scheduled?.authorizeRun(id) : undefined;
+    if (conversation.scheduled && !scheduledTask) throw new Error('Scheduled run unavailable.');
     const originalProject = this.store.project(conversation.projectId)!;
     const admin =
       originalProject.ownerId && this.store.user(originalProject.ownerId)?.role === 'admin';
@@ -186,7 +192,7 @@ export class Runner extends EventEmitter {
         statusCode: 409,
       });
     const project =
-      conversation.incognito || excel
+      conversation.incognito || excel || scheduledTask
         ? { ...originalProject, toolsEnabled: false }
         : originalProject;
     if (this.mssql?.schema.jobs.has(project.id))
@@ -312,6 +318,47 @@ export class Runner extends EventEmitter {
         void Promise.resolve()
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
+            if (scheduledTask) this.scheduled!.authorizeRun(id);
+            if (event.action === 'schedule_prepare') {
+              if (scheduledTask || conversation.incognito || excel || !this.scheduled)
+                throw new Error('Scheduling is unavailable here.');
+              return this.scheduled.prepare(id, event.args);
+            }
+            if (event.action === 'scheduled_fail' && scheduledTask) {
+              const { reason } = z
+                .object({ reason: z.string().trim().min(1).max(2000) })
+                .parse(event.args);
+              this.store.db
+                .prepare('UPDATE scheduled_runs SET error=? WHERE conversationId=?')
+                .run(reason, id);
+              return { ok: true };
+            }
+            if (event.action === 'scheduled_email') {
+              if (!scheduledTask || !this.scheduled)
+                throw new Error('Scheduled delivery is unavailable here.');
+              return this.scheduled.prepareEmail(id, event.args);
+            }
+            if (
+              scheduledTask &&
+              ![
+                'model_acquire',
+                'model_release',
+                'knowledge_search',
+                'knowledge_read',
+                'reports_sources',
+                'reports_create',
+                'charts_sources',
+                'charts_import',
+                'charts_transform',
+                'charts_create',
+                'charts_datasets',
+                'schema_search',
+                'schema_read',
+                'notes_search',
+                'query',
+              ].includes(event.action)
+            )
+              throw new Error('This action is unavailable in unattended tasks.');
             if (event.action === 'model_acquire') {
               active.queued = true;
               active.snapshot.status = 'Queued for model';
@@ -430,13 +477,13 @@ export class Runner extends EventEmitter {
             if (event.action === 'charts_datasets' && this.charts) return this.charts.list(id);
             if (!this.mssql) throw new Error('Plugin unavailable');
             if (
-              excel &&
+              (excel || scheduledTask) &&
               event.action === 'query' &&
               classify(commandSchema.parse(event.args), this.mssql.requireProject(project.id)) !==
                 'read'
             )
               throw new Error(
-                'Frame for Excel supports read-only SQL. Use Frame chat for database changes.',
+                'This task supports read-only SQL. Use Frame chat for database changes.',
               );
             return this.mssql.invoke(id, runId, event.action, event.args);
           })
@@ -524,6 +571,7 @@ export class Runner extends EventEmitter {
         );
       this.active.delete(id);
       this.emit(id);
+      this.emit('finished', runId, { status, error });
     };
     child.once('error', () => {
       error = 'Agent process failed to start.';
@@ -564,7 +612,14 @@ export class Runner extends EventEmitter {
         documents,
         images,
         excel: excelContext,
-        email: this.email?.modelContext(id),
+        scheduling:
+          !conversation.incognito && !excel && !scheduledTask && this.scheduled
+            ? { timezone: this.scheduled.timezone(), now: new Date().toISOString() }
+            : undefined,
+        scheduledRun: scheduledTask
+          ? { recipients: scheduledTask.recipients, attachments: scheduledTask.attachments }
+          : undefined,
+        email: scheduledTask ? undefined : this.email?.modelContext(id),
         pythonPath,
         // Metadata only: page text is served through knowledge_search/knowledge_read.
         knowledge: knowledge.map(({ text: _, ...entry }) => entry),

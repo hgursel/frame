@@ -233,6 +233,7 @@ export class Maintenance {
       if (settings.learnConversations)
         for (const c of this.store
           .conversations()
+          .filter((c) => !c.scheduled)
           .filter((c) => c.projectId === projectId && !c.incognito))
           queue.push({ projectId, kind: 'conversation', id: c.id });
     }

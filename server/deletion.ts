@@ -60,6 +60,7 @@ export function deleteWorkspaceData(
   const sql = runner.mssql!;
   if (
     runner.projectBusy(projectId) ||
+    runner.scheduled?.busy(projectId) ||
     runner.reports?.busy(projectId) ||
     runner.email?.busy(projectId) ||
     knowledge.locks.has(projectId) ||

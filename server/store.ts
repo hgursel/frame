@@ -62,6 +62,12 @@ export class Store {
       )
     )
       this.db.exec('ALTER TABLE conversations ADD COLUMN incognito INTEGER NOT NULL DEFAULT 0');
+    if (
+      !(this.db.prepare('PRAGMA table_info(conversations)').all() as any[]).some(
+        (c) => c.name === 'scheduled',
+      )
+    )
+      this.db.exec('ALTER TABLE conversations ADD COLUMN scheduled INTEGER NOT NULL DEFAULT 0');
     this.db.exec(`CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE,
       password TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','user')),

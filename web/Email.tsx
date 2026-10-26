@@ -24,7 +24,7 @@ export function EmailSettings() {
       <h2>Email</h2>
       <p>
         Send internal emails from any project after the user reviews the draft and clicks Send.
-        Replies are not monitored.
+        Activated scheduled tasks send automatically. Replies are not monitored.
       </p>
       <form
         onSubmit={async (e) => {

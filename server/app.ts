@@ -1,3 +1,4 @@
+import { Scheduled, scheduledApi } from './scheduled.js';
 import { Email, emailApi } from './email.js';
 import { installAuthorization, usernameSchema } from './auth.js';
 import { chatAttachments } from './chat-attachments.js';
@@ -159,6 +160,33 @@ export async function createApp(options: {
       return [];
     }
   };
+  const scheduled = new Scheduled(store, runner, email, async (id, runId, task) => {
+    await knowledge.write(task.projectId, async () => {
+      const runtime = await python.status();
+      const catalog = [...(await wiki.catalog(task.projectId)), ...library.catalog(task.projectId)];
+      const recalled = recall(
+        maintenance.methods,
+        mssql,
+        task.projectId,
+        task.instructions,
+        catalog,
+        store.settings().contextWindow,
+      );
+      scheduled.authorizeRun(id);
+      runner.start(
+        id,
+        runId,
+        task.instructions,
+        undefined,
+        runtime.state === 'ready' ? python.executable : undefined,
+        recalled.catalog,
+        'prompt',
+        recalled.reference,
+      );
+    });
+  });
+  runner.scheduled = scheduled;
+  scheduled.startTimer();
   const incognito = new Incognito(store, runner, knowledge);
   maintenance.startTimer();
   const streams = new Set<ServerResponse>();
@@ -217,6 +245,7 @@ export async function createApp(options: {
   };
   installAuthorization(app, store);
   emailApi(app, email);
+  scheduledApi(app, scheduled);
   app.get('/api/auth/status', async () => ({
     setupRequired: !store.db.prepare('SELECT id FROM users LIMIT 1').get(),
   }));
@@ -344,7 +373,7 @@ export async function createApp(options: {
   app.get('/api/conversations', async (request) =>
     store
       .conversations()
-      .filter((c) => !c.incognito && store.ownsConversation(request.user.id, c.id)),
+      .filter((c) => !c.incognito && !c.scheduled && store.ownsConversation(request.user.id, c.id)),
   );
   app.post('/api/conversations', async (request, reply) => {
     const { projectId, incognito: temporary } = z
@@ -397,6 +426,8 @@ export async function createApp(options: {
         .parse(request.body);
       if (store.db.prepare('SELECT id FROM runs WHERE id=?').get(requestId))
         return reply.code(202).send(runner.start(id, requestId, text));
+      if (store.conversation(id)?.scheduled)
+        throw Object.assign(new Error('Scheduled run history is read-only.'), { statusCode: 409 });
       const project = store.project(store.conversation(id)!.projectId)!;
       return knowledge.write(project.id, async () => {
         const documents = await chatAttachments(knowledge, id, project.id, documentIds);
@@ -591,6 +622,7 @@ export async function createApp(options: {
   app.addHook('preClose', async () => {
     for (const stream of streams) stream.end();
     await maintenance.close();
+    await scheduled.close();
     await runner.close();
     await email.close();
     await reports.close();
@@ -617,5 +649,6 @@ export async function createApp(options: {
     maintenance,
     incognito,
     email,
+    scheduled,
   };
 }

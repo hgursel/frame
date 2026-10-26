@@ -12,14 +12,15 @@
     "build": "tsc --noEmit && vite build && tsc -p tsconfig.server.json",
     "start": "node --env-file-if-exists=.env dist/server/index.js",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:ui": "node --import tsx tests/browser.smoke.ts && node --import tsx tests/mssql.browser.ts && node --import tsx tests/reports.browser.ts && node --import tsx tests/maintenance.browser.ts && node --import tsx tests/library.browser.ts && node --import tsx tests/skills.browser.ts && FRAME_TEST_HTTP_LAN=true node --import tsx tests/browser.smoke.ts && node --import tsx tests/images.browser.ts && node --import tsx tests/workspace.browser.ts && node --import tsx tests/email.browser.ts",
+    "test:ui": "node --import tsx tests/browser.smoke.ts && node --import tsx tests/mssql.browser.ts && node --import tsx tests/reports.browser.ts && node --import tsx tests/maintenance.browser.ts && node --import tsx tests/library.browser.ts && node --import tsx tests/skills.browser.ts && FRAME_TEST_HTTP_LAN=true node --import tsx tests/browser.smoke.ts && node --import tsx tests/images.browser.ts && node --import tsx tests/workspace.browser.ts && node --import tsx tests/email.browser.ts && node --import tsx tests/scheduled.browser.ts",
     "test:multiuser-ui": "node --import tsx tests/multiuser.browser.ts",
     "test:excel": "node --import tsx tests/excel.browser.ts",
     "check": "tsc --noEmit",
     "packs:build": "node --import tsx knowledge-packs/build.ts",
     "packs:check": "node --import tsx knowledge-packs/build.ts --check",
     "python:setup": "node --env-file-if-exists=.env --import tsx server/setup-python.ts",
-    "test:email-ui": "node --import tsx tests/email.browser.ts"
+    "test:email-ui": "node --import tsx tests/email.browser.ts",
+    "test:scheduled-ui": "node --import tsx tests/scheduled.browser.ts"
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.85.1",

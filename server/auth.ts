@@ -82,6 +82,13 @@ export function installAuthorization(app: FastifyInstance, store: Store) {
       ownProject(id);
     }
     const mutation = !['GET', 'HEAD'].includes(request.method);
+    if (
+      mutation &&
+      route.startsWith('/api/conversations/:') &&
+      store.conversation(params.conversation || params.id!)?.scheduled &&
+      !route.endsWith('/stop')
+    )
+      throw fail(409, 'Scheduled run history is read-only. Manage the task from Scheduled.');
     const admin =
       route.startsWith('/api/admin/') ||
       (route.startsWith('/api/settings') && mutation) ||

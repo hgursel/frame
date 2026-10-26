@@ -29,3 +29,7 @@ Messages have no Reply-To and include “This mailbox is not monitored. Please d
 ## Validation
 
 Automated tests use a local SMTP capture server, a mock OpenAI-compatible model endpoint, and the real Pi SDK. They cover authorization, domain checks, secret isolation, recipient lookup, confirmation, file boundaries, changed previews, duplicate requests, partial/uncertain outcomes, restart recovery, deletion, profile management, and desktop/mobile UI. Real SMTP, corporate CA, relay policy, and delivery acceptance must be verified in the deployment environment.
+
+## Scheduled delivery
+
+[Scheduled tasks](SCHEDULED.md) authorize automatic email when the user activates the review card. Recipients are fixed at activation, changes require review again, and only authorized generated outputs from the current run can be attached. The server sends after successful task completion. Interactive chat emails continue to require Send confirmation.

@@ -1,4 +1,7 @@
 const labels: Record<string, string> = {
+  schedule_task: 'Prepare scheduled task',
+  scheduled_email: 'Prepare scheduled delivery',
+  scheduled_fail: 'Report scheduled task failure',
   email_recipients: 'Find email recipients',
   email_outputs: 'Find email attachments',
   email_prepare: 'Prepare email for review',
