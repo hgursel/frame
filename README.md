@@ -40,7 +40,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 
 - **Answer focused questions.** Frame can ask up to four questions with choices and custom answers, then continue from your response.
 - **Find files in one place.** Open **Files** for conversation Sources and generated Outputs in a separate panel.
-- **Schedule work from chat.** Review and activate one-time or recurring tasks, then manage them under **Scheduled** at the bottom left. Run read-only analyses, generate reports, and send approved internal emails while offline. Results stay in Scheduled. [Set up scheduled tasks →](docs/SCHEDULED.md)
+- **Schedule work from chat.** Review and activate one-time or recurring tasks, then manage them under **Scheduled** at the bottom left. Use the originating project's enabled skills and file/Python tools, run read-only SQL analyses, generate reports, and send approved internal emails while offline. Results stay in Scheduled. [Set up scheduled tasks →](docs/SCHEDULED.md)
 - **Give longer tasks time.** Runs allow 60 minutes of execution, pausing the timer while waiting for question answers.
 
 ### Frame for Excel (Windows pilot)

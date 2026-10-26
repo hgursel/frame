@@ -2,7 +2,7 @@
 
 ## Scheduled tasks (implemented)
 
-Chat-created review cards with explicit activation; private Scheduled panel and run outputs; admin timezone; one-time/daily/weekday/weekly/monthly timing; latest missed-run catch-up; nonoverlapping execution; fresh project context; server-enforced read-only tools and fixed recipients; automatic email after successful completion; failure notifications; restart-safe run claims. Edits and timezone changes require reactivation. Local fixture coverage does not replace real-model and production SMTP acceptance. See [Scheduled](SCHEDULED.md).
+Chat-created review cards with explicit activation; private Scheduled panel and run outputs; admin timezone; one-time/daily/weekday/weekly/monthly timing; latest missed-run catch-up; nonoverlapping execution; fresh context and enabled skills/file/Python tools from the originating project; server-enforced read-only SQL plugin tools and fixed email recipients; automatic email after successful completion; failure notifications; restart-safe run claims. Edits and timezone changes require reactivation. Local fixture coverage does not replace real-model and production SMTP acceptance. See [Scheduled](SCHEDULED.md).
 
 ## 0.1 — Foundation
 

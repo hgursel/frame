@@ -728,13 +728,13 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
-          <button onClick={() => setPage('scheduled')}>◷ Scheduled</button>
           <div className="sidebar-user" title={user?.username}>
             <span aria-hidden="true">
               {(user?.displayName || user?.username || '').slice(0, 1).toUpperCase()}
             </span>
             <strong>{user?.displayName || user?.username}</strong>
           </div>
+          <button onClick={() => setPage('scheduled')}>◷ Scheduled</button>
           <button onClick={() => setPage('settings')}>⚙ Settings</button>
           <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             {theme === 'light' ? '◐ Dark appearance' : '◑ Light appearance'}
@@ -746,7 +746,7 @@ function Workspace() {
               )
             }
           >
-            Sign out
+            <span aria-hidden="true">⇥</span> Sign out
           </button>
         </div>
       </aside>

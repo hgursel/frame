@@ -192,7 +192,7 @@ export class Runner extends EventEmitter {
         statusCode: 409,
       });
     const project =
-      conversation.incognito || excel || scheduledTask
+      conversation.incognito || excel
         ? { ...originalProject, toolsEnabled: false }
         : originalProject;
     if (this.mssql?.schema.jobs.has(project.id))
