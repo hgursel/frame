@@ -305,8 +305,9 @@ function TaskCard({
           </dl>
           {task.state === 'draft' && (
             <p className="muted">
-              Activate authorizes future runs and automatic emails to these recipients. Failures
-              appear here and are emailed to your account address when available.
+              Activate authorizes future runs using this project's current tools and enabled skills,
+              and automatic emails to these recipients. Failures appear here and are emailed to your
+              account address when available.
             </p>
           )}
           {error && (

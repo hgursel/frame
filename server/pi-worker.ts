@@ -155,7 +155,7 @@ async function run(input: WorkerInput): Promise<WorkerCompletion> {
         : []),
       ...(input.scheduledRun
         ? [
-            `This is an authorized unattended task. Complete the saved instructions using current project data. Do not ask questions, schedule other tasks, change databases, execute skills, or use shell/network tools. If required information or a capability is missing, use scheduled_fail with a clear reason; do not claim success. Fixed email recipients: ${JSON.stringify(input.scheduledRun.recipients)}. Attachment policy: ${input.scheduledRun.attachments}. If recipients are present, prepare one email with scheduled_email after generating the requested outputs. The server sends it automatically after successful completion. If no recipients are present, return the result here. Current time: ${new Date().toISOString()}.`,
+            `This is an authorized unattended task. Run in the originating project using its current instructions, knowledge, enabled skills, and file/Python tools. Use the enabled skills needed for the saved task, including their scripts. Save generated outputs in the current run artifact directory. Do not ask questions, schedule other tasks, or change databases. Never send email through shell/Python/network tools; use only scheduled_email with the fixed recipients and attachment policy below. If required information or a capability is missing, use scheduled_fail with a clear reason; do not claim success. Fixed email recipients: ${JSON.stringify(input.scheduledRun.recipients)}. Attachment policy: ${input.scheduledRun.attachments}. If recipients are present, prepare one email with scheduled_email after generating the requested outputs. The server sends it automatically after successful completion. If no recipients are present, return the result here. Current time: ${new Date().toISOString()}.`,
           ]
         : []),
       ...(input.email
@@ -253,7 +253,9 @@ async function run(input: WorkerInput): Promise<WorkerCompletion> {
                   'charts_create',
                 ]
               : []),
-            ...(input.scheduledRun && input.pythonPath ? ['create_document'] : []),
+            ...(input.scheduledRun && !project.toolsEnabled && input.pythonPath
+              ? ['create_document']
+              : []),
             ...(project.toolsEnabled
               ? ['read', 'write', 'edit', 'bash', ...(input.pythonPath ? ['create_document'] : [])]
               : []),
