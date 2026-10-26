@@ -582,6 +582,7 @@ test(
         'read',
         'read_chat_file',
         'read_knowledge',
+        'schedule_task',
         'search_knowledge',
         'write',
       ]);

@@ -1,3 +1,4 @@
+import { ScheduledPanel, ScheduleCards, ScheduledSettings } from './Scheduled.js';
 import { EmailDrafts, EmailSettings } from './Email.js';
 import { AccountGate, AccountSettings, UsersSettings, useUser } from './Accounts.js';
 import { QuestionCard } from './QuestionCard.js';
@@ -200,7 +201,9 @@ function Workspace() {
   const [switchingPrivacy, setSwitchingPrivacy] = useState(false);
   const currentChat = useRef(chatId);
   currentChat.current = chatId;
-  const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge'>('chat');
+  const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge' | 'scheduled'>(
+    'chat',
+  );
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [chatFiles, setChatFiles] = useState<KnowledgeDocument[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -725,6 +728,7 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
+          <button onClick={() => setPage('scheduled')}>◷ Scheduled</button>
           <div className="sidebar-user" title={user?.username}>
             <span aria-hidden="true">
               {(user?.displayName || user?.username || '').slice(0, 1).toUpperCase()}
@@ -771,7 +775,11 @@ function Workspace() {
             </button>
             <span className="muted">Workspace</span>
             <span className="slash">/</span>
-            {page === 'settings' ? 'Settings' : project?.name || 'Getting started'}
+            {page === 'scheduled'
+              ? 'Scheduled'
+              : page === 'settings'
+                ? 'Settings'
+                : project?.name || 'Getting started'}
           </div>
           {(page === 'settings' || page === 'project') && (
             <button onClick={() => setPage('chat')}>Back to chat</button>
@@ -839,6 +847,8 @@ function Workspace() {
           ) : (
             <AccountSettings />
           )
+        ) : page === 'scheduled' ? (
+          <ScheduledPanel projects={projects} />
         ) : page === 'knowledge' && project ? (
           <KnowledgePanel
             key={projectId}
@@ -932,6 +942,15 @@ function Workspace() {
                       chatId={chatId}
                     />
                   )}
+                  <ScheduleCards
+                    tasks={snapshot.scheduled || []}
+                    onOpen={() => setPage('scheduled')}
+                    refresh={() => {
+                      void api<ChatSnapshot>(`/conversations/${chatId}`)
+                        .then((value) => applySnapshot(chatId, value))
+                        .catch((e) => setError(e.message));
+                    }}
+                  />
                   <EmailDrafts chatId={chatId} drafts={snapshot.emails || []} />
                   {snapshot.question && (
                     <QuestionCard
@@ -1229,6 +1248,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
     'library',
     'excel',
     'email',
+    'scheduled',
   ] as const;
   const [tab, setTab] = useState<(typeof tabs)[number]>('model');
   const [visited, setVisited] = useState(new Set<string>(['model']));
@@ -1290,6 +1310,14 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           ))}
         </div>
         <div className="settings-content">
+          <div
+            id="settings-scheduled"
+            role="tabpanel"
+            aria-labelledby="tab-scheduled"
+            hidden={tab !== 'scheduled'}
+          >
+            {visited.has('scheduled') && <ScheduledSettings />}
+          </div>
           <div
             id="settings-account"
             role="tabpanel"

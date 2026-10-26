@@ -31,7 +31,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Remember useful methods.** Project memory learns recurring tasks and parameterized SQL without saving result values. Keep up to 30 methods per project, review changes, and supply relevant methods directly to future chats. [Configure learning and maintenance →](docs/KNOWLEDGE_MAINTENANCE.md)
 - **Keep the history.** Knowledge pages include revisions and provenance. Export or import a portable **Open Knowledge Format 0.2** bundle with an index, change log, and Frame revision history. Preview imports; conflicting pages update with prior versions preserved.
 - **Add shared business references.** Open **Settings → Knowledge Library → Browse packs** to search eight included packs and 28 detailed federal, industry, California, and guild guides. Inspect sections, install directly, or download JSON without leaving Frame. Topics include employment, safety, privacy, commercial practices, IP/AI, benefits, tax preparation, governance, entertainment, and work with outside counsel. Industry guides cover technology/services, healthcare, nonprofits, education, property, manufacturing, construction, logistics, and retail/hospitality. Attach a version to selected projects separately; open cited sections inside chat. No bargaining agreement content is included in the new guides. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
-- **Send internal email after review.** Configure SMTP once, find colleagues by their admin-managed profiles, and send generated outputs to approved internal domains. Every email requires a visible draft and explicit Send confirmation. [Configure email →](docs/EMAIL.md)
+- **Send internal email after review.** Configure SMTP once, find colleagues by their admin-managed profiles, and send generated outputs to approved internal domains. Interactive emails require a visible draft and explicit Send confirmation; activated schedules authorize unattended sends. [Configure email →](docs/EMAIL.md)
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
 [Explore the knowledge workflow →](docs/KNOWLEDGE.md)
@@ -40,6 +40,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 
 - **Answer focused questions.** Frame can ask up to four questions with choices and custom answers, then continue from your response.
 - **Find files in one place.** Open **Files** for conversation Sources and generated Outputs in a separate panel.
+- **Schedule work from chat.** Review and activate one-time or recurring tasks, then manage them under **Scheduled** at the bottom left. Run read-only analyses, generate reports, and send approved internal emails while offline. Results stay in Scheduled. [Set up scheduled tasks →](docs/SCHEDULED.md)
 - **Give longer tasks time.** Runs allow 60 minutes of execution, pausing the timer while waiting for question answers.
 
 ### Frame for Excel (Windows pilot)

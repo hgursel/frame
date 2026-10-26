@@ -1,5 +1,9 @@
 # Development roadmap
 
+## Scheduled tasks (implemented)
+
+Chat-created review cards with explicit activation; private Scheduled panel and run outputs; admin timezone; one-time/daily/weekday/weekly/monthly timing; latest missed-run catch-up; nonoverlapping execution; fresh project context; server-enforced read-only tools and fixed recipients; automatic email after successful completion; failure notifications; restart-safe run claims. Edits and timezone changes require reactivation. Local fixture coverage does not replace real-model and production SMTP acceptance. See [Scheduled](SCHEDULED.md).
+
 ## 0.1 — Foundation
 
 Implemented: local endpoint setup, administrator sign-in, managed projects, chat-only/trusted-tool modes, SDK worker lifecycle, streaming, persisted history, and downloads. Validate against a real model server/model before internal trial use.

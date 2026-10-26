@@ -30,6 +30,7 @@ export interface Project {
   toolsEnabled: boolean;
 }
 export interface Conversation {
+  scheduled?: boolean;
   id: string;
   projectId: string;
   title: string;
@@ -52,6 +53,7 @@ export interface DisplayMessage {
   chart?: ChartRef;
 }
 export interface ChatSnapshot {
+  scheduled?: import('./scheduled.js').ScheduledTask[];
   emails?: import('./email.js').EmailDraft[];
   question?: import('./questions.js').QuestionRequest;
   /** Monotonic server observation order; HTTP and SSE share this sequence. */
@@ -96,6 +98,8 @@ export interface ChatMetrics {
   };
 }
 export interface WorkerInput {
+  scheduling?: { timezone: string; now: string };
+  scheduledRun?: { recipients: string[]; attachments: string };
   email?: {
     displayName: string;
     email: string;
