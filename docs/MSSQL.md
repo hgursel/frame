@@ -4,7 +4,7 @@ Frame uses one administrator-configured SQL Server profile and a shared read-onl
 
 ## Configure in the browser
 
-1. Open **Settings → Plugins → Microsoft SQL Server**. Enter a host, TCP port (default 1433), and explicit database names, one per line. Named instances must use their configured TCP port.
+1. Open **Admin → Plugins → Microsoft SQL Server**. Enter a host, TCP port (default 1433), and explicit database names, one per line. Named instances must use their configured TCP port.
 2. Configure one SQL Authentication login restricted at SQL Server to SELECT and permitted metadata. Do not grant write, execute, ownership, or administrative privileges.
 3. Enable the plugin system-wide. Data/schema changes and procedure calls are disabled for every account, including administrators; legacy write settings cannot enable them.
 4. Save, then **Test saved read login**. Saving does not connect. The test reads identity/roles; it does not prove all effective permissions are read-only. Review the SQL Server grants independently.

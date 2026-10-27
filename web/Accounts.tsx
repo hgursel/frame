@@ -91,7 +91,7 @@ export function AccountSettings() {
   const user = useUser();
   return (
     <section className="settings-panel">
-      <h1>Your account</h1>
+      <h2>Your account</h2>
       <p>
         Signed in as <strong>{user?.username}</strong> ·{' '}
         {user?.role === 'admin' ? 'Administrator' : 'User'}

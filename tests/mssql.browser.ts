@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -191,7 +192,7 @@ try {
   await page.getByLabel('Setup token').fill('sql-test');
   await page.getByLabel('Password').fill('sql-browser-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.locator('.sidebar-bottom').getByRole('button', { name: 'Settings' }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
   await page.getByRole('button', { name: 'Charts plugin', exact: true }).click();
   await page.getByLabel('Enable Charts system-wide').check();

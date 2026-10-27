@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -103,7 +104,7 @@ try {
   await page.getByLabel('Setup token').fill('test');
   await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('button', { name: '⚙ Settings', exact: true }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Plugins', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Reports', exact: true })).toBeVisible();
   await page.getByLabel('Enable Reports system-wide').check();

@@ -339,7 +339,7 @@ function TaskCard({
             <button disabled={busy} onClick={() => setEditing(true)}>
               Edit
             </button>
-            {onOpen && <button onClick={onOpen}>View in Scheduled</button>}
+            {onOpen && <button onClick={onOpen}>View in Scheduled Tasks</button>}
             <button disabled={busy} onClick={() => void action('delete')}>
               Delete
             </button>
@@ -512,8 +512,7 @@ export function ScheduledPanel({ projects }: { projects: Project[] }) {
     <section className="scheduled-panel">
       <div className="scheduled-heading">
         <div>
-          <span className="settings-eyebrow">YOUR WORKSPACE</span>
-          <h1>Scheduled</h1>
+          <h1>Scheduled Tasks</h1>
         </div>
         <span className="muted">{timezone}</span>
       </div>

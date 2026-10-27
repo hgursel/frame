@@ -1,6 +1,7 @@
+import { UserSettings, useAppearance } from './UserSettings.js';
 import { ScheduledPanel, ScheduleCards, ScheduledSettings } from './Scheduled.js';
 import { EmailDrafts, EmailSettings } from './Email.js';
-import { AccountGate, AccountSettings, UsersSettings, useUser } from './Accounts.js';
+import { AccountGate, UsersSettings, useUser } from './Accounts.js';
 import { QuestionCard } from './QuestionCard.js';
 import { ExcelSettings } from './ExcelSettings.js';
 import { ConversationPanel } from './ConversationPanel.js';
@@ -168,17 +169,13 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
 function Workspace() {
   const user = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 760);
-  const [theme, setTheme] = useState(() => localStorage.getItem('frame-theme') || 'light');
+  const [theme, setTheme] = useAppearance();
   const [chatSearch, setChatSearch] = useState('');
   const scrollArea = useRef<HTMLElement>(null);
   const pinned = useRef(true);
   const [showJump, setShowJump] = useState(false);
   const compactRequest = useRef<{ chat: string; id: string } | undefined>(undefined);
   const [compacting, setCompacting] = useState(false);
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('frame-theme', theme);
-  }, [theme]);
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setSidebarOpen(false);
@@ -201,9 +198,9 @@ function Workspace() {
   const [switchingPrivacy, setSwitchingPrivacy] = useState(false);
   const currentChat = useRef(chatId);
   currentChat.current = chatId;
-  const [page, setPage] = useState<'chat' | 'settings' | 'project' | 'knowledge' | 'scheduled'>(
-    'chat',
-  );
+  const [page, setPage] = useState<
+    'chat' | 'settings' | 'admin' | 'project' | 'knowledge' | 'scheduled'
+  >('chat');
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [chatFiles, setChatFiles] = useState<KnowledgeDocument[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -617,7 +614,28 @@ function Workspace() {
             setSidebarOpen(false);
         }}
       >
-        <Logo />
+        <button
+          className="frame-home"
+          aria-label="Frame home"
+          onClick={() => {
+            if (!projectId) {
+              const remembered = user && localStorage.getItem(`frame-project-${user.id}`);
+              setProjectId(projects.find((p) => p.id === remembered)?.id || projects[0]?.id || '');
+            }
+            currentChat.current = '';
+            setChatId('');
+            setPage('chat');
+            setDraft('');
+            setAttached([]);
+            chatImages.setImages([]);
+            setPending(undefined);
+            setLastSubmitted(undefined);
+            setError('');
+            setPanelOpen(false);
+          }}
+        >
+          <Logo />
+        </button>
         <div className="nav-heading">
           PROJECTS
           <button
@@ -631,7 +649,7 @@ function Workspace() {
             +
           </button>
         </div>
-        <nav aria-label="Projects">
+        <nav className="project-list" aria-label="Projects">
           {projects.map((p) => (
             <div className="sidebar-row" key={p.id}>
               <button
@@ -728,26 +746,34 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-user" title={user?.username}>
-            <span aria-hidden="true">
-              {(user?.displayName || user?.username || '').slice(0, 1).toUpperCase()}
-            </span>
-            <strong>{user?.displayName || user?.username}</strong>
+          <div className="sidebar-row sidebar-account">
+            <div className="sidebar-user" title={user?.username}>
+              <strong>{user?.displayName || user?.username}</strong>
+            </div>
+            <SidebarMenu label="Account menu" placement="above">
+              <button onClick={() => setPage('scheduled')}>
+                <span aria-hidden="true">◷</span> Scheduled Tasks
+              </button>
+              <button onClick={() => setPage('settings')}>
+                <span aria-hidden="true">⚙</span> Settings
+              </button>
+              {user?.role === 'admin' && (
+                <button onClick={() => setPage('admin')}>
+                  <span aria-hidden="true">⚙</span> Admin
+                </button>
+              )}
+              <button
+                className="account-sign-out"
+                onClick={() =>
+                  void api('/auth/logout', 'POST', {}).then(() =>
+                    window.dispatchEvent(new Event('frame-signed-out')),
+                  )
+                }
+              >
+                <span aria-hidden="true">⇥</span> Sign Out
+              </button>
+            </SidebarMenu>
           </div>
-          <button onClick={() => setPage('scheduled')}>◷ Scheduled</button>
-          <button onClick={() => setPage('settings')}>⚙ Settings</button>
-          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-            {theme === 'light' ? '◐ Dark appearance' : '◑ Light appearance'}
-          </button>
-          <button
-            onClick={() =>
-              void api('/auth/logout', 'POST', {}).then(() =>
-                window.dispatchEvent(new Event('frame-signed-out')),
-              )
-            }
-          >
-            <span aria-hidden="true">⇥</span> Sign out
-          </button>
         </div>
       </aside>
       <main className="main">
@@ -776,12 +802,14 @@ function Workspace() {
             <span className="muted">Workspace</span>
             <span className="slash">/</span>
             {page === 'scheduled'
-              ? 'Scheduled'
+              ? 'Scheduled Tasks'
               : page === 'settings'
                 ? 'Settings'
-                : project?.name || 'Getting started'}
+                : page === 'admin'
+                  ? 'Admin Settings'
+                  : project?.name || 'Getting started'}
           </div>
-          {(page === 'settings' || page === 'project') && (
+          {['settings', 'admin', 'project', 'scheduled'].includes(page) && (
             <button onClick={() => setPage('chat')}>Back to chat</button>
           )}
           {page === 'chat' && (
@@ -841,12 +869,10 @@ function Workspace() {
             </button>
           )}
         </header>
-        {page === 'settings' && settings ? (
-          user?.role === 'admin' ? (
-            <Settings initial={settings} onSaved={refresh} />
-          ) : (
-            <AccountSettings />
-          )
+        {page === 'settings' ? (
+          <UserSettings theme={theme} onThemeChange={setTheme} />
+        ) : page === 'admin' && user?.role === 'admin' && settings ? (
+          <Settings initial={settings} onSaved={refresh} />
         ) : page === 'scheduled' ? (
           <ScheduledPanel projects={projects} />
         ) : page === 'knowledge' && project ? (
@@ -915,7 +941,7 @@ function Workspace() {
                         <em>Your infrastructure.</em>
                       </h1>
                       {!settings?.modelId && user?.role === 'admin' && (
-                        <button className="setup-link" onClick={() => setPage('settings')}>
+                        <button className="setup-link" onClick={() => setPage('admin')}>
                           Configure the model connection →
                         </button>
                       )}
@@ -1169,7 +1195,8 @@ function Workspace() {
                       !!settings?.modelId
                     }
                     onCompact={() => void compact()}
-                    onSettings={() => setPage('settings')}
+                    onSettings={user?.role === 'admin' ? () => setPage('admin') : undefined}
+                    settingsLabel="Model settings"
                   />
                   <Throughput
                     metrics={snapshot.metrics}
@@ -1236,12 +1263,9 @@ function Workspace() {
 function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () => Promise<void> }) {
   const [form, setForm] = useState(initial);
   const tabs = [
-    'account',
     'users',
     'model',
-    'context',
     'instructions',
-    'documents',
     'plugins',
     'skills',
     'knowledge',
@@ -1263,8 +1287,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
   const [busy, setBusy] = useState(false);
   return (
     <section className="settings-panel settings-page" data-topic={tab}>
-      <span className="settings-eyebrow">WORKSPACE</span>
-      <h1>Settings</h1>
+      <h1>Admin Settings</h1>
       <p className="muted">Manage your workspace, local model, knowledge, and connected tools.</p>
       <div className="settings-layout">
         <div
@@ -1319,14 +1342,6 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             {visited.has('scheduled') && <ScheduledSettings />}
           </div>
           <div
-            id="settings-account"
-            role="tabpanel"
-            aria-labelledby="tab-account"
-            hidden={tab !== 'account'}
-          >
-            {visited.has('account') && <AccountSettings />}
-          </div>
-          <div
             id="settings-users"
             role="tabpanel"
             aria-labelledby="tab-users"
@@ -1335,7 +1350,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             {visited.has('users') && <UsersSettings />}
           </div>
           <form
-            hidden={!['model', 'context', 'instructions'].includes(tab)}
+            hidden={!['model', 'instructions'].includes(tab)}
             onSubmit={async (e) => {
               e.preventDefault();
               setBusy(true);
@@ -1413,15 +1428,6 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
                 />
                 Remove saved endpoint token
               </label>
-            </fieldset>
-            <fieldset
-              id="settings-context"
-              role="tabpanel"
-              aria-labelledby="tab-context"
-              hidden={tab !== 'context'}
-              disabled={tab !== 'context' || busy}
-              className="settings-topic"
-            >
               <div className="settings-section-heading">
                 <h2>Context & generation</h2>
                 <p>Control how much the model can read, write, and retain during a conversation.</p>
@@ -1590,14 +1596,6 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             )}
           </form>
           <div
-            id="settings-documents"
-            role="tabpanel"
-            aria-labelledby="tab-documents"
-            hidden={tab !== 'documents'}
-          >
-            {visited.has('documents') && <DocumentTools />}
-          </div>
-          <div
             id="settings-plugins"
             role="tabpanel"
             aria-labelledby="tab-plugins"
@@ -1611,7 +1609,12 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             aria-labelledby="tab-skills"
             hidden={tab !== 'skills'}
           >
-            {visited.has('skills') && <SkillsSettings />}
+            {visited.has('skills') && (
+              <>
+                <SkillsSettings />
+                <DocumentTools />
+              </>
+            )}
           </div>
           <div
             id="settings-email"
@@ -1644,14 +1647,6 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             hidden={tab !== 'knowledge'}
           >
             {visited.has('knowledge') && <MaintenanceSettingsPanel />}
-          </div>
-          <div className="scope-note">
-            <strong>Personal workspaces</strong>
-            <p>
-              Manage accounts under Users and installed skills under Skills. Each user owns their
-              projects and knowledge. Configure your chosen OpenAI-compatible model server under
-              Model.
-            </p>
           </div>
         </div>
       </div>

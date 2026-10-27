@@ -5,7 +5,7 @@ Use your existing Agent Skills with Frame. A skill is a folder with a `SKILL.md`
 ## Set up
 
 1. Put your skills in a folder outside the Frame checkout, for example `/opt/frame-skills/<skill-name>/SKILL.md`. Give the Linux account that runs Frame read access to the folder and execute permission on scripts. `~` inside a script refers to temporary sandbox storage.
-2. Open **Settings → Skills**, enter one absolute folder path per line, and select **Save skill folders**. Frame lists the skills it found and any warnings, such as a missing description, a duplicate name, or an unreadable folder. **Rescan** refreshes the list after you edit files.
+2. Open **Admin → Skills**, enter one absolute folder path per line, and select **Save skill folders**. Frame lists the skills it found and any warnings, such as a missing description, a duplicate name, or an unreadable folder. **Rescan** refreshes the list after you edit files.
 3. As an administrator, open **Project settings → Skills**, select the skills this project may use, and save. File and Python tools are built in; there is no separate enable switch.
 
 Saving settings records folder paths only. It does not run scripts, install dependencies, or contact anything.

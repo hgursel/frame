@@ -30,7 +30,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Find the right page faster.** Descriptions, tags, and aliases help small local models retrieve focused knowledge without loading the entire wiki.
 - **Remember useful methods.** Project memory learns recurring tasks and parameterized SQL without saving result values. Keep up to 30 methods per project, review changes, and supply relevant methods directly to future chats. [Configure learning and maintenance →](docs/KNOWLEDGE_MAINTENANCE.md)
 - **Keep the history.** Knowledge pages include revisions and provenance. Export or import a portable **Open Knowledge Format 0.2** bundle with an index, change log, and Frame revision history. Preview imports; conflicting pages update with prior versions preserved.
-- **Add shared business references.** Open **Settings → Knowledge Library → Browse packs** to search eight included packs and 28 detailed federal, industry, California, and guild guides. Inspect sections, install directly, or download JSON without leaving Frame. Topics include employment, safety, privacy, commercial practices, IP/AI, benefits, tax preparation, governance, entertainment, and work with outside counsel. Industry guides cover technology/services, healthcare, nonprofits, education, property, manufacturing, construction, logistics, and retail/hospitality. Attach a version to selected projects separately; open cited sections inside chat. No bargaining agreement content is included in the new guides. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
+- **Add shared business references.** Open **Admin → Knowledge Library → Browse packs** to search eight included packs and 28 detailed federal, industry, California, and guild guides. Inspect sections, install directly, or download JSON without leaving Frame. Topics include employment, safety, privacy, commercial practices, IP/AI, benefits, tax preparation, governance, entertainment, and work with outside counsel. Industry guides cover technology/services, healthcare, nonprofits, education, property, manufacturing, construction, logistics, and retail/hospitality. Attach a version to selected projects separately; open cited sections inside chat. No bargaining agreement content is included in the new guides. [Explore the Knowledge Library →](docs/KNOWLEDGE_LIBRARY.md)
 - **Send internal email after review.** Configure SMTP once, find colleagues by their admin-managed profiles, and send generated outputs to approved internal domains. Interactive emails require a visible draft and explicit Send confirmation; activated schedules authorize unattended sends. [Configure email →](docs/EMAIL.md)
 - **Organize by project.** Give each project its own instructions, conversations, files, knowledge, and plugin choices.
 
@@ -40,7 +40,7 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 
 - **Answer focused questions.** Frame can ask up to four questions with choices and custom answers, then continue from your response.
 - **Find files in one place.** Open **Files** for conversation Sources and generated Outputs in a separate panel.
-- **Schedule work from chat.** Review and activate one-time or recurring tasks, then manage them under **Scheduled** at the bottom left. Use the originating project's enabled skills and file/Python tools, run read-only SQL analyses, generate reports, and send approved internal emails while offline. Results stay in Scheduled. [Set up scheduled tasks →](docs/SCHEDULED.md)
+- **Schedule work from chat.** Review and activate one-time or recurring tasks, then manage them under **Scheduled Tasks** in the account menu at the bottom left. Use the originating project's enabled skills and file/Python tools, run read-only SQL analyses, generate reports, and send approved internal emails while offline. Results stay in Scheduled Tasks. [Set up scheduled tasks →](docs/SCHEDULED.md)
 - **Give longer tasks time.** Runs allow 60 minutes of execution, pausing the timer while waiting for question answers.
 
 ### Frame for Excel (Windows pilot)
@@ -49,7 +49,7 @@ Use Frame in an Excel Desktop task pane: start on a blank sheet, explain or repa
 
 Excel selections now default to **100,000 cells / 1,024 columns**, with configurable limits, context-budgeted section reads, and visible supplied-range details. Grouped thinking/tool activity, a fixed-bottom composer, and a separate paginated review panel keep long conversations usable. Large writes are batched with progress and retain the same explicit approval controls. The composer includes send/stop, conversation-only file/image attachments, screenshot paste, knowledge selection, and context/throughput controls. Applied changes stay with their original response; sending a follow-up replaces a pending proposal without applying it.
 
-Install locally using an XML manifest from **Settings → Frame for Excel**. The Excel add-in uses your personal Frame account and requires trusted HTTPS and Microsoft 365 Excel with ExcelApi 1.16; Microsoft 365 Integrated Apps deployment is unnecessary. Automated tests use a simulated Office host; real Windows Excel and local-model acceptance remain required. [Installation, self-signed certificate, and pilot limits →](docs/FRAME_FOR_EXCEL.md)
+Install locally using an XML manifest from **Admin → Frame for Excel**. The Excel add-in uses your personal Frame account and requires trusted HTTPS and Microsoft 365 Excel with ExcelApi 1.16; Microsoft 365 Integrated Apps deployment is unnecessary. Automated tests use a simulated Office host; real Windows Excel and local-model acceptance remain required. [Installation, self-signed certificate, and pilot limits →](docs/FRAME_FOR_EXCEL.md)
 
 ### SQL analysis with explicit controls
 
@@ -100,7 +100,7 @@ Point Frame at folders of **Agent Skills**—the `SKILL.md` format used by OpenC
 | Context visibility   | See context usage and observed tokens/second; use automatic compaction or create a manual checkpoint.             |
 | Document generation  | Generate all PDFs with Reports; Word/DOCX generation remains available through trusted document tools. |
 | Conversation control | Resume saved chats, use incognito chats excluded from history and learning, stop active tasks, and remove conversations or entire projects with confirmation.             |
-| Everyday interface   | Use light/dark appearance, conversation search, attachments, and mobile navigation.                               |
+| Everyday interface   | Use Light/Dark/System appearance, conversation search, attachments, and mobile navigation.                               |
 
 ## Try asking Frame
 
@@ -127,12 +127,12 @@ npm start
 ```
 
 1. Open **http://127.0.0.1:3000**. Use the setup token printed in the server console to create an administrator username and password.
-2. Go to **Settings → Model**. Enter your OpenAI-compatible base URL, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
-3. In **Settings → Context**, match the context window to the model server’s per-request capacity and reserve room for output.
+2. Open the **⋯ account menu → Admin → Model**. Enter your OpenAI-compatible base URL, such as `http://127.0.0.1:8080/v1`, and the model alias it serves. Save and test the connection.
+3. In **Admin → Model**, match the context window to the model server’s per-request capacity and reserve room for output.
 4. Every new account starts with a private **Arena** project. Add documents under **Knowledge**, create additional projects, and start a conversation.
-5. Configure Reports, Charts, or MSSQL in **Settings → Plugins**, then enable them in **Project settings → Plugins**. Admin-only skills have their own **Skills** category. For MSSQL, initialize database knowledge.
+5. Configure Reports, Charts, or MSSQL in **Admin → Plugins**, then enable them in **Project settings → Plugins**. Admin-only skills have their own **Skills** category. For MSSQL, initialize database knowledge.
 
-The endpoint is reached from the Frame server. Administrators can configure HTTP(S) addresses, DNS names, and custom API base paths. There is no provider fallback. Configure simultaneous model requests and image/tool support in **Settings → Context**. For PDF/DOCX generation, install the optional document runtime from **Settings → Documents**; Ubuntu also needs Python 3 and `python3-venv`.
+The endpoint is reached from the Frame server. Administrators can configure HTTP(S) addresses, DNS names, and custom API base paths. There is no provider fallback. Configure simultaneous model requests and image/tool support in **Admin → Model**. For PDF/DOCX generation, install the optional document runtime from **Admin → Skills → Document tools**; Ubuntu also needs Python 3 and `python3-venv`.
 
 For access from another computer, follow the [LAN, HTTPS reverse-proxy, or SSH-tunnel guide](docs/DEPLOYMENT.md). Deployment-level network and storage settings are configured outside the browser.
 

@@ -4,7 +4,7 @@ Turn SQL results, CSV files, and Markdown tables into inline bar, line, pie/donu
 
 ## Enable and use
 
-1. Enable **Charts** in **Settings → Plugins**, then save Charts settings.
+1. Enable **Charts** in **Admin → Plugins**, then save Charts settings.
 2. Enable **Charts** in the project's settings and save project plugins. MSSQL is needed only to run SQL queries, not for file or chat charts.
 3. Upload a CSV/Markdown file with the chat attachment menu, select a knowledge source, paste a Markdown table, or refer to an earlier table or query result. Ask for a chart explicitly.
 

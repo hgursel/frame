@@ -433,9 +433,7 @@ function App() {
   useEffect(() => {
     void loadProjects().catch(() => {});
     if (location.protocol !== 'https:') {
-      setOfficeError(
-        'Set up trusted HTTPS first. Open Settings → Frame for Excel in your browser.',
-      );
+      setOfficeError('Set up trusted HTTPS first. Open Admin → Frame for Excel in your browser.');
       return;
     }
     if (typeof Office === 'undefined') {

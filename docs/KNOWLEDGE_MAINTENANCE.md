@@ -1,6 +1,6 @@
 # Project memory and knowledge maintenance
 
-Frame learns a compact set of reusable methods using your existing local model. It does not fine-tune the model, install a vector database, or run a second agent framework. Open **Settings → Knowledge** for Overview, Methods, Review, and Schedule.
+Frame learns a compact set of reusable methods using your existing local model. It does not fine-tune the model, install a vector database, or run a second agent framework. Open **Admin → Knowledge** for Overview, Methods, Review, and Schedule.
 
 ## What gets remembered
 

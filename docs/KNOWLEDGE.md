@@ -48,7 +48,7 @@ No OCR, image understanding, spreadsheets beyond CSV, legacy DOC, or macro execu
 
 ## Python document workflow
 
-Install Ubuntu's `python3-venv` prerequisite, then use **Settings → Documents**. Installation requires explicitly allowing package downloads. It creates `data/python/venv/` using the pinned `python/requirements.txt`; no package installer runs on application startup or model request. The CLI equivalent is `npm run python:setup`.
+Install Ubuntu's `python3-venv` prerequisite, then use **Admin → Skills → Document tools**. Installation requires explicitly allowing package downloads. It creates `data/python/venv/` using the pinned `python/requirements.txt`; no package installer runs on application startup or model request. The CLI equivalent is `npm run python:setup`.
 
 Organization proxies and pip index/certificate settings are passed to the installer only. Air-gapped deployments can provision the same requirements into a virtual environment and set the deployment variable `FRAME_PYTHON` to its interpreter; Frame will not modify an externally managed environment.
 
@@ -58,4 +58,4 @@ Both generators publish only complete files and refuse to overwrite an existing 
 
 ## Shared legal and HR references
 
-Install versioned starter packs in **Settings → Knowledge Library**, then attach them in **Project settings → Knowledge & Library → Library references**. These read-only briefs and workflows participate in chat retrieval but stay separate from uploaded documents, authored OKF pages, and learned memory. See [Knowledge Library](KNOWLEDGE_LIBRARY.md) for contents, citations, updates, and limitations.
+Install versioned starter packs in **Admin → Knowledge Library**, then attach them in **Project settings → Knowledge & Library → Library references**. These read-only briefs and workflows participate in chat retrieval but stay separate from uploaded documents, authored OKF pages, and learned memory. See [Knowledge Library](KNOWLEDGE_LIBRARY.md) for contents, citations, updates, and limitations.

@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 // Simulated Office host only. Real Windows Excel/WebView acceptance is documented separately.
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
@@ -600,7 +601,7 @@ try {
   await page.getByLabel('Context usage').click();
   await page.setViewportSize({ width: 1100, height: 850 });
   await page.goto(origin);
-  await page.getByRole('button', { name: 'Settings', exact: false }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Frame for Excel', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Frame for Excel', exact: true })).toBeVisible();
   const download = page.waitForEvent('download');

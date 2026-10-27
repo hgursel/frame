@@ -1,10 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export function SidebarMenu({ label, children }: { label: string; children: React.ReactNode }) {
+export function SidebarMenu({
+  label,
+  children,
+  placement = 'below',
+}: {
+  label: string;
+  children: React.ReactNode;
+  placement?: 'above' | 'below';
+}) {
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number }>();
+  const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number }>();
   useEffect(() => {
     if (!position) return;
     panel.current?.querySelector('button')?.focus();
@@ -44,8 +52,16 @@ export function SidebarMenu({ label, children }: { label: string; children: Reac
             position
               ? undefined
               : {
-                  top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 160)),
-                  left: Math.max(8, Math.min(rect.left, window.innerWidth - 220)),
+                  ...(placement === 'above'
+                    ? { bottom: window.innerHeight - rect.top + 4 }
+                    : { top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 160)) }),
+                  left: Math.max(
+                    8,
+                    Math.min(
+                      placement === 'above' ? rect.right - 204 : rect.left,
+                      window.innerWidth - 220,
+                    ),
+                  ),
                 },
           );
         }}

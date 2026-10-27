@@ -25,7 +25,7 @@ export function excelApi(
     if (!origin.startsWith('https:'))
       throw Object.assign(
         new Error(
-          'Frame for Excel requires a trusted HTTPS connection. See Settings → Frame for Excel.',
+          'Frame for Excel requires a trusted HTTPS connection. See Admin → Frame for Excel.',
         ),
         { statusCode: 400 },
       );
@@ -63,7 +63,7 @@ export function excelApi(
           'utf8',
         ).catch(
           () =>
-            'Open Settings → Frame for Excel. Setup guide: https://github.com/hgursel/frame/blob/main/docs/FRAME_FOR_EXCEL.md',
+            'Open Admin → Frame for Excel. Setup guide: https://github.com/hgursel/frame/blob/main/docs/FRAME_FOR_EXCEL.md',
         ),
       ),
   );
