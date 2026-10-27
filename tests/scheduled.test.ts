@@ -245,7 +245,7 @@ test('scheduled emails send automatically to fixed recipients with generated att
           name: 'scheduled_email',
           args: {
             subject: 'Daily report',
-            body: 'Completed analysis.',
+            body: '## Completed analysis\n\n| Team | Total |\n| --- | --- |\n| Sales | $42 |',
             attachments: ['report.pdf'],
           },
         }
@@ -270,6 +270,9 @@ test('scheduled emails send automatically to fixed recipients with generated att
     assert.equal(smtp.messages.length, 1);
     assert.match(smtp.messages[0]!, /alice@example.com/);
     assert.match(smtp.messages[0]!, /report.pdf/);
+    assert.match(smtp.messages[0]!, /Content-Type: multipart\/alternative/);
+    assert.match(smtp.messages[0]!, /Content-Type: text\/html/);
+    assert.match(smtp.messages[0]!, /<table/);
     const tools = f.requests[0].tools.map((t: any) => t.function.name);
     for (const name of [
       'email_prepare',

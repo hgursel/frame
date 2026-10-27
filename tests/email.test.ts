@@ -20,7 +20,7 @@ const settings = (port: number) => ({
 const content = {
   to: ['alice@example.com'],
   subject: 'Weekly report',
-  body: 'Please review the attached report.',
+  body: 'Please review the attached report.\n\n| Team | Total |\n| --- | --- |\n| Sales | $42 |',
   attachments: [] as string[],
 };
 async function fixture() {
@@ -200,6 +200,11 @@ test('confirmed emails attach exact conversation outputs, survive reload and nev
     const wire = f.smtp.messages[0]!;
     assert.match(wire, /To: alice@example.com/);
     assert.match(wire, /Subject: Weekly report/);
+    assert.match(wire, /Content-Type: multipart\/alternative/);
+    assert.match(wire, /Content-Type: text\/plain/);
+    assert.match(wire, /Content-Type: text\/html/);
+    assert.match(wire, /<table/);
+    assert.match(wire, /\| Sales \| \$42 \|/);
     assert.match(wire, /Please do not reply/);
     assert.match(wire, /filename=report.pdf/);
     assert(wire.includes(Buffer.from('generated pdf bytes').toString('base64')));

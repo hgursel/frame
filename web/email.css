@@ -19,12 +19,12 @@
   margin: 12px 0;
 }
 .email-body {
-  white-space: pre-wrap;
-  padding: 14px;
+  white-space: normal;
   background: var(--canvas);
   border-radius: 8px;
   max-height: 340px;
   overflow: auto;
+  min-width: 0;
 }
 .email-card fieldset {
   min-width: 0;
@@ -77,4 +77,104 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Match the SMTP renderer while keeping the app's no-inline-style CSP. */
+.email-body > div {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #172033;
+  background: #fff;
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.email-body p {
+  margin: 0 0 14px;
+}
+.email-body :is(h1, h2, h3, h4, h5, h6) {
+  margin: 20px 0 10px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+.email-body h1 {
+  font-size: 28px;
+}
+.email-body h2 {
+  font-size: 24px;
+}
+.email-body h3 {
+  font-size: 20px;
+}
+.email-body h4 {
+  font-size: 18px;
+}
+.email-body h5 {
+  font-size: 16px;
+}
+.email-body h6 {
+  font-size: 15px;
+}
+.email-body :is(ul, ol) {
+  margin: 0 0 14px;
+  padding-left: 26px;
+}
+.email-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 14px 0;
+}
+.email-body :is(th, td) {
+  border: 1px solid #cbd5e1;
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.email-body [align='right'] {
+  text-align: right;
+}
+.email-body [align='center'] {
+  text-align: center;
+}
+.email-body th {
+  background: #f1f5f9;
+  color: #172033;
+}
+.email-body code {
+  font-family: monospace;
+  background: #f1f5f9;
+  color: #172033;
+  padding: 2px 4px;
+}
+.email-body pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f1f5f9;
+  color: #172033;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+}
+.email-body pre code {
+  padding: 0;
+}
+.email-body blockquote {
+  margin: 14px 0;
+  padding: 0 14px;
+  border-left: 3px solid #94a3b8;
+}
+.email-body hr {
+  border: 0;
+  border-top: 1px solid #cbd5e1;
+  margin: 20px 0;
+}
+.email-body a {
+  color: #2459a6;
+  text-decoration: underline;
+}
+.email-body .email-footer {
+  margin: 20px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #cbd5e1;
+  color: #596579;
+  font-size: 12px;
 }
