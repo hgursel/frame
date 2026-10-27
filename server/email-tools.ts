@@ -43,7 +43,7 @@ export function emailTools() {
       name: 'email_prepare',
       label: 'Prepare email for review',
       description:
-        'Prepare an email ONLY when the user asks for one. This does not send anything. The user must review the visible draft and click Send. Use exact allowed recipient addresses, plain text body, and optional generated filenames from email_outputs. No CC, BCC, Reply-To, links as attachments, or automatic sending. Never claim an email was sent from this tool result.',
+        'Prepare an email ONLY when the user asks for one. This does not send anything. The user must review the visible draft and click Send. Use exact allowed recipient addresses, a Markdown body (headings, bold, lists, tables, code, and absolute http/https/mailto links supported; no raw HTML or embedded images), and optional generated filenames from email_outputs. The body is delivered as formatted HTML with a plain-text alternative. No CC, BCC, Reply-To, links as attachments, or automatic sending. Never claim an email was sent from this tool result.',
       parameters: Type.Object({
         to: Type.Array(Type.String(), { minItems: 1, maxItems: 20 }),
         subject: Type.String(),

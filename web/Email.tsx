@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { api } from './api.js';
-import { EMAIL_FOOTER, type EmailDraft, type SmtpSettings } from '../shared/email.js';
+import { type EmailDraft, type SmtpSettings } from '../shared/email.js';
+import { renderEmailHtml } from '../shared/email-markdown.js';
 import './email.css';
 export function EmailSettings() {
   const [form, setForm] = useState<SmtpSettings>();
@@ -198,6 +199,19 @@ export function EmailDrafts({ chatId, drafts }: { chatId: string; drafts: EmailD
     </div>
   );
 }
+function EmailBody({ body }: { body: string }) {
+  const html = useMemo(() => renderEmailHtml(body, false), [body]);
+  // Only the shared renderer's escaped, allowlisted output enters this preview.
+  return (
+    <div
+      className="email-body"
+      role="region"
+      aria-label="Email message preview"
+      tabIndex={0}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
 function EmailCard({ chatId, incoming }: { chatId: string; incoming: EmailDraft }) {
   const [editRevision, setEditRevision] = useState(incoming.revision);
   const [draft, setDraft] = useState(incoming);
@@ -294,6 +308,9 @@ function EmailCard({ chatId, incoming }: { chatId: string; incoming: EmailDraft 
                 onChange={(e) => setBody(e.target.value)}
               />
             </label>
+            <p className="muted">
+              Use Markdown for headings, bold, lists, and tables. Save to preview formatting.
+            </p>
             <p>
               <strong>Generated attachments</strong>
             </p>
@@ -334,8 +351,7 @@ function EmailCard({ chatId, incoming }: { chatId: string; incoming: EmailDraft 
           <p>
             <strong>Subject:</strong> {draft.subject}
           </p>
-          <div className="email-body">{draft.body}</div>
-          <p className="muted">{EMAIL_FOOTER}</p>
+          <EmailBody body={draft.body} />
           <p>
             <strong>Attachments:</strong>{' '}
             {draft.attachments.length

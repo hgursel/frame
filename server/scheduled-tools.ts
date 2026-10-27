@@ -48,7 +48,7 @@ export function scheduledEmailTool() {
     name: 'scheduled_email',
     label: 'Prepare scheduled delivery',
     description:
-      'Prepare the one authorized email for this run. The server supplies the fixed recipients and sends after successful completion without further approval. Use only generated output filenames as attachments if authorized. Never claim delivery before SMTP accepts it. Call once, after completing analysis and generating requested outputs.',
+      'Prepare the one authorized email for this run. The server supplies the fixed recipients and sends after successful completion without further approval. Use a Markdown body for headings, bold, lists, tables, code, and absolute http/https/mailto links; no raw HTML or embedded images. It is delivered as formatted HTML with a plain-text alternative. Use only generated output filenames as attachments if authorized. Never claim delivery before SMTP accepts it. Call once, after completing analysis and generating requested outputs.',
     parameters: Type.Object({
       subject: Type.String(),
       body: Type.String(),

@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import nodemailer from 'nodemailer';
+import { renderEmailHtml } from '../shared/email-markdown.js';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { Store } from './store.js';
@@ -391,6 +392,7 @@ export class Email extends EventEmitter {
           to: draft.to.map((address) => ({ address, name: '' })),
           subject: draft.subject,
           text: `${draft.body}\n\n${EMAIL_FOOTER}`,
+          html: renderEmailHtml(draft.body),
           messageId: `<${draft.id}@${c.fromEmail.split('@')[1]}>`,
           headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All' },
           attachments: attachments.map((a) => ({ filename: a.name, content: a.content })),

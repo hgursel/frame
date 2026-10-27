@@ -25,7 +25,7 @@ const model = createServer(async (req, res) => {
       arguments: {
         to: ['admin@example.com'],
         subject: 'Weekly report',
-        body: 'Here is your generated report.',
+        body: '# Weekly report\n\nHere is your **generated report**.\n\n| Team | Total |\n| --- | ---: |\n| Sales | $42 |\n\n- Review totals\n- Confirm next steps\n\n```text\nRevenue > cost\n```',
         attachments: ['report.pdf'],
       },
     },
@@ -113,19 +113,34 @@ try {
   assert.equal(smtp.messages.length, 0);
   await expect(card).toContainText('admin@example.com');
   await expect(card).toContainText('report.pdf');
+  await expect(card.getByRole('heading', { name: 'Weekly report' })).toBeVisible();
+  await expect(card.locator('.email-body strong')).toHaveText('generated report');
+  await expect(card.getByRole('cell', { name: '$42' })).toBeVisible();
+  await expect(card.getByRole('cell', { name: '$42' })).toHaveCSS('border-top-width', '1px');
+  await expect(card.getByRole('cell', { name: '$42' })).toHaveCSS('padding-left', '12px');
+  await expect(card.getByRole('cell', { name: '$42' })).toHaveCSS('text-align', 'right');
+  await expect(card.locator('.email-body [style]')).toHaveCount(0);
+  await expect(card.locator('.email-body li')).toHaveCount(2);
+  await expect(card.locator('.email-body pre')).toContainText('Revenue > cost');
   await card.getByRole('button', { name: 'Edit draft' }).click();
+  await expect(card.getByRole('textbox', { name: 'Message', exact: true })).toHaveValue(
+    /\| Sales \| \$42 \|/,
+  );
   await card.getByLabel('To', { exact: true }).fill('outsider@evil.com');
   await card.getByRole('button', { name: 'Save draft for review' }).click();
   await expect(card.getByRole('alert')).toContainText('admin-approved');
   assert.equal(smtp.messages.length, 0);
   await card.getByLabel('To', { exact: true }).fill('admin@example.com, teammate@example.com');
   await card.getByLabel('Subject', { exact: true }).fill('Reviewed weekly report');
+  const message = card.getByRole('textbox', { name: 'Message', exact: true });
+  await message.fill((await message.inputValue()).replace('$42', '$84'));
   await card.getByRole('button', { name: 'Save draft for review' }).click();
   await expect(card.getByRole('button', { name: 'Send email' })).toBeVisible();
   assert.equal(smtp.messages.length, 0);
   await page.reload();
   await page.getByRole('button', { name: 'Email review', exact: true }).click();
   await expect(card).toContainText('Reviewed weekly report');
+  await expect(card.getByRole('cell', { name: '$84' })).toBeVisible();
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-email-desktop.png'),
@@ -147,6 +162,9 @@ try {
   assert.equal(smtp.messages.length, 1);
   assert.match(smtp.messages[0]!, /teammate@example.com/);
   assert.match(smtp.messages[0]!, /Reviewed weekly report/);
+  assert.match(smtp.messages[0]!, /Content-Type: text\/html/);
+  assert.match(smtp.messages[0]!, /<table/);
+  assert.match(smtp.messages[0]!, /\$84/);
   await page.reload();
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.getByRole('button', { name: 'Email review', exact: true }).click();
