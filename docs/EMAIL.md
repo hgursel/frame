@@ -1,6 +1,6 @@
 # Internal email
 
-Administrators configure **Settings → Email** once. Email is available in every project after it is enabled; there is no per-project switch. Frame prepares email only on request. The user reviews a draft and clicks **Send email**. There is no inbox, reply processing, scheduler, automatic background sending, CC, or BCC.
+Administrators configure **Admin → Email** once. Email is available in every project after it is enabled; there is no per-project switch. Frame prepares email only on request. The user reviews a draft and clicks **Send email**. There is no inbox, reply processing, scheduler, automatic background sending, CC, or BCC.
 
 ## Configure SMTP
 
@@ -12,7 +12,7 @@ Domains match exactly. Add subdomains separately. Every recipient is checked whe
 
 ## User profiles and recipients
 
-Under **Settings → Users**, admins manage Display Name and Email for new and existing accounts, including their own profile. These fields are optional for migration compatibility. The sidebar shows Display Name, falling back to username; login usernames are unchanged. Regular users can view their own details but cannot edit them.
+Under **Admin → Users**, admins manage Display Name and Email for new and existing accounts, including their own profile. These fields are optional for migration compatibility. The sidebar shows Display Name, falling back to username; login usernames are unchanged. Regular users can view their own details but cannot edit them.
 
 “Email this to me” uses the signed-in user's saved email. Frame can search active registered users by display name or email, limited to approved domains. It should ask the user to choose when names are ambiguous. For other recipients, the user supplies an exact address. Missing profile emails must be supplied by the administrator or explicitly provided as a recipient; Frame must not invent an address.
 

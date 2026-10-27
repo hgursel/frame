@@ -20,7 +20,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 ## 0.3 — Chat interface and context management (implemented)
 
-- Refreshed chat layout, light/dark appearance, collapsible navigation, conversation search, copying, and scroll-aware streaming.
+- Refreshed chat layout, Light/Dark/System appearance saved per browser, collapsible navigation, conversation search, copying, and scroll-aware streaming.
 - Context window/usage meter with reported-versus-estimated counts, checkpoint inspection, and observed generation throughput.
 - Configurable automatic compaction with scaled local-model budgets, manual/interruptible compaction, and reversible older read-only tool-result pruning.
 - Local mock SDK and browser coverage. Real-model long-context quality and model-server timing validation remain acceptance work; see [context research](CONTEXT.md).
@@ -31,7 +31,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 - Shared chat/knowledge Markdown renderer with GFM tables, task lists, copyable code, and local Mermaid diagrams with expansion and source fallback.
 - Chat composer attachment menu for project knowledge or computer uploads, with removable selections.
 - Confirmed knowledge file/page removal with revision and activity guards, catalog cleanup, and rollback on catalog-update failure.
-- Model, Context, Instructions, and Documents settings tabs with retained drafts and keyboard navigation.
+- Separate user and admin settings; Context within Model and Document tools within Skills, with retained admin form drafts and keyboard tab navigation.
 - CI validates TypeScript, 17 API/SDK/Python tests, production build, and desktop/mobile browser workflows. Browser screenshots are retained as workflow artifacts.
 
 ## 0.4.1 — Chat lifecycle fixes
@@ -63,6 +63,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 ## Workspace refinements (implemented)
 
+- Project list capped at four visible rows with independent scrolling; account menu for Scheduled Tasks, Settings, Admin, and Sign Out. Frame logo opens a blank chat in the current project without adding an empty history entry.
 - Sidebar project/conversation action menus with confirmed deletion and scoped file/database cleanup; conversation deletion preserves shared knowledge.
 - Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.
 - Automatic SQL CSV exports appear only through their query result’s download link; conversation file cards show other deliverables, including ordinary CSV reports. Existing exports are retained and filtered by persisted SQL operation IDs.
@@ -90,7 +91,7 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 ## Knowledge maintenance and incognito (implemented)
 
-- Built-in Settings → Knowledge scheduling with timezone, project selection, active-processing budget, manual run/stop, persisted checkpoints, and chat preemption.
+- Built-in Admin → Knowledge scheduling with timezone, project selection, active-processing budget, manual run/stop, persisted checkpoints, and chat preemption.
 - Review inbox with selectable publication policy; drafts stay out of retrieval, human verification is explicit, and verified or manually rewritten pages are protected from automatic content updates.
 - Health findings for duplicate content, missing metadata, broken page links, removed/changed evidence, and changed SQL schema generations. No claim of semantic contradiction detection.
 - Sequential bounded conversation learning and metadata enrichment; SQL conversations contribute only parameterized SELECT templates. No result rows, sampled lookup values, chart/CSV data, parameter values, or SQL-derived assistant prose enters automatic learning.

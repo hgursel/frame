@@ -4,7 +4,7 @@
 
 App and project settings use compact rows with topic search, status filters, and expandable sections instead of large cards. Search covers titles, descriptions, jurisdictions, section titles, and tags. Rows show version and installation/attachment state; expanded details show source counts, word counts, review dates, and section links. Project settings can **Install & attach** an included pack directly, or import a downloaded JSON file without leaving the project. Importing never attaches a pack automatically.
 
-Select **Settings → Knowledge Library → Browse packs** (also available in Project settings) to explore **28 optional detailed guides, 61 sections, and 117 distinct official-source URLs**, alongside the eight current bundled packs (36 downloads total). Search across topics and sections, filter by collection, and expand a row for section descriptions, jurisdiction, size, word/source counts, and review date. The detailed guides contain about 22,500 words of original discussion and workflows. No collective bargaining agreement text or interpretation is included. Existing bundled briefs and previously published guides remain unchanged. The [repository collection](../knowledge-packs/README.md) remains available for manual distribution.
+Select **Admin → Knowledge Library → Browse packs** (also available in Project settings) to explore **28 optional detailed guides, 61 sections, and 117 distinct official-source URLs**, alongside the eight current bundled packs (36 downloads total). Search across topics and sections, filter by collection, and expand a row for section descriptions, jurisdiction, size, word/source counts, and review date. The detailed guides contain about 22,500 words of original discussion and workflows. No collective bargaining agreement text or interpretation is included. Existing bundled briefs and previously published guides remain unchanged. The [repository collection](../knowledge-packs/README.md) remains available for manual distribution.
 
 The catalog groups downloads into federal core, industry guides, California/guild guides, and bundled briefs. Seven federal guides cover employment/pay/leave, workplace safety, privacy and breaches, advertising/competition, copyright/trademarks/AI, benefits, and business tax/payroll. Nine industry guides cover technology/software/professional services, healthcare, nonprofits/associations, education, real estate, manufacturing, construction, logistics, and retail/restaurants/hospitality. The twelve California/guild guides retain their existing employer, member-service, governance, entertainment, and counsel-preparation coverage.
 
@@ -57,7 +57,7 @@ Investigation, performance, and commercial-lease packs are separate choices. Inv
 
 ## Start using a pack
 
-1. In **Settings → Knowledge Library**, explore the sections and select **Install pack**.
+1. In **Admin → Knowledge Library**, explore the sections and select **Install pack**.
 2. Open **Project settings → Library references** and select **Attach to project**.
 3. Upload the relevant handbook, agreement, amendments, or policies through project Knowledge or the chat attachment menu.
 4. Ask normally in chat: “Review our California paid sick leave policy” or “Compare this agreement and amendment; cite each changed obligation.”

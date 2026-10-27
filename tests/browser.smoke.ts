@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir, networkInterfaces } from 'node:os';
@@ -250,14 +251,18 @@ try {
       fullPage: true,
     });
   await page.getByLabel('Context usage', { exact: true }).click();
-  await page.getByRole('button', { name: 'Dark appearance', exact: false }).click();
+  await openAccountPage(page, 'Settings');
+  await page.getByLabel('Color theme').selectOption('dark');
+  await page.getByRole('button', { name: 'Back to chat', exact: true }).click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
   if (process.env.FRAME_SCREENSHOT)
     await page.screenshot({
       path: process.env.FRAME_SCREENSHOT.replace('.png', '-dark.png'),
       fullPage: true,
     });
-  await page.getByRole('button', { name: 'Light appearance', exact: false }).click();
+  await openAccountPage(page, 'Settings');
+  await page.getByLabel('Color theme').selectOption('light');
+  await page.getByRole('button', { name: 'Back to chat', exact: true }).click();
   if (lan) {
     await page.getByRole('button', { name: 'Copy response', exact: true }).first().click();
     await expect(
@@ -338,21 +343,18 @@ try {
   await page.getByRole('button', { name: 'Remove file', exact: true }).click();
   await page.getByRole('button', { name: 'Remove permanently', exact: true }).click();
   await expect(page.locator('.knowledge-list')).not.toContainText('maintenance.md');
-  await page
-    .locator('.sidebar-bottom')
-    .getByRole('button', { name: 'Settings', exact: false })
-    .click();
-  await page.getByRole('tab', { name: 'Context', exact: true }).click();
+  await openAccountPage(page, 'Admin');
+  await page.getByRole('tab', { name: 'Model', exact: true }).click();
   await page.getByLabel('Compact at used percentage').fill('70');
   await page.getByRole('tab', { name: 'Instructions', exact: true }).click();
   await page.getByLabel('Organization instructions').fill('Keep answers accurate and practical.');
-  await page.getByRole('tab', { name: 'Context', exact: true }).click();
+  await page.getByRole('tab', { name: 'Model', exact: true }).click();
   await expect(page.getByLabel('Compact at used percentage')).toHaveValue('70');
   await page.getByRole('tab', { name: 'Model', exact: true }).click();
   await expect(page.getByLabel('Model ID', { exact: true })).toHaveValue('local-test-model');
   await page.getByRole('button', { name: 'Save settings', exact: true }).click();
   await page.getByRole('status').filter({ hasText: 'Settings saved' }).waitFor();
-  await page.getByRole('tab', { name: 'Documents', exact: true }).click();
+  await page.getByRole('tab', { name: 'Skills', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Document tools', exact: true })).toBeVisible();
   // Reopen a native session beyond both former display limits, without compaction.
   const longChat = store.createConversation(

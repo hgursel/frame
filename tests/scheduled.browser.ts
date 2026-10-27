@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect as baseExpect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -79,7 +80,7 @@ try {
   await page.getByLabel('Setup token').fill('scheduled-ui');
   await page.getByLabel('Password').fill('scheduled-browser-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('button', { name: '⚙ Settings' }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Scheduled', exact: true }).click();
   await page.getByLabel('Schedule timezone').selectOption('America/Los_Angeles');
   await page.getByRole('button', { name: 'Save schedule timezone' }).click();
@@ -99,8 +100,8 @@ try {
   assert.equal(smtp.messages.length, 0);
   await page.getByRole('button', { name: 'Activate', exact: true }).click();
   await expect(page.locator('.scheduled-state')).toHaveText('active');
-  await page.getByRole('button', { name: '◷ Scheduled', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Scheduled', exact: true })).toBeVisible();
+  await openAccountPage(page, 'Scheduled Tasks');
+  await expect(page.getByRole('heading', { name: 'Scheduled Tasks', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Weekly analysis', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Run now', exact: true }).click();
   await expect(page.getByText('Your weekly analysis is complete.', { exact: true })).toBeVisible();

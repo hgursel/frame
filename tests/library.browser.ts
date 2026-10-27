@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -76,7 +77,7 @@ try {
   await page.getByLabel('Setup token').fill('library-test');
   await page.getByLabel('Password').fill('library-test-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('button', { name: 'Settings', exact: false }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Knowledge Library', exact: true }).click();
   const hr = page.locator('.library-card').filter({
     has: page.getByRole('heading', { name: 'California HR Essentials' }),
@@ -234,7 +235,7 @@ try {
   await expect(reader).toBeVisible();
   await page.mouse.click(5, 5);
   await expect(reader).not.toBeVisible();
-  await page.getByRole('button', { name: 'Settings', exact: false }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Knowledge Library', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   if (await page.getByRole('button', { name: 'Close navigation', exact: true }).isVisible())

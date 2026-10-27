@@ -8,8 +8,8 @@ Reports is the only built-in PDF generator. The older `create_document` tool is 
 
 ## Set up
 
-1. Install the optional runtime in **Settings → Documents**. Ubuntu needs Python 3 and `python3-venv`. An existing working Frame document runtime already has the required packages.
-2. Open **Settings → Plugins → Reports**, enable the plugin, and configure its design. The plugin menu separates Reports, Charts, and MSSQL while preserving unsaved drafts when switching between them.
+1. Install the optional runtime in **Admin → Skills → Document tools**. Ubuntu needs Python 3 and `python3-venv`. An existing working Frame document runtime already has the required packages.
+2. Open **Admin → Plugins → Reports**, enable the plugin, and configure its design. The plugin menu separates Reports, Charts, and MSSQL while preserving unsaved drafts when switching between them.
 3. Under **Branding**, set the organization name, choose primary/secondary/accent colors, and upload a PNG or JPEG logo. Logos save immediately; use **Save report settings** for the other controls.
 4. Under **Layout**, choose a default layout, Letter or A4, portrait or landscape, cover/confidentiality pages, and the editable confidentiality notice. Headers use the report title; footers use the organization name.
 5. Under **Instructions**, describe required sections, titles, descriptions, and writing style in Markdown. Save, then use **Download saved-design sample** to inspect the layout. The sample contains fictional data and does not call the model or apply writing instructions.
@@ -25,7 +25,7 @@ With **Cover and confidentiality pages** enabled (the default), PDFs use this or
 2. A confidentiality page with the notice near the bottom, the report title and rule at the top, and the organization name and rule at the bottom. Body page numbering starts on the following page.
 3. The report body, with page numbering starting at 1.
 
-The default notice is “Confidential — For internal use only.” Edit it in **Settings → Plugins → Reports → Layout**, or override it for a project. It is plain text, supports line breaks, and is limited to 1,200 characters. It cannot be empty. The existing cover preference is retained on upgrade; enabling the renamed control includes both opening pages. Disabling it keeps the compact report format without either opening page.
+The default notice is “Confidential — For internal use only.” Edit it in **Admin → Plugins → Reports → Layout**, or override it for a project. It is plain text, supports line breaks, and is limited to 1,200 characters. It cannot be empty. The existing cover preference is retained on upgrade; enabling the renamed control includes both opening pages. Disabling it keeps the compact report format without either opening page.
 
 Report titles, section headings, chart titles, and table captions use Title Case. Acronyms, mixed-case names, and inline code are preserved; narrative text, table values, and column names are not recased. Cover logos fit within a 390 × 165 point area (260 × 110 points in coverless reports) while preserving aspect ratio. Long cover content shrinks together when necessary to stay on one page.
 
@@ -79,7 +79,7 @@ PDF charts are static snapshots of the saved chart data, drawn in the report pal
 - A report job blocks conflicting project deletion/settings changes. Stop cancels the active renderer; incomplete output is not published. Already completed files are retained.
 - PDFs use the existing authenticated artifact download route. Deleting a conversation removes its PDFs; deleting a project also removes its report overrides and all conversation files.
 
-If generation fails, check **Settings → Documents**, source sizes, and the tool result. A model can still choose invalid arguments or write a weak report; validate your own llama.cpp model's tool use and content quality. Automated coverage uses the real Pi SDK with a controlled local endpoint, not a production model.
+If generation fails, check **Admin → Skills → Document tools**, source sizes, and the tool result. A model can still choose invalid arguments or write a weak report; validate your own llama.cpp model's tool use and content quality. Automated coverage uses the real Pi SDK with a controlled local endpoint, not a production model.
 
 ## Markdown tables
 

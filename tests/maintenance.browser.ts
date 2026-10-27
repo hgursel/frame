@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -97,7 +98,7 @@ try {
   await page.getByLabel('Setup token').fill('maintenance-test');
   await page.getByLabel('Password').fill('maintenance-test-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('button', { name: 'Settings', exact: false }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Knowledge', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Project memory' })).toBeVisible();
   await page.getByRole('tab', { name: 'Schedule', exact: true }).click();

@@ -186,7 +186,7 @@ async function run(input: WorkerInput): Promise<WorkerCompletion> {
             `Reports plugin is enabled. For EVERY PDF request, use reports_sources and reports_create. PDF generation is available only through the Reports plugin. Never use create_document, bash, Python scripts, HTML conversion, or another fallback to generate a PDF. Discover existing charts and tables with reports_sources and include the relevant source IDs when requested; do not replace requested charts with prose. For a new chart, use the Charts plugin when enabled. Generate directly and revise as a new PDF when asked. Organization: ${input.reports.organization}. Default layout: ${input.reports.template}. Administrator report instructions:\n${input.reports.instructions}`,
           ]
         : [
-            'PDF generation is available only through the Reports plugin, which is disabled for this project. For PDF requests, tell the user to enable Reports in Settings → Plugins and Project settings. Do not generate PDFs with create_document, shell commands, Python scripts, or another fallback.',
+            'PDF generation is available only through the Reports plugin, which is disabled for this project. For PDF requests, tell the user to enable Reports in Admin → Plugins and Project settings. Do not generate PDFs with create_document, shell commands, Python scripts, or another fallback.',
           ]),
       ...(input.mssql?.map
         ? [

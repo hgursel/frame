@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
@@ -62,7 +63,7 @@ try {
   await page.getByLabel('Setup token').fill('email-ui');
   await page.getByLabel('Password').fill('email-browser-password');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('button', { name: '⚙ Settings' }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Users', exact: true }).click();
   const admin = page
     .locator('.auth-card')

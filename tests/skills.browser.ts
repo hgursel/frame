@@ -1,3 +1,4 @@
+import { openAccountPage } from './navigation.js';
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -50,7 +51,7 @@ try {
   await page.getByLabel('Setup token').fill('test');
   await page.getByLabel('Password').fill('test-password-12345');
   await page.getByRole('button', { name: 'Create workspace' }).click();
-  await page.getByRole('button', { name: '⚙ Settings', exact: true }).click();
+  await openAccountPage(page, 'Admin');
   await page.getByRole('tab', { name: 'Skills', exact: true }).click();
   await page
     .getByLabel('Skill folders', { exact: true })

@@ -98,7 +98,7 @@ function Activity({
               </React.Fragment>
             ))}
             <br />
-            Manage methods in Settings → Knowledge.
+            Manage methods in Admin → Knowledge.
           </div>
         )}
         {!steps.length && !memory?.length && (

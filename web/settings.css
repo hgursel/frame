@@ -78,16 +78,6 @@
   padding: 12px 10px;
   min-width: 0;
 }
-.sidebar-user > span {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 50%;
-}
 .sidebar-user strong {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -162,4 +152,67 @@
 }
 .settings-content .settings-actions:empty {
   display: none;
+}
+
+/* Projects scroll independently; conversations keep the remaining sidebar space. */
+.sidebar > :not(nav) {
+  flex-shrink: 0;
+}
+.sidebar .project-list {
+  --project-row-height: 42px;
+  max-height: calc(4 * var(--project-row-height));
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.project-list .sidebar-row {
+  height: var(--project-row-height);
+}
+.sidebar .chat-list {
+  min-height: 0;
+  flex: 1 0 80px;
+  overscroll-behavior: contain;
+}
+.sidebar .frame-home {
+  border: 0;
+  padding: 0;
+  text-align: left;
+  align-self: flex-start;
+}
+.sidebar .frame-home .frame-wordmark {
+  display: block;
+}
+.sidebar-account .sidebar-user {
+  flex: 1;
+}
+.sidebar-account .sidebar-user strong {
+  white-space: nowrap;
+}
+.row-menu-panel .account-sign-out {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 7px 7px;
+}
+.user-settings > .settings-content {
+  flex: 1;
+}
+.user-settings .settings-content > section {
+  max-width: 640px;
+}
+.appearance-settings {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.appearance-settings select {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
 }

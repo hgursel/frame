@@ -19,7 +19,7 @@ export function ContextPanel({
   running: boolean;
   canCompact: boolean;
   onCompact: () => void;
-  onSettings: () => void;
+  onSettings?: () => void;
   settingsLabel?: string;
 }) {
   const c = metrics?.context;
@@ -106,7 +106,7 @@ export function ContextPanel({
           <button className="primary" disabled={!canCompact || running} onClick={onCompact}>
             Compact now
           </button>
-          <button onClick={onSettings}>{settingsLabel}</button>
+          {onSettings && <button onClick={onSettings}>{settingsLabel}</button>}
         </div>
       </div>
     </details>

@@ -324,7 +324,7 @@ export function ReportsSettings({ projectId }: { projectId?: string }) {
       <p className="muted small">
         {settings.runtime.message}
         {settings.runtime.state !== 'ready'
-          ? ' Open Settings → Documents to set up the local document runtime.'
+          ? ' Open Admin → Skills → Document tools to set up the local document runtime.'
           : ' No host-tool permission is needed.'}
       </p>
       {busy && <p role="status">Working…</p>}

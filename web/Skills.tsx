@@ -158,7 +158,7 @@ export function ProjectSkillsSettings({ projectId }: { projectId: string }) {
     <section className="plugin-card">
       <h2>Project skills</h2>
       {value && !value.skills.length && (
-        <p className="muted small">No skills found. Add skill folders in Settings → Skills.</p>
+        <p className="muted small">No skills found. Add skill folders in Admin → Skills.</p>
       )}
       {value?.skills.map((s) => (
         <React.Fragment key={s.name}>
