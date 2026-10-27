@@ -91,16 +91,18 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return (
-    <main className="auth">
-      <Logo />
+    <main className="auth login-page">
+      <h1 className="login-brand">
+        <Logo />
+      </h1>
       <div className="auth-card">
         <span className="eyebrow">YOUR INFRASTRUCTURE. YOUR INTELLIGENCE.</span>
-        <h1>{setup ? 'Make room for better work.' : 'Welcome back.'}</h1>
-        <p>
-          {setup
-            ? 'Create the administrator account for this Frame installation.'
-            : 'Sign in to your organization’s local AI workspace.'}
-        </p>
+        {setup && (
+          <>
+            <h2>Make room for better work.</h2>
+            <p>Create the administrator account for this Frame installation.</p>
+          </>
+        )}
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -168,6 +170,11 @@ function Login({ setup, onDone }: { setup: boolean; onDone: () => void }) {
 
 function Workspace() {
   const user = useUser();
+  const displayName = user?.displayName.trim() || user?.username || '';
+  const nameParts = displayName.split(/\s+/);
+  const initials =
+    (Array.from(nameParts[0] || '')[0] || '') +
+    (nameParts.length > 1 ? Array.from(nameParts.at(-1)!)[0] || '' : '');
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 760);
   const [theme, setTheme] = useAppearance();
   const [chatSearch, setChatSearch] = useState('');
@@ -748,7 +755,10 @@ function Workspace() {
         <div className="sidebar-bottom">
           <div className="sidebar-row sidebar-account">
             <div className="sidebar-user" title={user?.username}>
-              <strong>{user?.displayName || user?.username}</strong>
+              <span className="user-avatar" aria-hidden="true">
+                {initials.toUpperCase()}
+              </span>
+              <strong>{displayName}</strong>
             </div>
             <SidebarMenu label="Account menu" placement="above">
               <button onClick={() => setPage('scheduled')}>
@@ -813,60 +823,60 @@ function Workspace() {
             <button onClick={() => setPage('chat')}>Back to chat</button>
           )}
           {page === 'chat' && (
-            <button
-              className="incognito-toggle"
-              aria-label="Incognito chat"
-              aria-pressed={isIncognito}
-              disabled={!canChangePrivacy}
-              title={
-                canChangePrivacy
-                  ? isIncognito
-                    ? 'Turn off incognito'
-                    : 'Turn on incognito'
-                  : 'Choose incognito before the first message. Start a new conversation to change it.'
-              }
-              onClick={async () => {
-                if (!canChangePrivacy) return;
-                setSwitchingPrivacy(true);
-                setError('');
-                try {
-                  await newChat(!isIncognito);
-                } catch (e) {
-                  setError((e as Error).message);
-                } finally {
-                  setSwitchingPrivacy(false);
+            <div className="chat-header-actions">
+              <button
+                className="incognito-toggle"
+                aria-label="Incognito chat"
+                aria-pressed={isIncognito}
+                disabled={!canChangePrivacy}
+                title={
+                  canChangePrivacy
+                    ? isIncognito
+                      ? 'Turn off incognito'
+                      : 'Turn on incognito'
+                    : 'Choose incognito before the first message. Start a new conversation to change it.'
                 }
-              }}
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+                onClick={async () => {
+                  if (!canChangePrivacy) return;
+                  setSwitchingPrivacy(true);
+                  setError('');
+                  try {
+                    await newChat(!isIncognito);
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setSwitchingPrivacy(false);
+                  }
+                }}
               >
-                <path
-                  d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z"
-                  strokeDasharray="3 3"
-                />
-              </svg>
-            </button>
-          )}
-          {page === 'chat' && (
-            <button
-              aria-label="Outputs and sources"
-              aria-expanded={panelOpen}
-              onClick={() => setPanelOpen((v) => !v)}
-            >
-              Files
-              {artifacts.length + chatFiles.length
-                ? ` · ${artifacts.length + chatFiles.length}`
-                : ''}
-            </button>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z"
+                    strokeDasharray="3 3"
+                  />
+                </svg>
+              </button>
+              <button
+                aria-label="Outputs and sources"
+                aria-expanded={panelOpen}
+                onClick={() => setPanelOpen((v) => !v)}
+              >
+                Files
+                {artifacts.length + chatFiles.length
+                  ? ` · ${artifacts.length + chatFiles.length}`
+                  : ''}
+              </button>
+            </div>
           )}
         </header>
         {page === 'settings' ? (

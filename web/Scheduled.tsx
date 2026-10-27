@@ -1,3 +1,4 @@
+import { RichMarkdown } from './RichMarkdown.js';
 import React, { useEffect, useState } from 'react';
 import { api } from './api.js';
 import { ConversationMessages } from './ConversationMessages.js';
@@ -292,7 +293,14 @@ function TaskCard({
           <p>
             <strong>{timingLabel(task.timing)}</strong> · {task.timezone}
           </p>
-          <p className="scheduled-instructions">{task.instructions}</p>
+          <div
+            className="scheduled-instructions"
+            role="region"
+            aria-label="Task instructions"
+            tabIndex={0}
+          >
+            <RichMarkdown text={task.instructions} />
+          </div>
           <dl>
             <dt>Email to</dt>
             <dd>{task.recipients.join(', ') || 'No email delivery'}</dd>

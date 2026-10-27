@@ -73,7 +73,15 @@
   color: #6b501e;
 }
 .scheduled-instructions {
-  white-space: pre-wrap;
+  max-height: min(360px, 40dvh);
+  overflow: auto;
+  margin: 16px 0;
+  padding-right: 8px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.scheduled-layout > div {
+  min-width: 0;
 }
 .scheduled-card dl {
   display: grid;
