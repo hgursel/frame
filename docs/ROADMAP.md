@@ -63,6 +63,8 @@ Implemented: local endpoint setup, administrator sign-in, managed projects, chat
 
 ## Workspace refinements (implemented)
 
+- Display-name initials avatar in the sidebar; larger login wordmark without the welcome/sign-in introduction; Incognito grouped beside Files on the right. Scheduled task prompts render Markdown inside a bounded, keyboard-scrollable region.
+
 - Project list capped at four visible rows with independent scrolling; account menu for Scheduled Tasks, Settings, Admin, and Sign Out. Frame logo opens a blank chat in the current project without adding an empty history entry.
 - Sidebar project/conversation action menus with confirmed deletion and scoped file/database cleanup; conversation deletion preserves shared knowledge.
 - Centered empty-chat composer, “Your knowledge. Your infrastructure.”, context controls beneath the composer, and friendly tool labels.

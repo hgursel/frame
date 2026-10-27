@@ -11,6 +11,28 @@ const expect = baseExpect.configure({ timeout: 20000 });
 const smtp = await smtpFixture();
 const root = await mkdtemp(path.join(tmpdir(), 'frame-scheduled-ui-'));
 const origin = 'http://127.0.0.1:3198';
+const instructions = [
+  '## Weekly review',
+  '**Analyze** the project and send a summary.',
+  '',
+  '- Review current data',
+  '- Explain changes',
+  '',
+  '| Metric | Action |',
+  '| --- | --- |',
+  '| Revenue | Compare weeks |',
+  '',
+  '```sql',
+  'SELECT revenue FROM weekly_summary;',
+  '```',
+  '',
+  ...Array.from(
+    { length: 60 },
+    (_, i) => `Paragraph ${i + 1}: Explain the findings with supporting context.`,
+  ),
+  '',
+  'Final instruction: email the summary.',
+].join('\n');
 const model = createServer(async (req, res) => {
   let raw = '';
   for await (const c of req) raw += c;
@@ -32,7 +54,7 @@ const model = createServer(async (req, res) => {
           name: 'schedule_task',
           args: {
             title: 'Weekly analysis',
-            instructions: 'Analyze current project knowledge and email me a summary.',
+            instructions,
             timing: { kind: 'weekly', weekday: 1, time: '07:00' },
             recipients: ['admin@example.com'],
             attachments: 'none',
@@ -97,12 +119,46 @@ try {
   await input.press('Enter');
   await expect(page.getByRole('button', { name: 'Activate', exact: true })).toBeVisible();
   await expect(page.getByText('Needs activation', { exact: true })).toBeVisible();
+  const prompt = page.getByRole('region', { name: 'Task instructions', exact: true });
+  await expect(prompt.getByRole('heading', { name: 'Weekly review' })).toBeVisible();
+  await expect(prompt.locator('strong')).toHaveText('Analyze');
+  await expect(prompt.locator('li')).toHaveCount(2);
+  await expect(prompt.getByRole('cell', { name: 'Revenue', exact: true })).toBeVisible();
+  await expect(prompt.locator('code')).toContainText('SELECT revenue');
+  const bounds = await prompt.evaluate((el) => ({
+    height: el.clientHeight,
+    total: el.scrollHeight,
+  }));
+  assert(bounds.height <= 360 && bounds.total > bounds.height);
+  await prompt.focus();
+  await page.keyboard.press('End');
+  await expect.poll(() => prompt.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  await expect(
+    prompt.getByText('Final instruction: email the summary.', { exact: false }),
+  ).toBeVisible();
+
   assert.equal(smtp.messages.length, 0);
   await page.getByRole('button', { name: 'Activate', exact: true }).click();
   await expect(page.locator('.scheduled-state')).toHaveText('active');
   await openAccountPage(page, 'Scheduled Tasks');
   await expect(page.getByRole('heading', { name: 'Scheduled Tasks', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Weekly analysis', exact: true })).toBeVisible();
+  await expect(prompt.locator('li')).toHaveCount(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (await page.locator('.sidebar').isVisible())
+    await page
+      .getByRole('button', { name: 'Close navigation' })
+      .click({ position: { x: 380, y: 50 } });
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  assert(
+    await prompt.evaluate(
+      (el) => el.clientHeight <= innerHeight * 0.4 + 1 && el.scrollHeight > el.clientHeight,
+    ),
+  );
+  await page.screenshot({ path: '/tmp/frame-scheduled-markdown-mobile.png' });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: '/tmp/frame-scheduled-markdown.png' });
+
   await page.getByRole('button', { name: 'Run now', exact: true }).click();
   await expect(page.getByText('Your weekly analysis is complete.', { exact: true })).toBeVisible();
   await expect.poll(() => smtp.messages.length).toBe(1);
@@ -112,6 +168,7 @@ try {
   await page.getByRole('button', { name: 'Resume', exact: true }).click();
   await expect(page.locator('.scheduled-state')).toHaveText('active');
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByLabel('Task instructions')).toHaveValue(instructions);
   await page
     .getByLabel('Task instructions')
     .fill('Analyze current data and email a concise summary.');

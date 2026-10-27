@@ -72,6 +72,7 @@ try {
   await admin.getByLabel('Email', { exact: true }).fill('admin@example.com');
   await admin.getByRole('button', { name: 'Save profile' }).click();
   await expect(page.locator('.sidebar-user strong')).toHaveText('Hakan Gursel');
+  await expect(page.locator('.user-avatar')).toHaveText('HG');
   await page.getByRole('tab', { name: 'Email', exact: true }).click();
   await page.getByLabel('Enable email in all projects').check();
   await page.getByLabel('SMTP host').fill('127.0.0.1');

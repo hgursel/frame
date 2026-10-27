@@ -43,6 +43,11 @@ try {
   await admin.getByRole('tab', { name: 'Users', exact: true }).click();
   await admin.getByLabel('Username', { exact: true }).fill('alice');
   await admin.getByLabel('Temporary password', { exact: true }).fill('alice-temporary-password');
+  await admin
+    .locator('form')
+    .filter({ has: admin.getByRole('button', { name: 'Create account', exact: true }) })
+    .getByLabel('Display name', { exact: true })
+    .fill('Alice Marie Smith');
   await admin.getByRole('button', { name: 'Create account' }).click();
   await expect(
     admin.getByText('Account created. Share the username and temporary password with the user.'),
@@ -51,6 +56,17 @@ try {
   const alice = await context.newPage();
   alice.on('pageerror', (e) => errors.push(e.message));
   await alice.goto(origin);
+  await expect(alice.getByRole('heading', { name: 'Frame', exact: true })).toBeVisible();
+  await expect(alice.getByText('Welcome back.', { exact: true })).toHaveCount(0);
+  await expect(
+    alice.getByText('Sign in to your organization’s local AI workspace.', { exact: true }),
+  ).toHaveCount(0);
+  assert(
+    await alice
+      .locator('.login-brand .frame-wordmark')
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 48),
+  );
+  await alice.screenshot({ path: '/tmp/frame-login-refined.png' });
   await alice.getByLabel('Username', { exact: true }).fill('alice');
   await alice.getByLabel('Password').fill('alice-temporary-password');
   await alice.getByRole('button', { name: 'Sign in', exact: false }).click();
@@ -124,8 +140,10 @@ try {
   await expect(
     alice.getByLabel('Project menu: Alice private research', { exact: true }),
   ).toBeVisible();
-  await expect(alice.locator('.sidebar-user')).toHaveText('alice');
-  await expect(admin.locator('.sidebar-user')).toHaveText('admin');
+  await expect(alice.locator('.sidebar-user strong')).toHaveText('Alice Marie Smith');
+  await expect(alice.locator('.user-avatar')).toHaveText('AS');
+  await expect(admin.locator('.sidebar-user strong')).toHaveText('admin');
+  await expect(admin.locator('.user-avatar')).toHaveText('A');
   await admin.getByRole('tab', { name: 'Model', exact: true }).click();
   const width = await admin
     .locator('.settings-page')
@@ -220,6 +238,22 @@ try {
     async () => (await (await fetch('/api/conversations')).json()).length,
   );
   await alice.getByRole('button', { name: 'Frame home' }).click();
+  const checkHeader = async (page: typeof alice) => {
+    const header = (await page.locator('.main > header').boundingBox())!;
+    const incognito = (await page
+      .getByRole('button', { name: 'Incognito chat', exact: true })
+      .boundingBox())!;
+    const files = (await page
+      .getByRole('button', { name: 'Outputs and sources', exact: true })
+      .boundingBox())!;
+    assert(Math.abs(incognito.y + incognito.height / 2 - files.y - files.height / 2) < 2);
+    assert(
+      files.x - incognito.x - incognito.width >= 0 && files.x - incognito.x - incognito.width <= 16,
+    );
+    assert(header.x + header.width - files.x - files.width < 30);
+  };
+  await checkHeader(alice);
+  await alice.screenshot({ path: '/tmp/frame-chat-actions.png' });
   await expect(alice.getByLabel('Message Frame')).toHaveValue('');
   await expect(alice.locator('.header-location')).toContainText('Arena');
   assert.equal(
@@ -237,6 +271,9 @@ try {
   });
   const touch = await touchContext.newPage();
   await touch.goto(origin);
+  await touch.getByRole('button', { name: 'Outputs and sources', exact: true }).waitFor();
+  await checkHeader(touch);
+  await touch.screenshot({ path: '/tmp/frame-chat-actions-mobile.png' });
   await touch.getByRole('button', { name: 'Toggle navigation' }).tap();
   await expect(touch.getByRole('button', { name: 'Account menu' })).toHaveCSS('opacity', '1');
   await touch.getByRole('button', { name: 'Account menu' }).tap();

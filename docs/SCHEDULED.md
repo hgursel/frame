@@ -6,6 +6,9 @@ Ask Frame in a regular project chat to do work later or repeatedly, for example:
 
 Open **⋯ account menu → Scheduled Tasks** at the bottom left to view your tasks, next runs, results, run history, email status, and downloadable outputs. Edit, pause/resume, run now, or delete tasks there. Editing requires reactivation. Deleting a task deletes its run history and outputs. Deleting the source chat leaves the standalone task intact; deleting its project removes the task and all its runs. Tasks and results are private to their owner, including against other administrators.
 
+Task instructions render Markdown (including lists, tables, and code blocks) in a bounded scroll area. Long prompts remain fully readable and editable without stretching the task card; timing, recipients, and task controls stay outside that scroll area.
+
+
 ## Timing and operation
 
 An administrator selects one IANA timezone under **Admin → Scheduled** (initially UTC). It applies to everyone. Changing it returns existing schedules to review so users can approve the changed timing. One-time, daily, weekdays, weekly, and monthly schedules are supported. Daily/weekly schedules follow local daylight saving time. Nonexistent spring-forward wall times are skipped; repeated fall-back wall times run once, at the first occurrence. A monthly day absent from a month is skipped.

@@ -781,3 +781,24 @@ pre code {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.login-brand {
+  margin: 0;
+}
+.login-brand .frame-wordmark {
+  font-size: clamp(48px, 8vw, 60px);
+  letter-spacing: -2px;
+}
+.login-page .auth-card {
+  margin-top: 28px;
+}
+.login-page .auth-card h2 {
+  font-size: 32px;
+}
