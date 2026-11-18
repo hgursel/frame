@@ -66,7 +66,8 @@ export function displayMessages(messages: unknown[], activeThinking = false): Di
         attachments: attached,
         ...(excelProposalId ? { excelProposalId } : {}),
         images:
-          m.role === 'user' && Array.isArray(m.content)
+          (m.role === 'user' || (m.role === 'toolResult' && m.toolName === 'browser_screenshot')) &&
+          Array.isArray(m.content)
             ? m.content
                 .filter(
                   (p: any) =>

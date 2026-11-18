@@ -42,20 +42,32 @@ const profileFields = {
 export const passwordSchema = z.string().min(12).max(256);
 const fail = (statusCode: number, message: string) =>
   Object.assign(new Error(message), { statusCode });
-export function installAuthorization(app: FastifyInstance, store: Store) {
+export function installAuthorization(
+  app: FastifyInstance,
+  store: Store,
+  browserUser?: (token: string) => User,
+) {
   app.decorateRequest('user');
   app.addHook('preHandler', async (request) => {
     const route = request.routeOptions.url || '';
     if (
       !route.startsWith('/api/') ||
-      ['/api/auth/status', '/api/auth/login', '/api/auth/setup'].includes(route)
+      [
+        '/api/auth/status',
+        '/api/auth/login',
+        '/api/auth/setup',
+        '/api/browser/device/pair',
+      ].includes(route)
     )
       return;
-    const user = store.db
-      .prepare(
-        `SELECT u.id,u.username,u.displayName,u.email,u.role,u.disabled,u.mustChangePassword FROM users u JOIN logins l ON l.userId=u.id WHERE l.token=? AND l.expires>? AND u.disabled=0`,
-      )
-      .get(digest(request.cookies.frame_session || ''), Date.now()) as unknown as User;
+    const user =
+      request.headers.authorization?.startsWith('Bearer ') && browserUser
+        ? browserUser(request.headers.authorization.slice(7))
+        : (store.db
+            .prepare(
+              `SELECT u.id,u.username,u.displayName,u.email,u.role,u.disabled,u.mustChangePassword FROM users u JOIN logins l ON l.userId=u.id WHERE l.token=? AND l.expires>? AND u.disabled=0`,
+            )
+            .get(digest(request.cookies.frame_session || ''), Date.now()) as unknown as User);
     if (!user) throw fail(401, 'Sign in to Frame');
     request.user = user;
     if (

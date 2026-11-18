@@ -1,3 +1,4 @@
+import { BrowserSettings } from './Browser.js';
 import React, { useEffect, useState } from 'react';
 import { AccountSettings } from './Accounts.js';
 
@@ -52,6 +53,7 @@ export function UserSettings({
           </p>
         </section>
         <AccountSettings />
+        <BrowserSettings />
       </div>
     </section>
   );

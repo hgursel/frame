@@ -185,3 +185,10 @@ The registered-script plugin with per-operation JSON inputs, approvals, and `.en
 - Structured questions with selectable options, custom answers, cancellation, and refresh recovery.
 - Outputs and Sources in a collapsible right panel, with a drawer on smaller screens.
 - Chat uploads are conversation-scoped, sent with the next message, and promoted to project knowledge only by explicit action. Incognito uploads are removed when the chat ends. Chats with uploaded documents are excluded from automatic learning.
+
+
+## Frame for Browser
+
+Implemented: Chrome extension packaging and side panel; per-account HTTPS pairing/revocation; project opt-in; shared conversations; attached/task tabs; text/table snapshots; vision-gated screenshots in conversation history; structured actions with specific batch review; login/MFA handoff; cancellation, stale-target checks and no automatic command replay; exclusion of browser-derived conversations from automatic learning.
+
+Acceptance still required: real Windows managed Chrome, actual model tool/vision reliability, and target internal websites (especially custom controls and autosave). Website file transfer, unattended browser schedules, closed-shadow/custom trusted-input support, and managed extension distribution are not part of this release.

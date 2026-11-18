@@ -1,0 +1,69 @@
+.browser-controls {
+  border: 1px solid var(--border, #ddd);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-size: 13px;
+  background: var(--surface, #fff);
+}
+.browser-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.browser-toolbar > span {
+  flex: 1;
+  color: var(--muted, #666);
+}
+.browser-controls small,
+.browser-review small {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--muted, #666);
+}
+.browser-controls ul,
+.browser-review ol {
+  padding-left: 22px;
+  max-height: 260px;
+  overflow: auto;
+}
+.browser-controls li {
+  margin: 8px 0;
+}
+.browser-review {
+  border-top: 1px solid var(--border, #ddd);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.browser-review h3 {
+  margin: 0;
+}
+.browser-review pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 120px;
+  overflow: auto;
+  background: var(--bg, #f7f7f7);
+  padding: 8px;
+}
+.browser-settings {
+  margin-top: 20px;
+}
+.browser-settings label {
+  display: block;
+  margin: 12px 0;
+}
+.browser-settings input[readonly] {
+  width: 100%;
+  font-family: monospace;
+}
+.browser-settings li {
+  margin: 10px 0;
+}
+.browser-capture {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+  border-radius: 8px;
+}

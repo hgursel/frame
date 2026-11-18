@@ -25,10 +25,13 @@ jobs:
       - run: npm run packs:check
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium --only-shell
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:ui
       - run: npm run test:multiuser-ui
       - run: npm run test:excel
+      - run: npm run test:browser-extension
+        env:
+          FRAME_BROWSER_SCREENSHOT: ${{ runner.temp }}/frame-ui-browser-extension.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:

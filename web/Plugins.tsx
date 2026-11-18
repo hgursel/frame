@@ -267,6 +267,8 @@ export function PluginSettings() {
   );
 }
 export function ProjectPlugins({ projectId }: { projectId: string }) {
+  const [browser, setBrowser] = useState(false);
+  const [browserSystem, setBrowserSystem] = useState(false);
   const [excel, setExcel] = useState(false);
   const [reports, setReports] = useState(false);
   const [reportsSystem, setReportsSystem] = useState(false);
@@ -282,6 +284,8 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   useEffect(() => {
     let live = true;
     void api<{
+      browser: boolean;
+      browserSystemEnabled: boolean;
       excel: boolean;
       mssql: boolean;
       systemEnabled: boolean;
@@ -292,6 +296,8 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
     }>(`/projects/${projectId}/plugins`)
       .then((v) => {
         if (live) {
+          setBrowser(v.browser);
+          setBrowserSystem(v.browserSystemEnabled);
           setExcel(v.excel);
           setEnabled(v.mssql);
           setSystem(v.systemEnabled);
@@ -312,6 +318,21 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
   return (
     <section className="plugin-card">
       <h2>Project plugins</h2>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={browser}
+          disabled={!loaded || busy}
+          onChange={(e) => setBrowser(e.target.checked)}
+        />
+        Frame for Browser
+      </label>
+      <p className="muted small">
+        Attach Chrome tabs and review website changes.{' '}
+        {browserSystem
+          ? 'Browser is enabled system-wide.'
+          : 'An administrator must enable Browser first.'}
+      </p>
       <label className="checkbox">
         <input
           type="checkbox"
@@ -381,6 +402,7 @@ export function ProjectPlugins({ projectId }: { projectId: string }) {
             setError('');
             try {
               await api(`/projects/${projectId}/plugins`, 'PUT', {
+                browser,
                 excel,
                 mssql: enabled,
                 charts,

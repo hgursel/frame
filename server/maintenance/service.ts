@@ -505,7 +505,14 @@ export class Maintenance {
   }
   private async conversation(item: Item, signal: AbortSignal) {
     const c = this.store.conversation(item.id);
-    if (!c || c.incognito || this.runner.active.has(c.id) || this.runner.excel?.has(c.id)) return;
+    if (
+      !c ||
+      c.incognito ||
+      this.runner.active.has(c.id) ||
+      this.runner.excel?.has(c.id) ||
+      this.runner.browser?.used(c.id)
+    )
+      return;
     // Chat uploads and any answers derived from them stay out of automatic project learning.
     if (
       this.store.db
@@ -639,6 +646,7 @@ export class Maintenance {
           throw fail('Generated content contains disallowed data');
       }
       signal.throwIfAborted();
+      if (this.runner.browser?.used(c.id)) return;
       if (this.busy()) throw fail('Interactive work has priority');
       const taskKey =
         unit.kind === 'query'

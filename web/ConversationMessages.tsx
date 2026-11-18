@@ -1,3 +1,4 @@
+import { BrowserCapture } from './Browser.js';
 import React, { useEffect, useRef } from 'react';
 import type { ChatSnapshot } from '../shared/types.js';
 import {
@@ -119,6 +120,9 @@ function Activity({
               ) : (
                 <pre>{m.chart ? 'Chart displayed in the conversation below.' : m.text}</pre>
               )}
+              {m.images?.map((image) => (
+                <BrowserCapture key={image.id} chatId={chatId} imageId={image.id} />
+              ))}
               {canSave && (
                 <button className="save-knowledge" onClick={() => onSave(index)}>
                   {m.proposal ? 'Review knowledge draft' : 'Save useful result'}

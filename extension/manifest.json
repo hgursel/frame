@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Frame for Browser",
+  "version": "0.1.0",
+  "description": "Your Frame workspace alongside your websites. Attach tabs, analyze pages, and review website changes.",
+  "minimum_chrome_version": "120",
+  "permissions": ["sidePanel", "storage", "tabs", "tabGroups", "scripting", "alarms", "debugger"],
+  "host_permissions": ["https://*/*", "http://*/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Open Frame" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none';" }
+}
