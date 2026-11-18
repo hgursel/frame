@@ -1,3 +1,4 @@
+import type { Browsers } from './browser/service.js';
 import type { Scheduled } from './scheduled.js';
 import type { Email } from './email.js';
 import { ModelCapacity } from './model-capacity.js';
@@ -48,6 +49,7 @@ type ActiveRun = {
 };
 export class Runner extends EventEmitter {
   readonly capacity = new ModelCapacity(() => this.store.settings().maxConcurrentRequests || 2);
+  browser?: Browsers;
   excel?: ExcelSessions;
   email?: Email;
   scheduled?: Scheduled;
@@ -75,6 +77,7 @@ export class Runner extends EventEmitter {
       const sqlApproval = this.mssql?.approval(id);
       return {
         ...live.snapshot,
+        browser: this.browser?.state(id),
         scheduled: this.scheduled?.forConversation(id),
         emails: this.email?.list(id),
         messages: live.tail ? [...live.snapshot.messages, live.tail] : live.snapshot.messages,
@@ -85,11 +88,15 @@ export class Runner extends EventEmitter {
         status:
           live.queued && !live.stopRequested
             ? 'Queued for model'
-            : this.questions.get(id) && !live.stopRequested
-              ? 'Waiting for your answer'
-              : sqlApproval && !live.stopRequested
-                ? 'Awaiting SQL approval'
-                : live.snapshot.status,
+            : this.browser?.state(id).review && !live.stopRequested
+              ? this.browser.state(id).review?.handoff
+                ? 'Waiting for browser user'
+                : 'Awaiting browser approval'
+              : this.questions.get(id) && !live.stopRequested
+                ? 'Waiting for your answer'
+                : sqlApproval && !live.stopRequested
+                  ? 'Awaiting SQL approval'
+                  : live.snapshot.status,
         runId: live.runId,
         revision: ++this.revision,
       };
@@ -139,7 +146,7 @@ export class Runner extends EventEmitter {
     for (const entry of entries as any[]) {
       if (
         entry.type !== 'message' ||
-        entry.message?.role !== 'user' ||
+        !['user', 'toolResult'].includes(entry.message?.role) ||
         !Array.isArray(entry.message.content)
       )
         continue;
@@ -191,8 +198,14 @@ export class Runner extends EventEmitter {
       throw Object.assign(new Error('Continue this conversation in Frame for Excel.'), {
         statusCode: 409,
       });
+    const browserContext =
+      !conversation.incognito &&
+      !scheduledTask &&
+      !excel &&
+      this.browser?.state(id).enabled &&
+      !!this.browser?.state(id).device;
     const project =
-      conversation.incognito || excel
+      conversation.incognito || excel || browserContext
         ? { ...originalProject, toolsEnabled: false }
         : originalProject;
     if (this.mssql?.schema.jobs.has(project.id))
@@ -319,6 +332,14 @@ export class Runner extends EventEmitter {
           .then<unknown>(() => {
             if (active.stopRequested) throw new Error('Task stopped.');
             if (scheduledTask) this.scheduled!.authorizeRun(id);
+            if (event.action.startsWith('browser_')) {
+              if (!browserContext || !this.browser)
+                throw new Error('Attach a browser to this conversation.');
+              deadline.pause();
+              return this.browser
+                .invoke(id, runId, event.action, event.args, active.pluginAbort.signal)
+                .finally(() => deadline.resume());
+            }
             if (event.action === 'schedule_prepare') {
               if (scheduledTask || conversation.incognito || excel || !this.scheduled)
                 throw new Error('Scheduling is unavailable here.');
@@ -531,6 +552,7 @@ export class Runner extends EventEmitter {
       finished = true;
       deadline.close();
       this.questions.finish(runId);
+      this.browser?.cancel(id);
       active.pluginAbort.abort();
       this.capacity.release(runId);
       this.mssql?.cancelRun(runId);
@@ -611,6 +633,7 @@ export class Runner extends EventEmitter {
         prompt,
         documents,
         images,
+        browser: !!browserContext,
         excel: excelContext,
         scheduling:
           !conversation.incognito && !excel && !scheduledTask && this.scheduled
@@ -660,6 +683,7 @@ export class Runner extends EventEmitter {
       );
     if (run.stopRequested) return;
     this.excel?.cancel(id);
+    this.browser?.cancel(id);
     run.stopRequested = true;
     run.pluginAbort.abort();
     this.mssql?.cancelRun(run.runId);

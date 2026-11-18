@@ -1,3 +1,4 @@
+import { BrowserControls, BrowserSettings } from './Browser.js';
 import { UserSettings, useAppearance } from './UserSettings.js';
 import { ScheduledPanel, ScheduleCards, ScheduledSettings } from './Scheduled.js';
 import { EmailDrafts, EmailSettings } from './Email.js';
@@ -347,6 +348,15 @@ function Workspace() {
     setProjects(p);
     setChats(c);
     setSettings(s);
+    const linked = new URLSearchParams(location.search).get('conversation');
+    if (linked && !currentChat.current) {
+      const selected = c.find((chat) => chat.id === linked);
+      if (selected) {
+        setProjectId(selected.projectId);
+        setChatId(selected.id);
+        currentChat.current = selected.id;
+      }
+    }
     setProjectId((prev) => {
       const preferred = prev || (user ? localStorage.getItem(`frame-project-${user.id}`) : '');
       return p.some((project) => project.id === preferred) ? preferred! : p[0]?.id || '';
@@ -1018,6 +1028,9 @@ function Workspace() {
                 </div>
               </section>
               <div className="composer-area">
+                {chatId && !isIncognito && (
+                  <BrowserControls chatId={chatId} running={snapshot.running} />
+                )}
                 {showJump && (
                   <button
                     className="jump-latest"
@@ -1281,6 +1294,7 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
     'knowledge',
     'library',
     'excel',
+    'browser',
     'email',
     'scheduled',
   ] as const;
@@ -1336,9 +1350,11 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
             >
               {name === 'library'
                 ? 'Knowledge Library'
-                : name === 'excel'
-                  ? 'Frame for Excel'
-                  : name[0]!.toUpperCase() + name.slice(1)}
+                : name === 'browser'
+                  ? 'Frame for Browser'
+                  : name === 'excel'
+                    ? 'Frame for Excel'
+                    : name[0]!.toUpperCase() + name.slice(1)}
             </button>
           ))}
         </div>
@@ -1634,6 +1650,14 @@ function Settings({ initial, onSaved }: { initial: PublicSettings; onSaved: () =
           >
             {visited.has('email') && <EmailSettings />}
           </div>
+          <section
+            role="tabpanel"
+            id="settings-browser"
+            aria-labelledby="tab-browser"
+            hidden={tab !== 'browser'}
+          >
+            {visited.has('browser') && <BrowserSettings admin />}
+          </section>
           <div
             id="settings-excel"
             role="tabpanel"

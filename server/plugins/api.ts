@@ -18,6 +18,8 @@ export function projectPluginsApi(
     return id;
   };
   const snapshot = (id: string) => ({
+    browser: runner.browser?.projectEnabled(id) ?? false,
+    browserSystemEnabled: runner.browser?.enabled() ?? false,
     excel: runner.excel?.projectEnabled(id) ?? false,
     mssql: sql.projectEnabled(id),
     systemEnabled: sql.settings().enabled,
@@ -42,6 +44,7 @@ export function projectPluginsApi(
       });
     const value = z
       .object({
+        browser: z.boolean().optional(),
         excel: z.boolean().optional(),
         mssql: z.boolean().optional(),
         charts: z.boolean().optional(),
@@ -49,6 +52,10 @@ export function projectPluginsApi(
       })
       .strict()
       .parse(req.body);
+    if (value.browser !== undefined)
+      sql.store.db
+        .prepare("INSERT OR REPLACE INTO project_plugins VALUES (?,'browser',?)")
+        .run(id, Number(value.browser));
     if (value.excel !== undefined)
       sql.store.db
         .prepare("INSERT OR REPLACE INTO project_plugins VALUES (?,'excel',?)")

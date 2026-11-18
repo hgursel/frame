@@ -85,6 +85,12 @@ export function learningUnits(branch: any[]): LearningUnit[] {
   const calls = messages.flatMap((m) =>
     Array.isArray(m.content) ? m.content.filter((c: any) => c.type === 'toolCall') : [],
   );
+  // Browser output may be repeated in later prose; exclude the entire branch.
+  if (
+    calls.some((c) => c.name?.startsWith('browser_')) ||
+    messages.some((m) => m.toolName?.startsWith('browser_'))
+  )
+    return [];
   const sql =
     calls.some((c) => c.name?.startsWith('mssql_')) ||
     messages.some((m) => m.toolName?.startsWith('mssql_'));

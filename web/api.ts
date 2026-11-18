@@ -1,4 +1,9 @@
+let customTransport: ((url: string, method: string, body?: unknown) => Promise<any>) | undefined;
+export function setApiTransport(transport: typeof customTransport) {
+  customTransport = transport;
+}
 export async function api<T>(url: string, method = 'GET', body?: unknown): Promise<T> {
+  if (customTransport) return customTransport(url, method, body);
   const response = await fetch(`/api${url}`, {
     method,
     credentials: 'same-origin',

@@ -43,6 +43,12 @@ _The running Frame interface with fictional demonstration content. [Screenshot d
 - **Schedule work from chat.** Review and activate one-time or recurring tasks, then manage them under **Scheduled Tasks** in the account menu at the bottom left. Use the originating project's enabled skills and file/Python tools, run read-only SQL analyses, generate reports, and send approved internal emails while offline. Results stay in Scheduled Tasks. [Set up scheduled tasks →](docs/SCHEDULED.md)
 - **Give longer tasks time.** Runs allow 60 minutes of execution, pausing the timer while waiting for question answers.
 
+### Frame for Browser (Chrome on Windows)
+
+Connect Chrome to your personal Frame account and use the same project conversation in the extension side panel or Frame website. Attach selected tabs, read page text/tables, navigate and search, capture screenshots with a vision model, and review specific batches before website-changing actions. Existing website sessions remain in Chrome; login/MFA uses a user handoff. Admins enable the capability globally; project owners opt in per project. Browser-used conversations are excluded from automatic knowledge learning.
+
+`npm run build` produces the extension ZIP, downloadable from **Settings → Frame for Browser**. This initial release uses unpacked installation; managed distribution is separate. Unknown/autosaving controls require review, and unsupported custom controls require user handoff. Real Windows Chrome, internal websites, and local-model acceptance remain required. [Installation, controls, and limitations →](docs/FRAME_FOR_BROWSER.md)
+
 ### Frame for Excel (Windows pilot)
 
 Use Frame in an Excel Desktop task pane: start on a blank sheet, explain or repair formulas, clean data, import saved read-only SQL results, and work directly on existing worksheets. Selected cells are included automatically with each message. Frame can read other sheets as needed and preview changes to values, formulas, formatting, tables, charts, sorting, filters, and worksheet rows/columns. Project knowledge remains available. Every workbook batch has a preview and explicit **Apply** button, with changed-cell checks and no automatic replay.

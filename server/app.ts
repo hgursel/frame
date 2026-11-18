@@ -1,3 +1,5 @@
+import { Browsers } from './browser/service.js';
+import { browserApi, browserDeviceRoute } from './browser/api.js';
 import { Scheduled, scheduledApi } from './scheduled.js';
 import { Email, emailApi } from './email.js';
 import { installAuthorization, usernameSchema } from './auth.js';
@@ -132,6 +134,9 @@ export async function createApp(options: {
   store.db.prepare("DELETE FROM meta WHERE key='private-tools:settings'").run();
   store.db.prepare("DELETE FROM project_plugins WHERE plugin='private-tools'").run();
   runner = new Runner(store, mssql, charts, reports, skills, knowledge);
+  const browser = new Browsers(store);
+  runner.browser = browser;
+  browser.on('change', (id: string) => runner.emit(id));
   const email = new Email(store);
   runner.email = email;
   email.on('change', (id: string) => runner.emit(id));
@@ -223,6 +228,35 @@ export async function createApp(options: {
     const route = request.url.split('?')[0]!;
     if (!route.startsWith('/api/')) return;
     reply.header('Cache-Control', 'no-store');
+    const extensionOrigin = /^chrome-extension:\/\/[a-p]{32}$/.test(request.headers.origin || '');
+    const extensionRoute =
+      route === '/api/browser/device/pair' ||
+      browserDeviceRoute(
+        route,
+        request.method === 'OPTIONS'
+          ? String(request.headers['access-control-request-method'])
+          : request.method,
+      );
+    if (extensionOrigin && extensionRoute) {
+      reply.header('Access-Control-Allow-Origin', request.headers.origin!).header('Vary', 'Origin');
+      if (request.method === 'OPTIONS')
+        return reply
+          .header('Access-Control-Allow-Methods', 'GET, POST, DELETE')
+          .header('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+          .code(204)
+          .send();
+    }
+    if (route === '/api/browser/device/pair' && request.method === 'POST') {
+      if (!extensionOrigin)
+        return reply.code(403).send({ error: 'Pair from the Chrome extension.' });
+      return;
+    }
+    if (request.headers.authorization?.startsWith('Bearer ')) {
+      if (!origin.startsWith('https:') || !browserDeviceRoute(route, request.method))
+        return reply.code(403).send({ error: 'This operation is unavailable to browser devices.' });
+      browser.authenticate(request.headers.authorization.slice(7));
+      return;
+    }
     if (!['GET', 'HEAD'].includes(request.method) && request.headers.origin !== origin)
       return reply.code(403).send({ error: 'Same-origin request required' });
     if (request.headers['sec-fetch-site'] === 'cross-site')
@@ -243,7 +277,12 @@ export async function createApp(options: {
     secure: origin.startsWith('https:'),
     maxAge: 8 * 3600,
   };
-  installAuthorization(app, store);
+  installAuthorization(
+    app,
+    store,
+    (token) => store.user(browser.authenticate(token).userId) as any,
+  );
+  browserApi(app, browser, runner, origin);
   emailApi(app, email);
   scheduledApi(app, scheduled);
   app.get('/api/auth/status', async () => ({
@@ -631,10 +670,12 @@ export async function createApp(options: {
     incognito.close();
   });
   app.addHook('onClose', async () => {
+    browser.close();
     store.close();
   });
   return {
     app,
+    browser,
     store,
     runner,
     knowledge,

@@ -1,4 +1,9 @@
 const labels: Record<string, string> = {
+  browser_tabs: 'List attached tabs',
+  browser_snapshot: 'Read browser page',
+  browser_screenshot: 'Capture browser screenshot',
+  browser_actions: 'Perform browser actions',
+  browser_handoff: 'Wait for browser user',
   schedule_task: 'Prepare scheduled task',
   scheduled_email: 'Prepare scheduled delivery',
   scheduled_fail: 'Report scheduled task failure',

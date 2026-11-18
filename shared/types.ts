@@ -53,6 +53,7 @@ export interface DisplayMessage {
   chart?: ChartRef;
 }
 export interface ChatSnapshot {
+  browser?: import('./browser.js').BrowserState;
   scheduled?: import('./scheduled.js').ScheduledTask[];
   emails?: import('./email.js').EmailDraft[];
   question?: import('./questions.js').QuestionRequest;
@@ -98,6 +99,7 @@ export interface ChatMetrics {
   };
 }
 export interface WorkerInput {
+  browser?: boolean;
   scheduling?: { timezone: string; now: string };
   scheduledRun?: { recipients: string[]; attachments: string };
   email?: {

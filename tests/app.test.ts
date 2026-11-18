@@ -101,7 +101,13 @@ test('authentication, origin checks, settings secrecy, and project boundaries', 
     // Every API route, including plugin routes added later, requires a session and same-origin writes.
     const routes = apiRoutes(f.app);
     assert(routes.length > 60, `Only ${routes.length} routes found`);
-    const open = ['/api/auth/status', '/api/auth/setup', '/api/auth/login'];
+    // Pairing uses a short-lived one-time credential and extension Origin, tested separately.
+    const open = [
+      '/api/auth/status',
+      '/api/auth/setup',
+      '/api/auth/login',
+      '/api/browser/device/pair',
+    ];
     for (const { method, url } of routes) {
       const headers = { host: '127.0.0.1:3000', origin };
       if (!open.includes(url)) {
