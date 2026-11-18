@@ -68,6 +68,13 @@ function splitRef(ref) {
   if (!m) throw new Error('Use a current snapshot ref.');
   return { frameId: Number(m[1]), ref: m[2] };
 }
+// Chrome and the server may serialize object properties in different orders.
+function planKey(plan) {
+  return JSON.stringify(
+    plan,
+    [...new Set([...Object.keys(plan), ...Object.keys(plan.action)])].sort(),
+  );
+}
 async function prepare(conversationId, actions) {
   const results = [];
   for (const a of actions) {
@@ -94,15 +101,12 @@ async function prepare(conversationId, actions) {
     if (!r) throw new Error('Page did not return an action target.');
     results.push({ ...r, action: a });
   }
-  prepared.set(
-    conversationId,
-    results.map((p) => JSON.stringify(p)),
-  );
+  prepared.set(conversationId, results.map(planKey));
   return results;
 }
 async function execute(conversationId, p, check) {
   const plans = prepared.get(conversationId) || [];
-  const key = JSON.stringify(p),
+  const key = planKey(p),
     index = plans.indexOf(key);
   if (index < 0) throw new Error('This action was not prepared by this browser.');
   plans.splice(index, 1); // Consume before any action, including failures.
@@ -149,7 +153,9 @@ async function execute(conversationId, p, check) {
   const info = await assertTab(conversationId, a.tab);
   const { frameId, ref } = a.ref ? splitRef(a.ref) : { frameId: 0, ref: undefined };
   await check();
-  await page(a.tab, 'execute', { ...p, action: { ...a, ref } }, frameId);
+  const [execution] = await page(a.tab, 'execute', { ...p, action: { ...a, ref } }, frameId);
+  if (execution?.result?.ok !== true)
+    throw new Error('Page changed or action outcome unknown. Inspect the page before continuing.');
   return {
     ok: true,
     tab: info,

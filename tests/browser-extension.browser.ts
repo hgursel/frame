@@ -182,7 +182,9 @@ try {
   await expect(panel.getByLabel('Project', { exact: true })).toBeVisible();
   await panel.getByLabel('Project', { exact: true }).selectOption(project.id);
   await panel.getByRole('button', { name: 'New chat', exact: true }).click();
-  const conversationId = await panel.getByLabel('Conversation', { exact: true }).inputValue();
+  const selectedChat = panel.getByLabel('Conversation', { exact: true });
+  await expect(selectedChat).toHaveValue(/.+/);
+  const conversationId = await selectedChat.inputValue();
   assert.ok(conversationId);
   const site = await context.newPage();
   await site.goto(`http://127.0.0.1:${(website.address() as any).port}`);

@@ -198,33 +198,35 @@ function Panel() {
         </button>
       </header>
       <div className="panel-selectors">
-        <label>
-          Project
-          <select
-            value={project}
-            disabled={busy || snapshot.running}
-            onChange={(e) => setProject(e.target.value)}
-          >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+        <label htmlFor="panel-project">Project</label>
+        <select
+          id="panel-project"
+          value={project}
+          disabled={busy || snapshot.running}
+          onChange={(e) => setProject(e.target.value)}
+        >
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="panel-conversation">Conversation</label>
+        <select
+          id="panel-conversation"
+          value={chat}
+          disabled={busy}
+          onChange={(e) => setChat(e.target.value)}
+        >
+          <option value="">Choose a conversation</option>
+          {chats
+            .filter((c) => c.projectId === project)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Conversation
-          <select value={chat} disabled={busy} onChange={(e) => setChat(e.target.value)}>
-            <option value="">Choose a conversation</option>
-            {chats
-              .filter((c) => c.projectId === project)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-          </select>
-        </label>
+        </select>
         <button
           disabled={busy || !enabled}
           onClick={() =>
